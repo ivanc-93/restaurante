@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="960" viewBox="0 0 1440 960">
+  <rect width="1440" height="960" fill="#f7f7f3"/>
+  <rect width="246" height="960" fill="#ffffff"/>
+  <path d="M246 0v960" stroke="#ecebe5"/>
+  <rect x="27" y="26" width="38" height="38" rx="11" fill="#31563e"/>
+  <text x="46" y="52" text-anchor="middle" font-family="Georgia,serif" font-size="24" fill="#fff">S</text>
+  <text x="76" y="50" font-family="Georgia,serif" font-size="24" font-weight="bold" fill="#282b25">sabores</text>
+  <text x="76" y="66" font-family="Arial,sans-serif" font-size="8" letter-spacing="1.5" fill="#84867d">GESTIÓN RESTAURANTE</text>
+  <text x="38" y="124" font-family="Arial,sans-serif" font-size="10" font-weight="bold" letter-spacing="1.4" fill="#9b9d93">MENÚ PRINCIPAL</text>
+  <g font-family="Arial,sans-serif" font-size="14" fill="#777b72">
+    <rect x="24" y="141" width="198" height="43" rx="8" fill="#eff3ec"/><text x="47" y="168" fill="#31563e">◫  Resumen</text>
+    <text x="47" y="215">▤  Pedidos y facturas</text><text x="47" y="261">♨  Menú y mesas</text><text x="47" y="307">▥  Reportes</text>
+  </g>
+  <text x="38" y="367" font-family="Arial,sans-serif" font-size="10" font-weight="bold" letter-spacing="1.4" fill="#9b9d93">ADMINISTRACIÓN</text>
+  <text x="47" y="403" font-family="Arial,sans-serif" font-size="14" fill="#777b72">⚙  Base de datos</text>
+  <path d="M24 872h198" stroke="#ecebe5"/>
+  <circle cx="47" cy="905" r="17" fill="#e8eee5"/><text x="47" y="910" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#31563e">A</text>
+  <text x="76" y="902" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#282b25">Administrador</text>
+  <text x="76" y="919" font-family="Arial,sans-serif" font-size="11" fill="#84867d">Administrador</text>
+  <rect x="246" width="1194" height="65" fill="#fff"/>
+  <path d="M246 65h1194" stroke="#ecebe5"/>
+  <text x="289" y="39" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#282b25">Panel de control</text>
+  <text x="402" y="39" font-family="Arial,sans-serif" font-size="13" fill="#9b9d93">/ Resumen</text>
+  <text x="1190" y="39" font-family="Arial,sans-serif" font-size="12" fill="#9b9d93">miércoles, 22 octubre 2026</text>
+  <text x="290" y="113" font-family="Arial,sans-serif" font-size="10" font-weight="bold" letter-spacing="1.5" fill="#9b9d93">TU RESTAURANTE, EN CONTROL</text>
+  <text x="290" y="157" font-family="Georgia,serif" font-size="32" font-weight="bold" fill="#282b25">Buenos días, Administrador</text>
+  <text x="290" y="183" font-family="Arial,sans-serif" font-size="14" fill="#84867d">Esto es lo que sucede hoy en tu restaurante.</text>
+  <rect x="1213" y="128" width="187" height="43" rx="7" fill="#31563e"/>
+  <text x="1306" y="155" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#fff">＋ Nuevo pedido</text>
+  <g>
+    <rect x="290" y="217" width="263" height="129" rx="10" fill="#fff" stroke="#ecebe5"/>
+    <rect x="570" y="217" width="263" height="129" rx="10" fill="#fff" stroke="#ecebe5"/>
+    <rect x="850" y="217" width="263" height="129" rx="10" fill="#fff" stroke="#ecebe5"/>
+    <rect x="1130" y="217" width="270" height="129" rx="10" fill="#fff" stroke="#ecebe5"/>
+    <g font-family="Arial,sans-serif" font-size="10" font-weight="bold" letter-spacing="1" fill="#84867d">
+      <text x="310" y="247">VENTAS DEL DÍA</text><text x="590" y="247">PEDIDOS ABIERTOS</text>
+      <text x="870" y="247">MESAS DISPONIBLES</text><text x="1150" y="247">PRODUCTOS EN MENÚ</text>
+    </g>
+    <g font-family="Georgia,serif" font-size="29" font-weight="bold">
+      <text x="310" y="292" fill="#bf714a">$1,245</text><text x="590" y="292" fill="#54758e">08</text>
+      <text x="870" y="292" fill="#4d7a59">06</text><text x="1150" y="292" fill="#7970a4">24</text>
+    </g>
+    <g font-family="Arial,sans-serif" font-size="11" fill="#9b9d93">
+      <text x="310" y="324">Facturación de hoy</text><text x="590" y="324">En atención</text>
+      <text x="870" y="324">Listas para clientes</text><text x="1150" y="324">Platos y bebidas activos</text>
+    </g>
+  </g>
+  <rect x="290" y="369" width="1110" height="237" rx="10" fill="#fff" stroke="#ecebe5"/>
+  <text x="323" y="407" font-family="Arial,sans-serif" font-size="10" font-weight="bold" letter-spacing="1.5" fill="#9b9d93">OPERACIÓN DIARIA</text>
+  <text x="323" y="450" font-family="Georgia,serif" font-size="28" font-weight="bold" fill="#282b25">Una gran experiencia empieza aquí.</text>
+  <text x="323" y="484" font-family="Arial,sans-serif" font-size="14" fill="#84867d">Registra pedidos, consulta tus ventas y mantén las mesas en</text>
+  <text x="323" y="507" font-family="Arial,sans-serif" font-size="14" fill="#84867d">movimiento desde un solo lugar.</text>
+  <text x="323" y="553" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#31563e">Gestionar pedidos  →</text>
+  <circle cx="1221" cy="489" r="78" fill="#f5eee4"/>
+  <circle cx="1221" cy="489" r="68" fill="none" stroke="#e6d8c5"/>
+  <text x="1221" y="462" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#d98455">✳</text>
+  <text x="1221" y="492" text-anchor="middle" font-family="Georgia,serif" font-size="23" font-weight="bold" fill="#6c604c">Buen</text>
+  <text x="1221" y="518" text-anchor="middle" font-family="Georgia,serif" font-size="23" font-weight="bold" fill="#6c604c">provecho</text>
+  <rect x="290" y="630" width="542" height="90" rx="10" fill="#fff" stroke="#ecebe5"/>
+  <rect x="850" y="630" width="550" height="90" rx="10" fill="#fff" stroke="#ecebe5"/>
+  <g font-family="Arial,sans-serif"><text x="326" y="673" font-size="14" font-weight="bold" fill="#282b25">Pedidos y facturas</text><text x="326" y="696" font-size="12" fill="#84867d">Crear un pedido y emitir factura</text><text x="784" y="683" font-size="20" fill="#84867d">→</text>
+  <text x="887" y="673" font-size="14" font-weight="bold" fill="#282b25">Reportes de ventas</text><text x="887" y="696" font-size="12" fill="#84867d">Ventas y productos más vendidos</text><text x="1350" y="683" font-size="20" fill="#84867d">→</text></g>
+</svg>

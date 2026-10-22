@@ -1,0 +1,60 @@
+erDiagram
+    USUARIOS {
+        int Id PK
+        nvarchar Nombre
+        nvarchar Usuario UK
+        char ContrasenaHash
+        nvarchar Sal
+        nvarchar Rol
+        bit Activo
+    }
+    MESAS {
+        int Id PK
+        int Numero UK
+        int Capacidad
+        nvarchar Estado
+    }
+    MENU {
+        int Id PK
+        nvarchar Nombre
+        nvarchar Tipo
+        nvarchar Categoria
+        decimal Precio
+        bit Alcoholica
+        bit Activo
+    }
+    CLIENTES {
+        int Id PK
+        nvarchar Nombre
+        nvarchar Telefono
+        nvarchar Correo
+    }
+    PEDIDOS {
+        int Id PK
+        int MesaId FK
+        int ClienteId FK
+        datetime Fecha
+        nvarchar Estado
+        decimal Total
+    }
+    DETALLESPEDIDO {
+        int Id PK
+        int PedidoId FK
+        int MenuId FK
+        int Cantidad
+        decimal PrecioUnitario
+    }
+    FACTURAS {
+        int Id PK
+        string NumeroFactura UK
+        int PedidoId FK,UK
+        datetime Fecha
+        decimal Subtotal
+        decimal Impuesto
+        decimal Total
+    }
+    MESAS ||--o{ PEDIDOS : atiende
+    CLIENTES o|--o{ PEDIDOS : realiza
+    PEDIDOS ||--|{ DETALLESPEDIDO : contiene
+    MENU ||--o{ DETALLESPEDIDO : incluye
+    PEDIDOS ||--o| FACTURAS : factura

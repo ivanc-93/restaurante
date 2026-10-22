@@ -1,0 +1,12 @@
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.csproj.AssemblyReference.cache
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.AssemblyInfoInputs.cache
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.AssemblyInfo.cs
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.csproj.CoreCompileInputs.cache
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\bin\Debug\net8.0\Restaurante.Backend.deps.json
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\bin\Debug\net8.0\Restaurante.Backend.dll
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\bin\Debug\net8.0\Restaurante.Backend.pdb
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.dll
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\refint\Restaurante.Backend.dll
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\Restaurante.Backend.pdb
+C:\Users\icoronado\Documents\copilot\restaurante2\Restaurante.Backend\obj\Debug\net8.0\ref\Restaurante.Backend.dll

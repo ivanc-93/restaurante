@@ -1,0 +1,150 @@
+classDiagram
+    class IConfiguracionConexion {
+        <<interface>>
+        +bool EstaConfigurada
+        +CrearConexion() SqlConnection
+        +ProbarYGuardar(servidor, puerto, baseDatos, usuario, contrasena, confiarCertificado) void
+    }
+    class ConfiguracionConexion {
+        -string _ruta
+        -string _cadena
+        +bool EstaConfigurada
+        +CrearConexion() SqlConnection
+        +ProbarYGuardar(servidor, puerto, baseDatos, usuario, contrasena, confiarCertificado) void
+    }
+    class IRepositorioRestaurante {
+        <<interface>>
+        +IniciarSesion(usuario, contrasena) UsuarioAutenticado
+        +ObtenerResumen() ResumenRestaurante
+        +ListarMesas() IReadOnlyList
+        +CrearMesa(numero, capacidad) void
+        +ActualizarMesa(id, numero, capacidad, estado) void
+        +EliminarMesa(id) void
+        +ListarMenu() IReadOnlyList
+        +ListarClientes() IReadOnlyList
+        +ListarPedidos() IReadOnlyList
+        +ObtenerPedidoAbierto(mesaId) PedidoResumen
+        +ListarDetallesPedido(pedidoId) IReadOnlyList
+        +CrearPedido(solicitud) PedidoCreado
+        +AgregarProductoAPedido(pedidoId, menuId, cantidad) decimal
+        +FacturarPedido(pedidoId) string
+        +ReportarVentas(desde, hasta) IReadOnlyList
+        +ReportarPlatosMasVendidos() IReadOnlyList
+    }
+    class RepositorioRestaurante {
+        -IConfiguracionConexion configuracion
+        +IniciarSesion(usuario, contrasena) UsuarioAutenticado
+        +CrearPedido(solicitud) PedidoCreado
+        +ObtenerPedidoAbierto(mesaId) PedidoResumen
+        +ListarDetallesPedido(pedidoId) IReadOnlyList
+        +AgregarProductoAPedido(pedidoId, menuId, cantidad) decimal
+        +FacturarPedido(pedidoId) string
+        +ReportarVentas(desde, hasta) IReadOnlyList
+        +CrearMesa(numero, capacidad) void
+        +ActualizarMesa(id, numero, capacidad, estado) void
+        +EliminarMesa(id) void
+    }
+    class ElementoMenu {
+        <<abstract>>
+        +int Id
+        +string Nombre
+        +string Categoria
+        +decimal Precio
+        +string Tipo*
+        +CalcularImporte(cantidad) decimal*
+    }
+    class Plato {
+        +string Tipo
+        +CalcularImporte(cantidad) decimal
+    }
+    class Bebida {
+        +bool Alcoholica
+        +string Tipo
+        +CalcularImporte(cantidad) decimal
+    }
+    class Mesa {
+        +int Id
+        +int Numero
+        +int Capacidad
+        +string Estado
+    }
+    class Cliente {
+        +int Id
+        +string Nombre
+        +string Telefono
+        +string Correo
+    }
+    class SolicitudPedido {
+        +int MesaId
+        +int ClienteId
+        +IReadOnlyList~DetallePedidoSolicitud~ Detalles
+    }
+    class DetallePedidoSolicitud {
+        +int PlatoId
+        +int Cantidad
+    }
+    class FormularioAcceso {
+        -IRepositorioRestaurante repositorio
+        -IConfiguracionConexion configuracion
+        +UsuarioAutenticado UsuarioActual
+        -IniciarSesion() void
+    }
+    class FormularioPrincipal {
+        -IRepositorioRestaurante repositorio
+        -IConfiguracionConexion configuracion
+        -UsuarioAutenticado usuario
+        +MostrarInicio() void
+        +MostrarPedidos() void
+        +MostrarMenuMesas() void
+        +MostrarReportes() void
+        +MostrarConexion() void
+    }
+    class FormularioDetalleMesa {
+        -IRepositorioRestaurante repositorio
+        -Mesa mesa
+        -PedidoResumen pedido
+        -CargarPedido() void
+        +AgregarProducto() void
+        +FacturarPedido() void
+    }
+    class PedidoResumen {
+        +int Id
+        +int NumeroMesa
+        +string Estado
+        +decimal Total
+        +string NumeroFactura
+    }
+    class DetallePedidoResumen {
+        +string Producto
+        +string Tipo
+        +int Cantidad
+        +decimal PrecioUnitario
+        +decimal Importe
+    }
+    class UsuarioAutenticado {
+        +string Nombre
+        +string Rol
+    }
+    class Factura {
+        +string NumeroFactura
+        +decimal Subtotal
+        +decimal Impuesto
+        +decimal Total
+    }
+    IConfiguracionConexion <|.. ConfiguracionConexion
+    IRepositorioRestaurante <|.. RepositorioRestaurante
+    ElementoMenu <|-- Plato
+    ElementoMenu <|-- Bebida
+    RepositorioRestaurante --> IConfiguracionConexion
+    FormularioAcceso --> IRepositorioRestaurante
+    FormularioAcceso --> IConfiguracionConexion
+    FormularioPrincipal --> IRepositorioRestaurante
+    FormularioPrincipal --> IConfiguracionConexion
+    FormularioPrincipal --> UsuarioAutenticado
+    FormularioDetalleMesa --> IRepositorioRestaurante
+    FormularioDetalleMesa --> Mesa
+    FormularioDetalleMesa --> PedidoResumen
+    SolicitudPedido *-- DetallePedidoSolicitud
+    FormularioAcceso --> UsuarioAutenticado
+    IRepositorioRestaurante ..> SolicitudPedido
+    IRepositorioRestaurante ..> ElementoMenu
