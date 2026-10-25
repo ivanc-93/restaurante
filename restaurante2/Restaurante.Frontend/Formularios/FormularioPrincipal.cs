@@ -1,3 +1,4 @@
+using Restaurante.Frontend.Servicios;
 using Restaurante.Backend.Dominio;
 using Restaurante.Backend.Servicios;
 
@@ -5,6 +6,7 @@ namespace Restaurante.Frontend.Formularios;
 
 public sealed partial class FormularioPrincipal : Form
 {
+    private readonly IDialogosUsuario _dialogos = new DialogosUsuario();
     private readonly IRepositorioRestaurante _repositorio = null!;
     private readonly IConfiguracionConexion _configuracion = null!;
     private readonly UsuarioAutenticado _usuario = null!;
@@ -12,11 +14,12 @@ public sealed partial class FormularioPrincipal : Form
     public bool SesionCerrada { get; private set; }
     public FormularioPrincipal() => InitializeComponent();
     public FormularioPrincipal(IRepositorioRestaurante repositorio, IConfiguracionConexion configuracion,
-        UsuarioAutenticado usuario) : this()
+        UsuarioAutenticado usuario, IDialogosUsuario? dialogos = null) : this()
     {
         _repositorio = repositorio;
         _configuracion = configuracion;
         _usuario = usuario;
+        _dialogos = dialogos ?? new DialogosUsuario();
         usuarioLabel.Text = $"{usuario.Nombre} ({usuario.Rol})";
         AgregarNavegacion(menu, "RESUMEN", "Resumen", MostrarInicio);
         AgregarNavegacion(menu, "SERVICIO", "Pedidos y facturas", MostrarPedidos);
@@ -25,6 +28,9 @@ public sealed partial class FormularioPrincipal : Form
         AgregarNavegacion(menu, "DATOS", "Clientes y productos", MostrarCatalogos);
         if (usuario.Rol == "Administrador")
             AgregarNavegacion(menu, "ADMINISTRACIÓN", "Conexión SQL", MostrarConexion);
+        menu.Enabled = false;
+        _contenido.Enabled = false;
+        salir.Enabled = false;
         Shown += async (_, _) => await EjecutarSeguro(MostrarInicio);
     }
 
@@ -174,7 +180,7 @@ public sealed partial class FormularioPrincipal : Form
                 };
                 registrar.Enabled = false;
                 var pedido = await Task.Run(() => _repositorio.CrearPedido(solicitud));
-                MessageBox.Show(this, $"Pedido #{pedido.Id} abierto.\r\nTotal actual: {pedido.Total:C}\r\nLa factura se emitirá cuando los comensales decidan retirarse.",
+                _dialogos.Mostrar(this, $"Pedido #{pedido.Id} abierto.\r\nTotal actual: {pedido.Total:C}\r\nLa factura se emitirá cuando los comensales decidan retirarse.",
                     "Pedido registrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 await Recargar();
             }
@@ -188,12 +194,12 @@ public sealed partial class FormularioPrincipal : Form
                 throw new InvalidOperationException("Selecciona un pedido para facturar.");
             if (pedido.Estado is not ("Abierto" or "En preparación"))
                 throw new InvalidOperationException("El pedido seleccionado ya está facturado o cerrado.");
-            if (MessageBox.Show(this,
+            if (_dialogos.Mostrar(this,
                 $"¿Los comensales se retiran y deseas facturar el pedido #{pedido.Id} por {pedido.Total:C}?",
                 "Confirmar factura", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
             var numeroFactura = await Task.Run(() => _repositorio.FacturarPedido(pedido.Id));
-            MessageBox.Show(this,
+            _dialogos.Mostrar(this,
                 $"Factura {numeroFactura} emitida. La mesa {pedido.NumeroMesa} quedó disponible.",
                 "Pedido facturado", MessageBoxButtons.OK, MessageBoxIcon.Information);
             await Recargar();
@@ -212,7 +218,8 @@ public sealed partial class FormularioPrincipal : Form
         registrar = Componentes.Boton("Abrir pedido (sin facturar)");
         registrar.AutoSize = true;
         registrar.Dock = DockStyle.Top;
-        var layout = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 1, AutoSize = true, Padding = new Padding(12) };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(12) };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.Controls.Add(Componentes.Etiqueta("Nuevo pedido", 14, true));
         layout.Controls.Add(Componentes.Etiqueta("Mesa disponible"));
         layout.Controls.Add(mesa);
@@ -289,7 +296,7 @@ public sealed partial class FormularioPrincipal : Form
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
             {
-                MessageBox.Show(this, "Selecciona una mesa para editar.", "Mesas",
+                _dialogos.Mostrar(this, "Selecciona una mesa para editar.", "Mesas",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -305,11 +312,11 @@ public sealed partial class FormularioPrincipal : Form
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
             {
-                MessageBox.Show(this, "Selecciona una mesa para visualizar.", "Mesas",
+                _dialogos.Mostrar(this, "Selecciona una mesa para visualizar.", "Mesas",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            using var formulario = new FormularioDetalleMesa(_repositorio, seleccionada);
+            using var formulario = new FormularioDetalleMesa(_repositorio, seleccionada, _dialogos);
             formulario.ShowDialog(this);
             await CargarMesas();
         });
@@ -319,11 +326,11 @@ public sealed partial class FormularioPrincipal : Form
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
             {
-                MessageBox.Show(this, "Selecciona una mesa para eliminar.", "Mesas",
+                _dialogos.Mostrar(this, "Selecciona una mesa para eliminar.", "Mesas",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            var confirmacion = MessageBox.Show(this,
+            var confirmacion = _dialogos.Mostrar(this,
                 $"¿Deseas eliminar la mesa {seleccionada.Numero}?",
                 "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (confirmacion != DialogResult.Yes) return;
@@ -359,7 +366,7 @@ public sealed partial class FormularioPrincipal : Form
     {
         if (_usuario.Rol != "Administrador")
         {
-            MessageBox.Show(this, "Solo el administrador puede cambiar la conexión.", "Acceso denegado",
+            _dialogos.Mostrar(this, "Solo el administrador puede cambiar la conexión.", "Acceso denegado",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return Task.CompletedTask;
         }
@@ -438,7 +445,7 @@ public sealed partial class FormularioPrincipal : Form
                 await Task.Run(() => _configuracion.ProbarYGuardar(host, port, db, user, password, trust));
                 estado.Text = "●  Conexión probada y guardada de forma protegida.";
                 estado.ForeColor = Componentes.Verde;
-                MessageBox.Show(this, "La conexión SQL Server es válida y se guardó protegida.",
+                _dialogos.Mostrar(this, "La conexión SQL Server es válida y se guardó protegida.",
                     "Conexión correcta", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 SesionCerrada = true;
                 Close();
@@ -558,6 +565,6 @@ public sealed partial class FormularioPrincipal : Form
     }
 
     private void MostrarError(Exception excepcion) =>
-        MessageBox.Show(this, excepcion.Message, "No se pudo completar la operación",
+        _dialogos.Mostrar(this, excepcion.Message, "No se pudo completar la operación",
             MessageBoxButtons.OK, MessageBoxIcon.Error);
 }

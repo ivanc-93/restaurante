@@ -12,6 +12,7 @@ internal static class Verificar
     [STAThread]
     private static int Main(string[] args)
     {
+        if(args.Length==4 && args[0]=="--sesion-ui") return PruebasSesion.Proceso(args[1],args[2],int.Parse(args[3]));
         ApplicationConfiguration.Initialize();
         salida=args[0]; Directory.CreateDirectory(salida);
         if(args.Length>1) ExportarDiagramas.Guardar(args[1]);
@@ -71,7 +72,7 @@ internal static class Verificar
                 Verdad(form.ClientRectangle.Contains(boton.Bounds),"Botón recortado: "+boton.Text);
         });
         var cadena=Environment.GetEnvironmentVariable("RESTAURANTE_TEST_CONNECTION");
-        if(!string.IsNullOrWhiteSpace(cadena)) { Integracion(cadena); PruebasHistorial.Ejecutar(cadena,Caso); }
+        if(!string.IsNullOrWhiteSpace(cadena)) { Integracion(cadena); PruebasHistorial.Ejecutar(cadena,Caso); PruebasSesion.Ejecutar(cadena,Caso,salida); }
         else Console.WriteLine("PENDIENTE: integración SQL (sin RESTAURANTE_TEST_CONNECTION).");
         Console.WriteLine($"RESULTADO: {correctas} correctas; {fallidas} fallidas.");
         return fallidas==0?0:1;
@@ -206,8 +207,9 @@ internal static class Verificar
         Caso("Pantallas operativas y cierre de sesión",()=>
         {
             using var form=new FormularioPrincipal(repo,new ConexionPrueba(cadena),new UsuarioAutenticado("Prueba","Administrador"));
+            bool mostrada=false; form.Shown+=(_,_)=>mostrada=true;
             form.Opacity=0; form.ShowInTaskbar=false; form.Show();
-            Esperar(()=>Campo<FlowLayoutPanel>(form,"menu").Enabled);
+            Esperar(()=>mostrada && Campo<FlowLayoutPanel>(form,"menu").Enabled);
             foreach(var pagina in new[]{"MostrarPedidos","MostrarMenuMesas"})
             {
                 var tarea=(Task)form.GetType().GetMethod(pagina,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(form,null)!;
@@ -283,4 +285,3 @@ internal static class Verificar
         throw new Exception("Se aceptó una operación inválida.");
     }
 }
-

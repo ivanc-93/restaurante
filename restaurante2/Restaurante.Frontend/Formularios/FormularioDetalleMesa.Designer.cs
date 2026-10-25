@@ -55,9 +55,11 @@ partial class FormularioDetalleMesa
         _cantidad.Maximum = 50;
         _cantidad.Value = 1;
         _cantidad.Width = 75;
+        _agregar.Enabled = false;
         _agregar.Text = "Agregar producto";
         _agregar.Size = new Size(145, 36);
         _agregar.Click += Agregar_Click;
+        _facturar.Enabled = false;
         _facturar.Text = "Facturar y liberar mesa";
         _facturar.Size = new Size(195, 36);
         _facturar.Click += Facturar_Click;

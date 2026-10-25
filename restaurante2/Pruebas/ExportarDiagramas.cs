@@ -15,7 +15,7 @@ internal static class ExportarDiagramas
         var nombres=Regex.Matches(fuente,@"(?m)^    class (\w+)").Select(m=>m.Groups[1].Value).ToArray();
         var grupos=new Dictionary<string,int>();
         foreach(var nombre in nombres)
-            grupos[nombre]=nombre.StartsWith("Formulario")||nombre is "Program" or "Componentes" or "OpcionFiltro"?3:
+            grupos[nombre]=nombre.StartsWith("Formulario")||nombre is "Program" or "Componentes" or "OpcionFiltro" or "CicloSesion" or "DialogosUsuario" or "IDialogosUsuario"?3:
                 nombre.StartsWith("IRepositorio")||nombre.Contains("Conexion")||nombre is "RepositorioRestaurante" or "ReglasRestaurante"?2:0;
         var posiciones=new Dictionary<string,Rectangle>();
         int dominio=0,servicios=0,ui=0;
@@ -60,7 +60,7 @@ internal static class ExportarDiagramas
         Preparar(g,"Base de datos: relaciones e integridad");
         var posiciones=new Dictionary<string,Rectangle>{
             ["USUARIOS"]=new(35,130,430,300),["CLIENTES"]=new(35,480,430,240),["MESAS"]=new(35,790,430,210),
-            ["PEDIDOS"]=new(550,400,430,300),["MENU"]=new(1060,130,430,300),["DETALLESPEDIDO"]=new(1060,480,430,260),
+            ["PEDIDOS"]=new(550,400,430,300),["MENU"]=new(1060,130,430,300),["DETALLESPEDIDO"]=new(1060,480,430,310),
             ["FACTURAS"]=new(550,830,430,300),["RESTAURANTE"]=new(1060,930,430,190)};
         using var linea=new Pen(Color.SlateGray,2);
         linea.CustomEndCap=new AdjustableArrowCap(5,6);
@@ -82,7 +82,7 @@ internal static class ExportarDiagramas
         }
         using var nota=new Font("Segoe UI",13);
         g.DrawString("PK: primaria · FK: foránea · UK: única. Restaurante contiene una fila (Id=1).",nota,Brushes.DimGray,35,1230);
-        g.DrawString("Un pedido puede tener una factura. Los detalles conservan el precio unitario del pedido.",nota,Brushes.DimGray,35,1265);
+        g.DrawString("Un pedido puede tener una factura. Los detalles conservan nombre, tipo y precio capturados al agregar el producto.",nota,Brushes.DimGray,35,1265);
         imagen.Save(Path.Combine(directorio,"DiagramaBaseDatos.png"));
     }
     private static void Preparar(Graphics g,string titulo)

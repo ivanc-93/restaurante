@@ -1,17 +1,20 @@
+using Restaurante.Frontend.Servicios;
 using Restaurante.Backend.Dominio;
 using Restaurante.Backend.Servicios;
 namespace Restaurante.Frontend.Formularios;
 
 public sealed partial class FormularioDetalleMesa : Form
 {
+    private readonly IDialogosUsuario _dialogos = new DialogosUsuario();
     private readonly IRepositorioRestaurante _repositorio = null!;
     private readonly Mesa _mesa = null!;
     private PedidoResumen? _pedido;
     public FormularioDetalleMesa() => InitializeComponent();
-    public FormularioDetalleMesa(IRepositorioRestaurante repositorio, Mesa mesa) : this()
+    public FormularioDetalleMesa(IRepositorioRestaurante repositorio, Mesa mesa, IDialogosUsuario? dialogos = null) : this()
     {
         _repositorio = repositorio;
         _mesa = mesa;
+        _dialogos = dialogos ?? new DialogosUsuario();
         Text = $"Mesa {mesa.Numero} | Pedido";
         Componentes.EstilizarTabla(_detalles);
         Shown += async (_, _) => await RecargarSeguroAsync();
@@ -38,7 +41,7 @@ public sealed partial class FormularioDetalleMesa : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "No se pudo cargar la mesa", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _dialogos.Mostrar(this, ex.Message, "No se pudo cargar la mesa", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
     private async void Agregar_Click(object? sender, EventArgs e)
@@ -60,7 +63,7 @@ public sealed partial class FormularioDetalleMesa : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "No se pudo agregar el producto",
+            _dialogos.Mostrar(this, ex.Message, "No se pudo agregar el producto",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             await RecargarSeguroAsync();
         }
@@ -72,7 +75,7 @@ public sealed partial class FormularioDetalleMesa : Form
         {
             if (_pedido is null)
                 throw new InvalidOperationException("No hay un pedido abierto para facturar.");
-            var confirmacion = MessageBox.Show(this,
+            var confirmacion = _dialogos.Mostrar(this,
                 $"¿Los comensales se retiran y deseas facturar el pedido #{_pedido.Id} por {_pedido.Total:C}?",
                 "Facturar pedido y liberar mesa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirmacion != DialogResult.Yes) return;
@@ -80,14 +83,14 @@ public sealed partial class FormularioDetalleMesa : Form
             var pedidoId = _pedido.Id;
             _agregar.Enabled = _facturar.Enabled = false;
             var factura = await Task.Run(() => _repositorio.FacturarPedido(pedidoId));
-            MessageBox.Show(this, $"Factura {factura} emitida. La mesa {_mesa.Numero} quedó disponible.",
+            _dialogos.Mostrar(this, $"Factura {factura} emitida. La mesa {_mesa.Numero} quedó disponible.",
                 "Pedido facturado", MessageBoxButtons.OK, MessageBoxIcon.Information);
             DialogResult = DialogResult.OK;
             Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "No se pudo facturar el pedido",
+            _dialogos.Mostrar(this, ex.Message, "No se pudo facturar el pedido",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
             await RecargarSeguroAsync();
         }

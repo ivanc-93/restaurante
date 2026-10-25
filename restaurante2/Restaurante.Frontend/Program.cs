@@ -1,25 +1,37 @@
 using Restaurante.Backend.Servicios;
-using Restaurante.Frontend.Formularios;
-
+using Restaurante.Frontend.Servicios;
 namespace Restaurante.Frontend;
 
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
-        var configuracion = new ConfiguracionConexion();
-        if (configuracion.ErrorCarga is not null)
-            MessageBox.Show(configuracion.ErrorCarga, "Configuración SQL", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        IRepositorioRestaurante repositorio = new RepositorioRestaurante(configuracion);
-        while (true)
+        if (args.Length > 0 && !args.SequenceEqual(new[] { "--pruebas" }))
         {
-            using var acceso = new FormularioAcceso(repositorio, configuracion);
-            if (acceso.ShowDialog() != DialogResult.OK || acceso.UsuarioActual is null) return;
-            using var principal = new FormularioPrincipal(repositorio, configuracion, acceso.UsuarioActual);
-            Application.Run(principal);
-            if (!principal.SesionCerrada) return;
+            MessageBox.Show("Opción desconocida. Use --pruebas únicamente con una conexión aislada.", "Inicio");
+            return;
         }
+        IConfiguracionConexion configuracion;
+        if (args.SequenceEqual(new[] { "--pruebas" }))
+        {
+            var cadena = Environment.GetEnvironmentVariable("RESTAURANTE_PRUEBAS_CONEXION");
+            if (string.IsNullOrWhiteSpace(cadena))
+            {
+                MessageBox.Show("Indique RESTAURANTE_PRUEBAS_CONEXION para una base aislada.", "Modo de prueba");
+                return;
+            }
+            try { configuracion = new ConfiguracionConexionPruebas(cadena); }
+            catch (ArgumentException ex) { MessageBox.Show(ex.Message, "Modo de prueba"); return; }
+        }
+        else
+        {
+            var guardada = new ConfiguracionConexion();
+            if (guardada.ErrorCarga is not null)
+                MessageBox.Show(guardada.ErrorCarga, "Configuración SQL", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            configuracion = guardada;
+        }
+        CicloSesion.Ejecutar(new RepositorioRestaurante(configuracion), configuracion);
     }
 }

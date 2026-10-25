@@ -8,7 +8,7 @@ $fuentes=[System.Security.SecurityElement]::Escape($PSScriptRoot)
 @"
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
-  <ItemGroup><ProjectReference Include="$frontend" /><Compile Include="$fuentes/Verificar.cs" Link="Verificar.cs" /><Compile Include="$fuentes/ConexionPrueba.cs" Link="ConexionPrueba.cs" /><Compile Include="$fuentes/ExportarDiagramas.cs" Link="ExportarDiagramas.cs" /><Compile Include="$fuentes/PruebasHistorial.cs" Link="PruebasHistorial.cs" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="$frontend" /><Compile Include="$fuentes/Verificar.cs" Link="Verificar.cs" /><Compile Include="$fuentes/ConexionPrueba.cs" Link="ConexionPrueba.cs" /><Compile Include="$fuentes/ExportarDiagramas.cs" Link="ExportarDiagramas.cs" /><Compile Include="$fuentes/PruebasHistorial.cs" Link="PruebasHistorial.cs" /><Compile Include="$fuentes/PruebasSesion.cs" Link="PruebasSesion.cs" /><Compile Include="$fuentes/DialogosPrueba.cs" Link="DialogosPrueba.cs" /></ItemGroup>
 </Project>
 "@ | Set-Content (Join-Path $trabajo 'Verificador.csproj') -Encoding utf8
 $conexionAnterior=$env:RESTAURANTE_TEST_CONNECTION
@@ -71,6 +71,3 @@ INSERT dbo.Facturas(PedidoId,Subtotal,Impuesto,Total) VALUES(@pedido,20,0,20);
     & dotnet run --project (Join-Path $trabajo 'Verificador.csproj') -- @argumentos
     if($LASTEXITCODE -ne 0) {throw 'Hay pruebas fallidas. Consulte la salida.'}
 } finally {$env:RESTAURANTE_TEST_CONNECTION=$conexionAnterior; $env:RESTAURANTE_TEST_ANTERIOR=$legadoAnterior; $env:RESTAURANTE_MIGRACION_003=$migracionAnterior}
-
-
-

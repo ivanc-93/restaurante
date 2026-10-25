@@ -659,4 +659,3 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         parametro.Value = valor;
     }
 }
-
