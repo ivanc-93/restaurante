@@ -233,13 +233,12 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         var resultado = new List<DetallePedidoResumen>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
-            SELECT m.Nombre, m.Tipo, SUM(d.Cantidad),
+            SELECT d.NombreProducto, d.TipoProducto, SUM(d.Cantidad),
                 d.PrecioUnitario, SUM(d.Cantidad*d.PrecioUnitario)
             FROM dbo.DetallesPedido d
-            JOIN dbo.Menu m ON m.Id=d.MenuId
             WHERE d.PedidoId=@pedido
-            GROUP BY m.Id,m.Nombre,m.Tipo,d.PrecioUnitario
-            ORDER BY m.Nombre;
+            GROUP BY d.MenuId,d.NombreProducto,d.TipoProducto,d.PrecioUnitario
+            ORDER BY d.NombreProducto;
             """, conexion);
         comando.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
         using var lector = comando.ExecuteReader();
@@ -309,13 +308,15 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             foreach (var detalle in detalles)
             {
                 using var linea = new SqlCommand("""
-                    INSERT dbo.DetallesPedido (PedidoId,MenuId,Cantidad,PrecioUnitario)
-                    VALUES (@pedido,@menu,@cantidad,@precio);
+                    INSERT dbo.DetallesPedido (PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)
+                    VALUES (@pedido,@menu,@cantidad,@precio,@nombre,@tipo);
                     """, conexion, transaccion);
                 linea.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
                 linea.Parameters.Add("@menu", SqlDbType.Int).Value = detalle.Solicitud.PlatoId;
                 linea.Parameters.Add("@cantidad", SqlDbType.Int).Value = detalle.Solicitud.Cantidad;
                 AgregarDecimal(linea, "@precio", detalle.Producto.Precio, 10);
+                linea.Parameters.Add("@nombre", SqlDbType.NVarChar, 120).Value = detalle.Producto.Nombre;
+                linea.Parameters.Add("@tipo", SqlDbType.NVarChar, 20).Value = detalle.Producto.Tipo;
                 linea.ExecuteNonQuery();
             }
 
@@ -358,22 +359,30 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
                 throw new InvalidOperationException("No se pueden añadir productos a un pedido facturado o cerrado.");
 
             using var precio = new SqlCommand(
-                "SELECT Precio FROM dbo.Menu WHERE Id=@menu AND Activo=1;",
+                "SELECT Precio,Nombre,Tipo FROM dbo.Menu WHERE Id=@menu AND Activo=1;",
                 conexion, transaccion);
             precio.Parameters.Add("@menu", SqlDbType.Int).Value = menuId;
-            var valor = precio.ExecuteScalar();
-            if (valor is null) throw new InvalidOperationException("El producto ya no está disponible.");
-            var precioUnitario = (decimal)valor;
+            decimal precioUnitario;
+            string nombreProducto, tipoProducto;
+            using (var lector = precio.ExecuteReader())
+            {
+                if (!lector.Read()) throw new InvalidOperationException("El producto ya no está disponible.");
+                precioUnitario = lector.GetDecimal(0);
+                nombreProducto = lector.GetString(1);
+                tipoProducto = lector.GetString(2);
+            }
 
             using (var detalle = new SqlCommand("""
-                INSERT dbo.DetallesPedido (PedidoId,MenuId,Cantidad,PrecioUnitario)
-                VALUES (@pedido,@menu,@cantidad,@precio);
+                INSERT dbo.DetallesPedido (PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)
+                VALUES (@pedido,@menu,@cantidad,@precio,@nombre,@tipo);
                 """, conexion, transaccion))
             {
                 detalle.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
                 detalle.Parameters.Add("@menu", SqlDbType.Int).Value = menuId;
                 detalle.Parameters.Add("@cantidad", SqlDbType.Int).Value = cantidad;
                 AgregarDecimal(detalle, "@precio", precioUnitario, 10);
+                detalle.Parameters.Add("@nombre", SqlDbType.NVarChar, 120).Value = nombreProducto;
+                detalle.Parameters.Add("@tipo", SqlDbType.NVarChar, 20).Value = tipoProducto;
                 detalle.ExecuteNonQuery();
             }
 
@@ -512,12 +521,20 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         var resultado = new List<PlatoVendido>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
-            SELECT TOP (10) m.Nombre, SUM(d.Cantidad), SUM(d.Cantidad*d.PrecioUnitario)
-            FROM dbo.DetallesPedido d JOIN dbo.Menu m ON m.Id=d.MenuId
-            JOIN dbo.Pedidos p ON p.Id=d.PedidoId
-            JOIN dbo.Facturas f ON f.PedidoId=p.Id
-            WHERE p.Estado=N'Facturado' AND m.Tipo=N'Plato' AND f.Fecha>=@desde AND f.Fecha<@hasta
-            GROUP BY m.Id,m.Nombre ORDER BY SUM(d.Cantidad) DESC, m.Id;
+            WITH Ventas AS
+            (
+                SELECT d.MenuId, d.NombreProducto, d.Cantidad, d.PrecioUnitario,
+                    ROW_NUMBER() OVER (PARTITION BY d.MenuId ORDER BY f.Fecha DESC,f.Id DESC,d.Id DESC) AS Orden
+                FROM dbo.DetallesPedido d
+                JOIN dbo.Pedidos p ON p.Id=d.PedidoId
+                JOIN dbo.Facturas f ON f.PedidoId=p.Id
+                WHERE p.Estado=N'Facturado' AND d.TipoProducto=N'Plato'
+                    AND f.Fecha>=@desde AND f.Fecha<@hasta
+            )
+            SELECT TOP (10) MAX(CASE WHEN Orden=1 THEN NombreProducto END),
+                SUM(Cantidad),SUM(Cantidad*PrecioUnitario)
+            FROM Ventas
+            GROUP BY MenuId ORDER BY SUM(Cantidad) DESC,MenuId;
             """, conexion);
         comando.Parameters.Add("@desde", SqlDbType.DateTime2).Value = fechas.Desde;
         comando.Parameters.Add("@hasta", SqlDbType.DateTime2).Value = fechas.HastaExclusivo;
@@ -642,3 +659,4 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         parametro.Value = valor;
     }
 }
+

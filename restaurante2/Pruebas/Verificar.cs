@@ -71,7 +71,7 @@ internal static class Verificar
                 Verdad(form.ClientRectangle.Contains(boton.Bounds),"Botón recortado: "+boton.Text);
         });
         var cadena=Environment.GetEnvironmentVariable("RESTAURANTE_TEST_CONNECTION");
-        if(!string.IsNullOrWhiteSpace(cadena)) Integracion(cadena);
+        if(!string.IsNullOrWhiteSpace(cadena)) { Integracion(cadena); PruebasHistorial.Ejecutar(cadena,Caso); }
         else Console.WriteLine("PENDIENTE: integración SQL (sin RESTAURANTE_TEST_CONNECTION).");
         Console.WriteLine($"RESULTADO: {correctas} correctas; {fallidas} fallidas.");
         return fallidas==0?0:1;
@@ -283,3 +283,4 @@ internal static class Verificar
         throw new Exception("Se aceptó una operación inválida.");
     }
 }
+
