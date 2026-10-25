@@ -90,6 +90,16 @@ classDiagram
     class FormularioReportes
     class OpcionFiltro
     class Componentes
+    class IDialogosUsuario {
+        <<interface>>
+        +Mostrar(propietario, mensaje, titulo, botones, icono) DialogResult
+    }
+    class DialogosUsuario
+    class CicloSesion {
+        <<static>>
+        +Ejecutar(repositorio, configuracion, dialogos) void
+    }
+    class ConfiguracionConexionPruebas
     class Program
     ElementoMenu <|-- Plato
     ElementoMenu <|-- Bebida
@@ -113,5 +123,13 @@ classDiagram
     FormularioCatalogos --> IRepositorioRestaurante
     FormularioReportes --> IRepositorioRestaurante
     FormularioReportes ..> OpcionFiltro
-    Program ..> FormularioAcceso
-    Program ..> FormularioPrincipal
+    Program ..> CicloSesion
+    Program ..> ConfiguracionConexionPruebas
+
+    IDialogosUsuario <|.. DialogosUsuario
+    IConfiguracionConexion <|.. ConfiguracionConexionPruebas
+    CicloSesion ..> FormularioAcceso
+    CicloSesion ..> FormularioPrincipal
+    CicloSesion --> IDialogosUsuario
+    FormularioPrincipal --> IDialogosUsuario
+    FormularioDetalleMesa --> IDialogosUsuario
