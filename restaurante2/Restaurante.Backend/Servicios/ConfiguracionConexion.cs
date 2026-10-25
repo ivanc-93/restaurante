@@ -4,14 +4,6 @@ using Microsoft.Data.SqlClient;
 
 namespace Restaurante.Backend.Servicios;
 
-public interface IConfiguracionConexion
-{
-    bool EstaConfigurada { get; }
-    SqlConnection CrearConexion();
-    void ProbarYGuardar(string servidor, int puerto, string baseDatos, string usuario,
-        string contrasena, bool confiarCertificado);
-}
-
 public sealed class ConfiguracionConexion : IConfiguracionConexion
 {
     private readonly string _ruta = Path.Combine(
@@ -20,13 +12,25 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
     private readonly object _candado = new();
     private string? _cadena;
 
-    public ConfiguracionConexion()
+    public ConfiguracionConexion() : this(null) { }
+
+    public ConfiguracionConexion(string? rutaArchivo)
     {
+        if (rutaArchivo is not null) _ruta = Path.GetFullPath(rutaArchivo);
         if (!File.Exists(_ruta)) return;
-        var protegido = File.ReadAllBytes(_ruta);
-        _cadena = Encoding.UTF8.GetString(
-            ProtectedData.Unprotect(protegido, null, DataProtectionScope.CurrentUser));
+        try
+        {
+            var protegido = File.ReadAllBytes(_ruta);
+            _cadena = Encoding.UTF8.GetString(
+                ProtectedData.Unprotect(protegido, null, DataProtectionScope.CurrentUser));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
+        {
+            ErrorCarga = "No se pudo leer la configuración guardada. Configure nuevamente la conexión SQL.";
+        }
     }
+
+    public string? ErrorCarga { get; private set; }
 
     public bool EstaConfigurada => !string.IsNullOrWhiteSpace(_cadena);
 
@@ -71,5 +75,6 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
         File.WriteAllBytes(temporal, protegido);
         File.Move(temporal, _ruta, true);
         lock (_candado) _cadena = opciones.ConnectionString;
+        ErrorCarga = null;
     }
 }

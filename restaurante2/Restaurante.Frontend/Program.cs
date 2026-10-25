@@ -1,4 +1,3 @@
-using Restaurante.Backend.Dominio;
 using Restaurante.Backend.Servicios;
 using Restaurante.Frontend.Formularios;
 
@@ -10,10 +9,17 @@ internal static class Program
     private static void Main()
     {
         ApplicationConfiguration.Initialize();
-        IConfiguracionConexion configuracion = new ConfiguracionConexion();
+        var configuracion = new ConfiguracionConexion();
+        if (configuracion.ErrorCarga is not null)
+            MessageBox.Show(configuracion.ErrorCarga, "Configuración SQL", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         IRepositorioRestaurante repositorio = new RepositorioRestaurante(configuracion);
-        using var acceso = new FormularioAcceso(repositorio, configuracion);
-        if (acceso.ShowDialog() != DialogResult.OK || acceso.UsuarioActual is null) return;
-        Application.Run(new FormularioPrincipal(repositorio, configuracion, acceso.UsuarioActual));
+        while (true)
+        {
+            using var acceso = new FormularioAcceso(repositorio, configuracion);
+            if (acceso.ShowDialog() != DialogResult.OK || acceso.UsuarioActual is null) return;
+            using var principal = new FormularioPrincipal(repositorio, configuracion, acceso.UsuarioActual);
+            Application.Run(principal);
+            if (!principal.SesionCerrada) return;
+        }
     }
 }

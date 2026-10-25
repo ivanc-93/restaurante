@@ -12,6 +12,7 @@ public interface IRepositorioRestaurante
     void EliminarMesa(int id);
     IReadOnlyList<ElementoMenu> ListarMenu();
     IReadOnlyList<Cliente> ListarClientes();
+    IReadOnlyList<Cliente> ListarClientesHistoricos();
     IReadOnlyList<PedidoResumen> ListarPedidos();
     PedidoResumen? ObtenerPedidoAbierto(int mesaId);
     IReadOnlyList<DetallePedidoResumen> ListarDetallesPedido(int pedidoId);
@@ -19,5 +20,13 @@ public interface IRepositorioRestaurante
     decimal AgregarProductoAPedido(int pedidoId, int menuId, int cantidad);
     string FacturarPedido(int pedidoId);
     IReadOnlyList<VentaDiaria> ReportarVentas(DateTime desde, DateTime hasta);
-    IReadOnlyList<PlatoVendido> ReportarPlatosMasVendidos();
+    IReadOnlyList<PlatoVendido> ReportarPlatosMasVendidos(DateTime desde, DateTime hasta);
+    DatosRestaurante ObtenerRestaurante();
+    void GuardarRestaurante(string nombre, string ubicacion);
+    void GuardarCliente(int? id, string nombre, string? telefono, string? correo);
+    void DesactivarCliente(int id);
+    void GuardarProducto(int? id, string nombre, string categoria, string tipo, decimal precio, bool alcoholica);
+    void DesactivarProducto(int id);
+    IReadOnlyList<VentaPeriodo> ReportarVentasPeriodo(DateTime desde, DateTime hasta, string agrupacion);
+    IReadOnlyList<PedidoResumen> ReportarPedidos(DateTime desde, DateTime hasta, int? mesaId, int? clienteId);
 }

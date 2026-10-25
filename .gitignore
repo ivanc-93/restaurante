@@ -1,0 +1,7 @@
+**/bin/
+**/obj/
+**/.vs/
+.codex-build/
+*.user
+*.suo
+conexion.bin*

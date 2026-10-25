@@ -79,12 +79,18 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             throw new ArgumentException("El estado de la mesa no es válido.", nameof(estado));
 
         using var conexion = AbrirConexion();
+        using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
+        using (var bloquear = new SqlCommand("SELECT Id FROM dbo.Mesas WITH (UPDLOCK, ROWLOCK) WHERE Id=@id;", conexion, transaccion))
+        {
+            bloquear.Parameters.Add("@id", SqlDbType.Int).Value = id;
+            if (bloquear.ExecuteScalar() is null) throw new InvalidOperationException("La mesa ya no existe.");
+        }
         if (estado == "Disponible")
         {
             using var pedidosAbiertos = new SqlCommand("""
                 SELECT COUNT(*) FROM dbo.Pedidos
                 WHERE MesaId = @id AND Estado IN (N'Abierto', N'En preparación');
-                """, conexion);
+                """, conexion, transaccion);
             pedidosAbiertos.Parameters.Add("@id", SqlDbType.Int).Value = id;
             if ((int)pedidosAbiertos.ExecuteScalar()! > 0)
                 throw new InvalidOperationException(
@@ -95,7 +101,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             UPDATE dbo.Mesas
             SET Numero = @numero, Capacidad = @capacidad, Estado = @estado
             WHERE Id = @id;
-            """, conexion);
+            """, conexion, transaccion);
         comando.Parameters.Add("@id", SqlDbType.Int).Value = id;
         comando.Parameters.Add("@numero", SqlDbType.Int).Value = numero;
         comando.Parameters.Add("@capacidad", SqlDbType.Int).Value = capacidad;
@@ -104,6 +110,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         {
             if (comando.ExecuteNonQuery() == 0)
                 throw new InvalidOperationException("La mesa seleccionada ya no existe.");
+            transaccion.Commit();
         }
         catch (SqlException ex) when (ex.Number is 2601 or 2627)
         {
@@ -158,14 +165,18 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         return resultado;
     }
 
-    public IReadOnlyList<Cliente> ListarClientes()
+    public IReadOnlyList<Cliente> ListarClientes() => LeerClientes(false);
+    public IReadOnlyList<Cliente> ListarClientesHistoricos() => LeerClientes(true);
+
+    private IReadOnlyList<Cliente> LeerClientes(bool incluirInactivos)
     {
         var resultado = new List<Cliente>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
             SELECT Id, Nombre, Telefono, Correo FROM dbo.Clientes
-            WHERE Activo=1 ORDER BY Nombre;
+            WHERE @todos=1 OR Activo=1 ORDER BY Nombre;
             """, conexion);
+        comando.Parameters.Add("@todos",SqlDbType.Bit).Value=incluirInactivos;
         using var lector = comando.ExecuteReader();
         while (lector.Read())
             resultado.Add(new(lector.GetInt32(0), lector.GetString(1),
@@ -179,7 +190,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         var resultado = new List<PedidoResumen>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
-            SELECT TOP (100) p.Id, m.Numero, COALESCE(c.Nombre,'Público general'),
+            SELECT p.Id, m.Numero, COALESCE(c.Nombre,'Público general'),
              p.Fecha, p.Estado, p.Total, f.NumeroFactura
             FROM dbo.Pedidos p JOIN dbo.Mesas m ON m.Id=p.MesaId
             LEFT JOIN dbo.Clientes c ON c.Id=p.ClienteId
@@ -227,7 +238,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             FROM dbo.DetallesPedido d
             JOIN dbo.Menu m ON m.Id=d.MenuId
             WHERE d.PedidoId=@pedido
-            GROUP BY m.Nombre,m.Tipo,d.PrecioUnitario
+            GROUP BY m.Id,m.Nombre,m.Tipo,d.PrecioUnitario
             ORDER BY m.Nombre;
             """, conexion);
         comando.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
@@ -240,6 +251,8 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public PedidoCreado CrearPedido(SolicitudPedido solicitud)
     {
+        ArgumentNullException.ThrowIfNull(solicitud);
+        if (solicitud.Detalles is null) throw new ArgumentException("Debe indicar los detalles del pedido.");
         if (solicitud.MesaId <= 0 || solicitud.Detalles.Count == 0 ||
             solicitud.Detalles.Any(x => x.PlatoId <= 0 || x.Cantidad is < 1 or > 50))
             throw new ArgumentException("Seleccione una mesa y productos con cantidades válidas.");
@@ -258,19 +271,28 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
                 if (estado != "Disponible") throw new InvalidOperationException("La mesa no está disponible.");
             }
 
-            var detalles = new List<(DetallePedidoSolicitud Solicitud, decimal Precio)>();
+            if (solicitud.ClienteId.HasValue)
+            {
+                using var cliente = new SqlCommand("SELECT Id FROM dbo.Clientes WHERE Id=@id AND Activo=1;",conexion,transaccion);
+                cliente.Parameters.Add("@id",SqlDbType.Int).Value=solicitud.ClienteId.Value;
+                if (cliente.ExecuteScalar() is null) throw new InvalidOperationException("El cliente ya no está activo.");
+            }
+            var detalles = new List<(DetallePedidoSolicitud Solicitud, ElementoMenu Producto)>();
             foreach (var detalle in solicitud.Detalles)
             {
                 using var precio = new SqlCommand(
-                    "SELECT Precio FROM dbo.Menu WHERE Id=@id AND Activo=1;",
+                    "SELECT Id,Nombre,Tipo,Categoria,Precio,Alcoholica FROM dbo.Menu WHERE Id=@id AND Activo=1;",
                     conexion, transaccion);
                 precio.Parameters.Add("@id", SqlDbType.Int).Value = detalle.PlatoId;
-                var valor = precio.ExecuteScalar();
-                if (valor is null) throw new InvalidOperationException($"El producto {detalle.PlatoId} no está disponible.");
-                detalles.Add((detalle, (decimal)valor));
+                using var lector = precio.ExecuteReader();
+                if (!lector.Read()) throw new InvalidOperationException($"El producto {detalle.PlatoId} no está disponible.");
+                ElementoMenu producto = lector.GetString(2) == "Bebida"
+                    ? new Bebida(lector.GetInt32(0),lector.GetString(1),lector.GetString(3),lector.GetDecimal(4),lector.GetBoolean(5))
+                    : new Plato(lector.GetInt32(0),lector.GetString(1),lector.GetString(3),lector.GetDecimal(4));
+                detalles.Add((detalle, producto));
             }
 
-            var total = detalles.Sum(x => x.Solicitud.Cantidad * x.Precio);
+            var total = detalles.Sum(x => x.Producto.CalcularImporte(x.Solicitud.Cantidad));
             int pedidoId;
             using (var pedido = new SqlCommand("""
                 INSERT dbo.Pedidos (MesaId, ClienteId, Estado, Total)
@@ -293,7 +315,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
                 linea.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
                 linea.Parameters.Add("@menu", SqlDbType.Int).Value = detalle.Solicitud.PlatoId;
                 linea.Parameters.Add("@cantidad", SqlDbType.Int).Value = detalle.Solicitud.Cantidad;
-                AgregarDecimal(linea, "@precio", detalle.Precio, 10);
+                AgregarDecimal(linea, "@precio", detalle.Producto.Precio, 10);
                 linea.ExecuteNonQuery();
             }
 
@@ -309,7 +331,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         }
         catch
         {
-            transaccion.Rollback();
+            try { transaccion.Rollback(); } catch (Exception ex) when (ex is SqlException or InvalidOperationException) { /* Preserve the original failure. */ }
             throw;
         }
     }
@@ -373,7 +395,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         }
         catch
         {
-            transaccion.Rollback();
+            try { transaccion.Rollback(); } catch (Exception ex) when (ex is SqlException or InvalidOperationException) { /* Preserve the original failure. */ }
             throw;
         }
     }
@@ -402,9 +424,19 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
                     throw new InvalidOperationException("Este pedido ya fue facturado o cerrado.");
             }
 
-            if (total <= 0)
-                throw new InvalidOperationException("Agrega al menos un producto antes de facturar el pedido.");
+            using (var detalles = new SqlCommand("SELECT COUNT(*) FROM dbo.DetallesPedido WHERE PedidoId=@pedido;", conexion, transaccion))
+            {
+                detalles.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
+                if ((int)detalles.ExecuteScalar()! == 0)
+                    throw new InvalidOperationException("Agrega al menos un producto antes de facturar.");
+            }
 
+            using (var comprobar = new SqlCommand("SELECT COALESCE(SUM(Cantidad*PrecioUnitario),0) FROM dbo.DetallesPedido WHERE PedidoId=@id;",conexion,transaccion))
+            {
+                comprobar.Parameters.Add("@id",SqlDbType.Int).Value=pedidoId;
+                if ((decimal)comprobar.ExecuteScalar()! != total)
+                    throw new InvalidOperationException("El total no coincide con sus detalles. Revise el pedido antes de facturar.");
+            }
             string numeroFactura;
             using (var factura = new SqlCommand("""
                 INSERT dbo.Facturas (PedidoId,Subtotal,Impuesto,Total)
@@ -443,7 +475,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         }
         catch
         {
-            transaccion.Rollback();
+            try { transaccion.Rollback(); } catch (Exception ex) when (ex is SqlException or InvalidOperationException) { /* Preserve the original failure. */ }
             throw;
         }
     }
@@ -458,6 +490,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public IReadOnlyList<VentaDiaria> ReportarVentas(DateTime desde, DateTime hasta)
     {
+        var fechas = ReglasRestaurante.Fechas(desde, hasta);
         var resultado = new List<VentaDiaria>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
@@ -465,26 +498,132 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             WHERE Fecha>=@desde AND Fecha<@hasta
             GROUP BY CAST(Fecha AS date) ORDER BY CAST(Fecha AS date);
             """, conexion);
-        comando.Parameters.Add("@desde", SqlDbType.DateTime2).Value = desde.Date;
-        comando.Parameters.Add("@hasta", SqlDbType.DateTime2).Value = hasta.Date.AddDays(1);
+        comando.Parameters.Add("@desde", SqlDbType.DateTime2).Value = fechas.Desde;
+        comando.Parameters.Add("@hasta", SqlDbType.DateTime2).Value = fechas.HastaExclusivo;
         using var lector = comando.ExecuteReader();
         while (lector.Read())
             resultado.Add(new(lector.GetDateTime(0), lector.GetInt32(1), lector.GetDecimal(2)));
         return resultado;
     }
 
-    public IReadOnlyList<PlatoVendido> ReportarPlatosMasVendidos()
+    public IReadOnlyList<PlatoVendido> ReportarPlatosMasVendidos(DateTime desde, DateTime hasta)
     {
+        var fechas = ReglasRestaurante.Fechas(desde, hasta);
         var resultado = new List<PlatoVendido>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
             SELECT TOP (10) m.Nombre, SUM(d.Cantidad), SUM(d.Cantidad*d.PrecioUnitario)
             FROM dbo.DetallesPedido d JOIN dbo.Menu m ON m.Id=d.MenuId
-            GROUP BY m.Nombre ORDER BY SUM(d.Cantidad) DESC;
+            JOIN dbo.Pedidos p ON p.Id=d.PedidoId
+            JOIN dbo.Facturas f ON f.PedidoId=p.Id
+            WHERE p.Estado=N'Facturado' AND m.Tipo=N'Plato' AND f.Fecha>=@desde AND f.Fecha<@hasta
+            GROUP BY m.Id,m.Nombre ORDER BY SUM(d.Cantidad) DESC, m.Id;
             """, conexion);
+        comando.Parameters.Add("@desde", SqlDbType.DateTime2).Value = fechas.Desde;
+        comando.Parameters.Add("@hasta", SqlDbType.DateTime2).Value = fechas.HastaExclusivo;
         using var lector = comando.ExecuteReader();
         while (lector.Read())
             resultado.Add(new(lector.GetString(0), lector.GetInt32(1), lector.GetDecimal(2)));
+        return resultado;
+    }
+
+    public DatosRestaurante ObtenerRestaurante()
+    {
+        using var conexion = AbrirConexion();
+        using var comando = new SqlCommand("SELECT Nombre,Ubicacion FROM dbo.Restaurante WHERE Id=1;", conexion);
+        using var lector = comando.ExecuteReader();
+        return lector.Read() ? new(lector.GetString(0), lector.GetString(1)) : new("Sabores", "Pendiente de configurar");
+    }
+
+    public void GuardarRestaurante(string nombre, string ubicacion)
+    {
+        nombre = ReglasRestaurante.Texto(nombre, "Nombre", 120);
+        ubicacion = ReglasRestaurante.Texto(ubicacion, "Ubicación", 250);
+        using var conexion = AbrirConexion();
+        using var comando = new SqlCommand("UPDATE dbo.Restaurante SET Nombre=@nombre,Ubicacion=@ubicacion WHERE Id=1;", conexion);
+        comando.Parameters.Add("@nombre", SqlDbType.NVarChar,120).Value = nombre;
+        comando.Parameters.Add("@ubicacion", SqlDbType.NVarChar,250).Value = ubicacion;
+        if (comando.ExecuteNonQuery()!=1) throw new InvalidOperationException("Ejecute la migración SQL para configurar el restaurante.");
+    }
+
+    public void GuardarCliente(int? id, string nombre, string? telefono, string? correo)
+    {
+        ReglasRestaurante.Cliente(nombre, telefono, correo);
+        using var conexion = AbrirConexion();
+        using var comando = new SqlCommand(id.HasValue
+            ? "UPDATE dbo.Clientes SET Nombre=@nombre,Telefono=@telefono,Correo=@correo WHERE Id=@id AND Activo=1;"
+            : "INSERT dbo.Clientes(Nombre,Telefono,Correo) VALUES(@nombre,@telefono,@correo);", conexion);
+        comando.Parameters.Add("@nombre", SqlDbType.NVarChar,120).Value = nombre.Trim();
+        comando.Parameters.Add("@telefono", SqlDbType.NVarChar,30).Value = string.IsNullOrWhiteSpace(telefono) ? DBNull.Value : telefono.Trim();
+        comando.Parameters.Add("@correo", SqlDbType.NVarChar,150).Value = string.IsNullOrWhiteSpace(correo) ? DBNull.Value : correo.Trim();
+        comando.Parameters.Add("@id", SqlDbType.Int).Value = (object?)id ?? DBNull.Value;
+                try { if (comando.ExecuteNonQuery()!=1) throw new InvalidOperationException("El cliente ya no está activo."); }
+        catch (SqlException ex) when (ex.Number is 2601 or 2627)
+        { throw new InvalidOperationException("Ya existe un cliente activo con ese correo.",ex); }
+    }
+
+    public void DesactivarCliente(int id) => Desactivar("Cliente", id);
+    public void DesactivarProducto(int id) => Desactivar("Producto", id);
+
+    private void Desactivar(string entidad, int id)
+    {
+        if (id<=0) throw new ArgumentException("Seleccione un registro válido.");
+        using var conexion = AbrirConexion();
+        // SQL choices are fixed; never interpolate user-supplied table names.
+        using var comando = new SqlCommand(entidad == "Cliente"
+            ? "UPDATE dbo.Clientes SET Activo=0 WHERE Id=@id AND Activo=1;"
+            : "UPDATE dbo.Menu SET Activo=0 WHERE Id=@id AND Activo=1;", conexion);
+        comando.Parameters.Add("@id", SqlDbType.Int).Value=id;
+        if (comando.ExecuteNonQuery()!=1) throw new InvalidOperationException("El registro ya no está activo.");
+    }
+
+    public void GuardarProducto(int? id, string nombre, string categoria, string tipo, decimal precio, bool alcoholica)
+    {
+        ReglasRestaurante.Producto(nombre, categoria, tipo, precio, alcoholica);
+        using var conexion = AbrirConexion();
+        using var comando = new SqlCommand(id.HasValue
+            ? "UPDATE dbo.Menu SET Nombre=@nombre,Categoria=@categoria,Tipo=@tipo,Precio=@precio,Alcoholica=@alcoholica WHERE Id=@id AND Activo=1;"
+            : "INSERT dbo.Menu(Nombre,Categoria,Tipo,Precio,Alcoholica) VALUES(@nombre,@categoria,@tipo,@precio,@alcoholica);", conexion);
+        comando.Parameters.Add("@nombre", SqlDbType.NVarChar,120).Value=nombre.Trim();
+        comando.Parameters.Add("@categoria", SqlDbType.NVarChar,60).Value=categoria.Trim();
+        comando.Parameters.Add("@tipo", SqlDbType.NVarChar,20).Value=tipo;
+        comando.Parameters.Add("@alcoholica", SqlDbType.Bit).Value=alcoholica;
+        comando.Parameters.Add("@id", SqlDbType.Int).Value=(object?)id ?? DBNull.Value;
+        AgregarDecimal(comando,"@precio",precio,10);
+                try { if (comando.ExecuteNonQuery()!=1) throw new InvalidOperationException("El producto ya no está activo."); }
+        catch (SqlException ex) when (ex.Number is 2601 or 2627)
+        { throw new InvalidOperationException("Ya existe un producto activo con ese nombre, tipo y categoría.",ex); }
+    }
+
+    public IReadOnlyList<VentaPeriodo> ReportarVentasPeriodo(DateTime desde, DateTime hasta, string agrupacion)
+    {
+        ReglasRestaurante.InicioPeriodo(desde, agrupacion);
+        return ReportarVentas(desde,hasta)
+            .GroupBy(v => ReglasRestaurante.InicioPeriodo(v.Fecha,agrupacion))
+            .OrderBy(g => g.Key)
+            .Select(g => new VentaPeriodo(g.Key,g.Sum(v=>v.Pedidos),g.Sum(v=>v.Total))).ToList();
+    }
+
+    public IReadOnlyList<PedidoResumen> ReportarPedidos(DateTime desde, DateTime hasta, int? mesaId, int? clienteId)
+    {
+        var fechas=ReglasRestaurante.Fechas(desde,hasta);
+        using var conexion=AbrirConexion();
+        using var comando=new SqlCommand("""
+            SELECT p.Id,m.Numero,COALESCE(c.Nombre,N'Público general'),p.Fecha,p.Estado,p.Total,f.NumeroFactura
+            FROM dbo.Pedidos p JOIN dbo.Mesas m ON m.Id=p.MesaId
+            LEFT JOIN dbo.Clientes c ON c.Id=p.ClienteId
+            LEFT JOIN dbo.Facturas f ON f.PedidoId=p.Id
+            WHERE p.Fecha>=@desde AND p.Fecha<@hasta AND (@mesa IS NULL OR p.MesaId=@mesa)
+              AND (@cliente IS NULL OR p.ClienteId=@cliente OR (@cliente=0 AND p.ClienteId IS NULL))
+            ORDER BY p.Fecha DESC,p.Id DESC;
+            """,conexion);
+        comando.Parameters.Add("@desde",SqlDbType.DateTime2).Value=fechas.Desde;
+        comando.Parameters.Add("@hasta",SqlDbType.DateTime2).Value=fechas.HastaExclusivo;
+        comando.Parameters.Add("@mesa",SqlDbType.Int).Value=(object?)mesaId ?? DBNull.Value;
+        comando.Parameters.Add("@cliente",SqlDbType.Int).Value=(object?)clienteId ?? DBNull.Value;
+        using var lector=comando.ExecuteReader();
+        var resultado=new List<PedidoResumen>();
+        while(lector.Read()) resultado.Add(new(lector.GetInt32(0),lector.GetInt32(1),lector.GetString(2),lector.GetDateTime(3),lector.GetString(4),lector.GetDecimal(5),lector.IsDBNull(6)?null:lector.GetString(6)));
         return resultado;
     }
 
