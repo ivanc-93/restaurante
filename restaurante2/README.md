@@ -102,3 +102,7 @@ Este modo no lee ni guarda `conexion.bin`; rechaza bases con nombres reales, aut
 La suite crea bases nuevas con prefijo de prueba y una fixture del esquema anterior. Los resultados de sesiones quedan en `sesion-proceso-1.json` y `sesion-proceso-2.json` dentro de `.codex-build/Verificador/Resultados`. Registran PID, pedido, factura, importe, cantidad de logins y DPI. El proceso 1 ingresa como administrador, crea un pedido de dos productos mediante controles, factura, hace logout e ingresa como otro usuario; el proceso 2 vuelve a ingresar y recupera la factura del mismo pedido.
 
 La matriz trazable de requisitos está en `Requerimientos.md`. Los pendientes académicos y límites de la comprobación se mantienen explícitos; no se certifica que el proyecto esté listo para entregar por el solo hecho de compilar.
+
+## Interfaz POS y respaldo
+
+Consulta [cambios, pruebas, limitaciones y recuperación](Pruebas/InterfazPOS.md). La rama de respaldo conserva el código previo; la base habitual no se migró ni se reemplazó.

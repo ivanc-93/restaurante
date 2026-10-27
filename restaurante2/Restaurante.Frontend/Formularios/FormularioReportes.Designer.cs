@@ -36,7 +36,7 @@ partial class FormularioReportes
         desdeLabel=new Label(); hastaLabel=new Label(); mesaLabel=new Label(); clienteLabel=new Label();
         ((System.ComponentModel.ISupportInitialize)ventas).BeginInit(); ((System.ComponentModel.ISupportInitialize)platos).BeginInit(); ((System.ComponentModel.ISupportInitialize)pedidos).BeginInit();
         SuspendLayout();
-        filtros.Dock=DockStyle.Top; filtros.Height=110; filtros.AutoScroll=true;
+        filtros.Dock=DockStyle.Top; filtros.AutoSize=true; filtros.Padding=new Padding(12); filtros.AutoScroll=true;
         desdeLabel.Text="Desde"; desdeLabel.AutoSize=true; hastaLabel.Text="Hasta"; hastaLabel.AutoSize=true;
         inicio.Format=DateTimePickerFormat.Short; inicio.Width=120; fin.Format=DateTimePickerFormat.Short; fin.Width=120;
         agrupacion.DropDownStyle=ComboBoxStyle.DropDownList; agrupacion.Items.AddRange(new object[]{"Día","Semana","Mes"}); agrupacion.Width=100;
@@ -45,9 +45,10 @@ partial class FormularioReportes
         clienteLabel.Text="Cliente"; clienteLabel.AutoSize=true;
         cliente.Width=180; cliente.DropDownStyle=ComboBoxStyle.DropDownList; cliente.DisplayMember="Nombre";
         consultar.Text="Consultar"; consultar.Size=new Size(110,32); consultar.Click+=Consultar_Click;
-        inicio.ValueChanged+=Consultar_Click; fin.ValueChanged+=Consultar_Click; agrupacion.SelectedIndexChanged+=Consultar_Click;
-        mesa.SelectedIndexChanged+=Consultar_Click; cliente.SelectedIndexChanged+=Consultar_Click;
+
+
         filtros.Controls.AddRange(new Control[]{desdeLabel,inicio,hastaLabel,fin,agrupacion,mesaLabel,mesa,clienteLabel,cliente,consultar});
+        pestanas.SelectedIndexChanged += Pestana_Cambio;
         pestanas.Dock=DockStyle.Fill; ventasTab.Text="Ventas facturadas"; platosTab.Text="Platos más vendidos"; pedidosTab.Text="Pedidos por mesa y cliente";
         ventas.Dock=DockStyle.Fill; platos.Dock=DockStyle.Fill; pedidos.Dock=DockStyle.Fill;
         ventasTab.Controls.Add(ventas); platosTab.Controls.Add(platos); pedidosTab.Controls.Add(pedidos);
@@ -59,5 +60,6 @@ partial class FormularioReportes
         Text="Reportes del restaurante";
         ((System.ComponentModel.ISupportInitialize)ventas).EndInit(); ((System.ComponentModel.ISupportInitialize)platos).EndInit(); ((System.ComponentModel.ISupportInitialize)pedidos).EndInit();
         ResumeLayout(false);
+        FormatoPresentacion.Aplicar(this);
     }
 }

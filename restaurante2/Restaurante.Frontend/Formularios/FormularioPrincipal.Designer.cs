@@ -37,7 +37,7 @@ partial class FormularioPrincipal
         estructura.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         lateral.Dock = DockStyle.Fill;
         marca.Text = "S  sabores";
-        marca.Font = new Font("Georgia",21F,FontStyle.Bold);
+        marca.Font = new Font("Segoe UI",21F,FontStyle.Bold);
         marca.Dock = DockStyle.Top;
         marca.Height = 65;
         menu.Dock = DockStyle.Fill;
@@ -47,6 +47,7 @@ partial class FormularioPrincipal
         usuarioLabel.Dock = DockStyle.Bottom;
         usuarioLabel.Height = 45;
         salir.Text = "Cerrar sesión";
+        Iconos.Aplicar(salir, "log-out");
         salir.Dock = DockStyle.Bottom;
         salir.Height = 42;
         salir.Click += Salir_Click;
@@ -68,9 +69,10 @@ partial class FormularioPrincipal
         AutoScaleDimensions = new SizeF(7F,15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1260,800);
-        MinimumSize = new Size(1080,720);
+        MinimumSize = new Size(650,380);
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Sabores | Gestión de restaurante";
         ResumeLayout(false);
+        FormatoPresentacion.Aplicar(this);
     }
 }

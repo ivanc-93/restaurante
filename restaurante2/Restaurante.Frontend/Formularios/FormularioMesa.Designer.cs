@@ -68,5 +68,6 @@ partial class FormularioMesa
         ((System.ComponentModel.ISupportInitialize)_numero).EndInit();
         ((System.ComponentModel.ISupportInitialize)_capacidad).EndInit();
         ResumeLayout(false);
+        FormatoPresentacion.Aplicar(this);
     }
 }

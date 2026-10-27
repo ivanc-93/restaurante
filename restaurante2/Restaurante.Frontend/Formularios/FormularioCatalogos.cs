@@ -7,18 +7,35 @@ public sealed partial class FormularioCatalogos : Form
     private readonly IRepositorioRestaurante _repositorio = null!;
     private bool _listo;
     private int? _id;
+    private bool _sucio;
+    private int _modoAnterior;
+    private bool _cambiandoModo;
+    private bool ConfirmarSalida() => !_sucio || MessageBox.Show(this,
+        "Hay cambios sin guardar. ¿Deseas descartarlos?", "Cambios pendientes", MessageBoxButtons.YesNo,
+        MessageBoxIcon.Question) == DialogResult.Yes;
     public FormularioCatalogos() => InitializeComponent();
-    public FormularioCatalogos(IRepositorioRestaurante repositorio, bool administrador) : this()
+    public FormularioCatalogos(IRepositorioRestaurante repositorio, bool administrador, bool soloRestaurante = false) : this()
     {
         _repositorio = repositorio;
         Componentes.EstilizarTabla(tabla);
         if (administrador) modo.Items.Add("Restaurante");
+        if (soloRestaurante) { modo.Items.Clear(); modo.Items.Add("Restaurante"); }
         modo.SelectedIndex = 0;
+        Text = soloRestaurante ? "Información del restaurante" : "Catálogos · Clientes y productos";
+        foreach (var campo in new TextBox[] {nombre,telefono,correo,categoria,ubicacion})
+            campo.TextChanged += (_,_) => { if (_listo && Enabled) _sucio=true; };
+        precio.ValueChanged += (_,_) => { if (_listo && Enabled) _sucio=true; };
+        tipo.SelectedIndexChanged += (_,_) => { if (_listo && Enabled) _sucio=true; };
+        alcoholica.CheckedChanged += (_,_) => { if (_listo && Enabled) _sucio=true; };
+        FormClosing += (_,e) => { if (!Enabled || !ConfirmarSalida()) e.Cancel=true; };
         Shown += async (_, _) => { _listo = true; await CargarAsync(); };
     }
     private async void Modo_Cambio(object? sender, EventArgs e)
     {
-        if (_listo) await CargarAsync();
+        if (!_listo || _cambiandoModo) return;
+        if (!ConfirmarSalida()) { _cambiandoModo=true; modo.SelectedIndex=_modoAnterior; _cambiandoModo=false; return; }
+        _modoAnterior=modo.SelectedIndex;
+        await CargarAsync();
     }
     private async Task CargarAsync()
     {
@@ -43,6 +60,7 @@ public sealed partial class FormularioCatalogos : Form
                 nombre.Text = datos.Nombre;
                 ubicacion.Text = datos.Ubicacion;
             }
+            _sucio=false;
         });
     }
     private async Task EjecutarAsync(Func<Task> accion)
@@ -59,9 +77,10 @@ public sealed partial class FormularioCatalogos : Form
         nombre.Clear(); telefono.Clear(); correo.Clear(); categoria.Clear(); ubicacion.Clear();
         precio.Value = 0; tipo.SelectedIndex = 0; alcoholica.Checked = false;
     }
-    private void Nuevo_Click(object? sender, EventArgs e) => Limpiar();
+    private void Nuevo_Click(object? sender, EventArgs e) { if (ConfirmarSalida()) { Limpiar(); _sucio=false; } }
     private void Seleccionar_Click(object? sender, EventArgs e)
     {
+        if (!ConfirmarSalida()) return;
         switch (tabla.CurrentRow?.DataBoundItem)
         {
             case Cliente c:
@@ -72,6 +91,7 @@ public sealed partial class FormularioCatalogos : Form
                 tipo.SelectedItem=p.Tipo; alcoholica.Checked=p is Bebida { Alcoholica: true };
                 break;
         }
+        _sucio=false;
     }
     private async void Guardar_Click(object? sender, EventArgs e)
     {
@@ -88,11 +108,12 @@ public sealed partial class FormularioCatalogos : Form
             });
             guardado=true;
         });
-        if(guardado) { MessageBox.Show(this,"Datos guardados.","Catálogos"); await CargarAsync(); }
+        if(guardado) { _sucio=false; MessageBox.Show(this,"Datos guardados.","Catálogos"); await CargarAsync(); }
     }
     private async void Desactivar_Click(object? sender, EventArgs e)
     {
-        Seleccionar_Click(sender,e);
+        if (!ConfirmarSalida()) return;
+        _sucio=false; Seleccionar_Click(sender,e);
         if(_id is null) return;
         if(MessageBox.Show(this,"¿Desactivar el registro? Su historial se conservará.","Confirmar",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes) return;
         var id=_id.Value; var entidad=modo.Text;

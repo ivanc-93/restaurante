@@ -24,3 +24,7 @@ Se inició Visual Studio 2026 y se preparó una copia temporal de la solución. 
 7. Si aparece un error real, registrar el texto completo y corregir únicamente su causa en las fuentes originales.
 
 No se generaron .resx vacíos: no hay recursos localizados ni binarios asociados a estos controles que los requieran actualmente.
+
+## Revisión POS del 26/10/2026
+
+La construcción y el render se volvieron a comprobar para los seis formularios. Se preparó la copia .codex-build/DesignerPos y se intentó abrir otra instancia de Visual Studio, sin obtener una ventana de esa copia accesible para el controlador. Abrir, editar, guardar y reabrir dentro del IDE continúa pendiente. Véase InterfazPOS.md para separar las comprobaciones realizadas de las pendientes.

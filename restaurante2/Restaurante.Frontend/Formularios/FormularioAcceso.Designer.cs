@@ -30,7 +30,7 @@ partial class FormularioAcceso
         ayuda = new Label();
         SuspendLayout();
         titulo.Text = "Sabores | Iniciar sesión";
-        titulo.Font = new Font("Georgia", 22F, FontStyle.Bold);
+        titulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
         titulo.SetBounds(32, 25, 480, 45);
         usuarioEtiqueta.Text = "Usuario";
         usuarioEtiqueta.SetBounds(35, 90, 420, 24);
@@ -60,6 +60,7 @@ partial class FormularioAcceso
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Sabores | Acceso";
         ResumeLayout(false);
+        FormatoPresentacion.Aplicar(this);
         PerformLayout();
     }
 }

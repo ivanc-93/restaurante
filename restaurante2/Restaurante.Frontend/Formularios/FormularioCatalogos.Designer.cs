@@ -74,5 +74,6 @@ partial class FormularioCatalogos
         ((System.ComponentModel.ISupportInitialize)tabla).EndInit();
         ((System.ComponentModel.ISupportInitialize)precio).EndInit();
         ResumeLayout(false);
+        FormatoPresentacion.Aplicar(this);
     }
 }

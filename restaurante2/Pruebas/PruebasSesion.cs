@@ -98,35 +98,10 @@ internal static class PruebasSesion
                     else if(estado==1)
                     {
                         dpi=principal.DeviceDpi;
-                        await Invocar(principal,"MostrarPedidos");
-                        var anterior=principal.Size;
-                        principal.Size=principal.MinimumSize;
-                        principal.PerformLayout();
-                        var abrir=Controles(principal).OfType<Button>().Single(b=>b.Text.StartsWith("Abrir pedido"));
-                        var area=Campo<Panel>(principal,"_contenido");
-                        area.ScrollControlIntoView(abrir);
-                        var editor=abrir.Parent!;
-                        var columnas=(TableLayoutPanel)editor.Parent!;
-                        if(editor.Right>columnas.GetColumnWidths()[0]) throw new Exception("El editor invade la columna del menú en tamaño mínimo.");
-                        if(!area.RectangleToScreen(area.ClientRectangle).IntersectsWith(abrir.RectangleToScreen(abrir.ClientRectangle)))
-                            throw new Exception("La acción de abrir pedido no es accesible en tamaño mínimo.");
-                        using(var captura=new System.Drawing.Bitmap(principal.Width,principal.Height))
-                        {
-                            principal.DrawToBitmap(captura,new System.Drawing.Rectangle(0,0,captura.Width,captura.Height));
-                            captura.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"sesion-tamano-minimo.png"));
-                        }
-                        principal.Size=anterior;
-                        var combos=Controles(principal).OfType<ComboBox>().ToArray();
-                        combos[0].SelectedItem=combos[0].Items.Cast<Mesa>().Single(m=>m.Numero==9100);
-                        combos[2].SelectedItem=combos[2].Items.Cast<ElementoMenu>().Single(p=>p.Nombre=="Sesión plato");
-                        Controles(principal).OfType<Button>().Single(b=>b.Text.StartsWith("Abrir pedido")).PerformClick();estado=2;
-                    }
-                    else if(estado==2)
-                    {
+                        await Invocar(principal,"MostrarMesasPos");
                         var mesa=repo.ListarMesas().Single(m=>m.Numero==9100);
-                        var pedido=repo.ObtenerPedidoAbierto(mesa.Id)??throw new Exception("El botón no creó el pedido.");
-                        pedidoId=pedido.Id; detalle=new FormularioDetalleMesa(repo,mesa,dialogos){Opacity=0,ShowInTaskbar=false};
-                        detalle.Show(principal);estado=3;
+                        detalle=new FormularioDetalleMesa(repo,mesa,dialogos){Opacity=0,ShowInTaskbar=false};
+                        detalle.Show(principal);estado=2;
                     }
                     else if(estado==5 && (detalle is null || detalle.IsDisposed))
                     {
@@ -142,7 +117,43 @@ internal static class PruebasSesion
                 }
                 if(detalle is not null&&!detalle.IsDisposed)
                 {
-                    if(estado==3&&Campo<Button>(detalle,"_agregar").Enabled&&Campo<ComboBox>(detalle,"_productos").Items.Count>0)
+                    if(estado==2&&Campo<Button>(detalle,"_agregar").Enabled)
+                    {
+                        if(repo.ObtenerPedidoAbierto(repo.ListarMesas().Single(m=>m.Numero==9100).Id) is not null)
+                            throw new Exception("Se creó un pedido vacío antes de agregar un producto.");
+                        var productos=Campo<ComboBox>(detalle,"_productos");
+                        productos.SelectedItem=productos.Items.Cast<ElementoMenu>().Single(p=>p.Nombre=="Sesión plato");
+                        Campo<Button>(detalle,"_agregar").PerformClick();estado=9;
+                    }
+                    else if(estado==9&&Campo<Button>(detalle,"_agregar").Enabled)
+                    {
+                        pedidoId=repo.ObtenerPedidoAbierto(repo.ListarMesas().Single(m=>m.Numero==9100).Id)!.Id;
+                        var buscar=Campo<TextBox>(detalle,"_buscar"); buscar.Text="Sesión";
+                        if(Campo<ComboBox>(detalle,"_productos").Items.Count!=2)throw new Exception("La búsqueda no filtra productos.");
+                        buscar.Clear();
+                        var previo=detalle.Size;
+                        foreach(var tamano in new[]{new System.Drawing.Size(1280,720),new System.Drawing.Size(1366,768)})
+                        {
+                            detalle.Size=tamano; detalle.PerformLayout();
+                            var accion=Campo<Button>(detalle,"_facturar");
+                            if(!detalle.ClientRectangle.Contains(detalle.RectangleToClient(accion.RectangleToScreen(accion.ClientRectangle))))
+                                throw new Exception("La facturación queda fuera del área visible en "+tamano);
+                            using var imagen=new System.Drawing.Bitmap(detalle.Width,detalle.Height);
+                            detalle.DrawToBitmap(imagen,new System.Drawing.Rectangle(0,0,imagen.Width,imagen.Height));
+                            imagen.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"pedido-"+tamano.Width+".png"));
+                        }
+                        detalle.Size=previo;
+                        var facturar=Campo<Button>(detalle,"_facturar");
+                        if(!detalle.RectangleToScreen(detalle.ClientRectangle).Contains(facturar.RectangleToScreen(facturar.ClientRectangle)))
+                            throw new Exception("Facturar no es accesible.");
+                        using(var captura=new System.Drawing.Bitmap(detalle.Width,detalle.Height))
+                        {
+                            detalle.DrawToBitmap(captura,new System.Drawing.Rectangle(0,0,captura.Width,captura.Height));
+                            captura.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"pedido-pos.png"));
+                        }
+                        estado=3;
+                    }
+                    else if(estado==3&&Campo<Button>(detalle,"_agregar").Enabled&&Campo<ComboBox>(detalle,"_productos").Items.Count>0)
                     {
                         var productos=Campo<ComboBox>(detalle,"_productos");
                         productos.SelectedItem=productos.Items.Cast<ElementoMenu>().Single(p=>p.Nombre=="Sesión bebida");

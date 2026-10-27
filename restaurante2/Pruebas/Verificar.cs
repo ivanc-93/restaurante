@@ -210,7 +210,10 @@ internal static class Verificar
             bool mostrada=false; form.Shown+=(_,_)=>mostrada=true;
             form.Opacity=0; form.ShowInTaskbar=false; form.Show();
             Esperar(()=>mostrada && Campo<FlowLayoutPanel>(form,"menu").Enabled);
-            foreach(var pagina in new[]{"MostrarPedidos","MostrarMenuMesas"})
+            Verdad(Campo<FlowLayoutPanel>(form,"menu").Controls.OfType<Button>().All(b=>b.Image is not null),"Hay iconos de navegación sin recurso incrustado.");
+            Capturar(form,"InicioPos");
+            SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+            foreach(var pagina in new[]{"MostrarPedidosPos","MostrarMesasPos","MostrarMenuMesas"})
             {
                 var tarea=(Task)form.GetType().GetMethod(pagina,System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(form,null)!;
                 Esperar(()=>tarea.IsCompleted); tarea.GetAwaiter().GetResult(); form.PerformLayout();
@@ -236,6 +239,9 @@ internal static class Verificar
             using var reportes=new FormularioReportes(repo);
             reportes.Opacity=0; reportes.ShowInTaskbar=false; reportes.Show();
             Esperar(()=>Campo<bool>(reportes,"_listo") && !Campo<bool>(reportes,"_cargando"));
+            Verdad(!Campo<ComboBox>(reportes,"mesa").Visible,"Ventas muestra filtros que solo afectan pedidos.");
+            Campo<TabControl>(reportes,"pestanas").SelectedIndex=2;
+            Verdad(Campo<ComboBox>(reportes,"mesa").Visible && !Campo<ComboBox>(reportes,"agrupacion").Visible,"Filtros de pedidos incorrectos.");
             Capturar(reportes,"ReportesConDatos"); reportes.Close();
         });
         Caso("Desactivación conserva detalles e historial",()=>

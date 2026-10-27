@@ -13,6 +13,7 @@ public sealed partial class FormularioReportes : Form
         Componentes.EstilizarTabla(ventas); Componentes.EstilizarTabla(platos); Componentes.EstilizarTabla(pedidos);
         inicio.Value=DateTime.Today.AddDays(-30); fin.Value=DateTime.Today;
         agrupacion.SelectedIndex=0;
+        Pestana_Cambio(this,EventArgs.Empty);
                 Shown+=async (_,_)=>
         {
             filtros.Enabled=false;
@@ -27,6 +28,12 @@ public sealed partial class FormularioReportes : Form
             catch(Exception ex) { MessageBox.Show(this,ex.Message,"Filtros de reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
             finally {if(!IsDisposed) filtros.Enabled=true;}
         };
+    }
+    private void Pestana_Cambio(object? sender, EventArgs e)
+    {
+        agrupacion.Visible=pestanas.SelectedIndex==0;
+        mesa.Visible=mesaLabel.Visible=cliente.Visible=clienteLabel.Visible=pestanas.SelectedIndex==2;
+        total.Visible=pestanas.SelectedIndex==0;
     }
     private async void Consultar_Click(object? sender,EventArgs e) => await CargarAsync();
     private async Task CargarAsync()
@@ -45,7 +52,8 @@ public sealed partial class FormularioReportes : Form
                 Platos:_repositorio.ReportarPlatosMasVendidos(desde,hasta),
                 Pedidos:_repositorio.ReportarPedidos(desde,hasta,mesaId,clienteId)));
             ventas.DataSource=datos.Ventas.ToList(); platos.DataSource=datos.Platos.ToList(); pedidos.DataSource=datos.Pedidos.ToList();
-            total.Text=$"Ventas facturadas: {datos.Ventas.Sum(x=>x.Total):C} · {datos.Ventas.Sum(x=>x.Facturas)} facturas. Semana: lunes a domingo.";
+            total.Text=$"Ventas facturadas: {FormatoPresentacion.Moneda(datos.Ventas.Sum(x=>x.Total))} · {datos.Ventas.Sum(x=>x.Facturas)} facturas. Semana: lunes a domingo.";
+            FormatoPresentacion.Aplicar(this);
         }
         catch(Exception ex) { MessageBox.Show(this,ex.Message,"Reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
         finally { _cargando=false; if(!IsDisposed) { filtros.Enabled=true; UseWaitCursor=false; } }
