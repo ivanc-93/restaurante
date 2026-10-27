@@ -5,3 +5,7 @@
 *.user
 *.suo
 conexion.bin*
+**/*.bak
+**/*.mdf
+**/*.ndf
+**/*.ldf

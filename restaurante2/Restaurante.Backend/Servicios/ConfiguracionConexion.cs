@@ -54,7 +54,8 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
 
         var opciones = new SqlConnectionStringBuilder
         {
-            DataSource = $"{servidor.Trim()},{puerto}",
+            DataSource = servidor.Trim().StartsWith("(localdb)\\",StringComparison.OrdinalIgnoreCase)
+                ? servidor.Trim() : $"{servidor.Trim()},{puerto}",
             InitialCatalog = baseDatos.Trim(),
             UserID = usuario.Trim(),
             Password = contrasena,

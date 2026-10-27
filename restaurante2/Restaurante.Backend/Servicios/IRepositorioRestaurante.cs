@@ -4,6 +4,20 @@ namespace Restaurante.Backend.Servicios;
 
 public interface IRepositorioRestaurante
 {
+    UsuarioAutenticado? UsuarioActual { get; }
+    string IdentificadorBase { get; }
+    bool BaseEsPruebas { get; }
+    void CerrarSesion();
+    void ValidarEsquema();
+    bool OperacionAplicada(Guid operacionId);
+    CuentaRevision RevisarCuenta(int pedidoId);
+    ResultadoCobro RegistrarCobro(SolicitudCobro solicitud);
+    Guid? ObtenerPagoIncierto(int pedidoId);
+    SolicitudCobro ConsultarSolicitudCobro(Guid operacionId);
+    ResultadoCobro ConciliarTarjeta(Guid operacionIncierta, bool confirmado, string motivo, Guid operacionId);
+    string GestionarMesa(SolicitudGestionMesa solicitud);
+    string ConsultarComprobante(int pedidoId);
+    IReadOnlyList<MovimientoOperacion> ReportarOperaciones(DateTime desde,DateTime hasta);
     UsuarioAutenticado? IniciarSesion(string usuario, string contrasena);
     ResumenRestaurante ObtenerResumen();
     IReadOnlyList<Mesa> ListarMesas();
@@ -17,7 +31,7 @@ public interface IRepositorioRestaurante
     PedidoResumen? ObtenerPedidoAbierto(int mesaId);
     IReadOnlyList<DetallePedidoResumen> ListarDetallesPedido(int pedidoId);
     PedidoCreado CrearPedido(SolicitudPedido solicitud);
-    decimal AgregarProductoAPedido(int pedidoId, int menuId, int cantidad);
+    decimal AgregarProductoAPedido(int pedidoId, int menuId, int cantidad, Guid? operacionId = null);
     string FacturarPedido(int pedidoId);
     IReadOnlyList<VentaDiaria> ReportarVentas(DateTime desde, DateTime hasta);
     IReadOnlyList<PlatoVendido> ReportarPlatosMasVendidos(DateTime desde, DateTime hasta);

@@ -6,14 +6,15 @@ using Restaurante.Backend.Dominio;
 
 namespace Restaurante.Backend.Servicios;
 
-public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion) : IRepositorioRestaurante
+public sealed partial class RepositorioRestaurante(IConfiguracionConexion configuracion) : IRepositorioRestaurante
 {
     public UsuarioAutenticado? IniciarSesion(string usuario, string contrasena)
     {
+        _sesion = null;
         if (!configuracion.EstaConfigurada) return null;
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
-            SELECT Nombre, Rol, ContrasenaHash, Sal
+            SELECT Nombre, Rol, ContrasenaHash, Sal, Id
             FROM dbo.Usuarios WHERE Usuario = @usuario AND Activo = 1;
             """, conexion);
         comando.Parameters.Add("@usuario", SqlDbType.NVarChar, 50).Value = usuario.Trim();
@@ -21,9 +22,9 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         if (!lector.Read()) return null;
         var hash = Convert.ToHexString(SHA256.HashData(
             Encoding.UTF8.GetBytes($"{lector.GetString(3)}:{contrasena}")));
-        return CryptographicOperations.FixedTimeEquals(
+        return _sesion = CryptographicOperations.FixedTimeEquals(
             Encoding.ASCII.GetBytes(lector.GetString(2)), Encoding.ASCII.GetBytes(hash))
-            ? new UsuarioAutenticado(lector.GetString(0), lector.GetString(1))
+            ? new UsuarioAutenticado(lector.GetString(0), lector.GetString(1), lector.GetInt32(4))
             : null;
     }
 
@@ -34,7 +35,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             SELECT
              (SELECT COUNT(*) FROM dbo.Mesas WHERE Estado = 'Disponible'),
              (SELECT COUNT(*) FROM dbo.Pedidos WHERE Estado IN ('Abierto','En preparación')),
-             (SELECT COALESCE(SUM(Total),0) FROM dbo.Facturas WHERE CAST(Fecha AS date)=CAST(GETDATE() AS date)),
+             (SELECT COALESCE(SUM(Total),0) FROM dbo.Facturas WHERE CAST(Fecha AS date)=CAST(DATEADD(hour,-6,SYSUTCDATETIME()) AS date)),
              (SELECT COUNT(*) FROM dbo.Menu WHERE Activo=1);
             """, conexion);
         using var lector = comando.ExecuteReader();
@@ -56,6 +57,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public void CrearMesa(int numero, int capacidad)
     {
+        ExigirSesion(true);
         ValidarMesa(numero, capacidad);
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
@@ -73,9 +75,10 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public void ActualizarMesa(int id, int numero, int capacidad, string estado)
     {
+        ExigirSesion(true);
         if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id), "Seleccione una mesa válida.");
         ValidarMesa(numero, capacidad);
-        if (estado is not ("Disponible" or "Ocupada" or "Reservada"))
+        if (estado is not ("Disponible" or "Ocupada" or "Reservada" or "En limpieza"))
             throw new ArgumentException("El estado de la mesa no es válido.", nameof(estado));
 
         using var conexion = AbrirConexion();
@@ -85,7 +88,16 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             bloquear.Parameters.Add("@id", SqlDbType.Int).Value = id;
             if (bloquear.ExecuteScalar() is null) throw new InvalidOperationException("La mesa ya no existe.");
         }
-        if (estado == "Disponible")
+        using (var actual = new SqlCommand("SELECT Estado FROM dbo.Mesas WHERE Id=@id;", conexion, transaccion))
+        {
+            actual.Parameters.AddWithValue("@id",id);
+            var anterior=(string)actual.ExecuteScalar()!;
+            if ((anterior is "Ocupada" or "En limpieza") && estado!=anterior)
+                throw new InvalidOperationException("Utilice Gestionar cierre para resolver el estado con motivo y auditoría.");
+            if (estado=="Ocupada" && anterior!="Ocupada")
+                throw new InvalidOperationException("Una mesa se ocupa al registrar el primer producto.");
+        }
+        if (estado != "Ocupada")
         {
             using var pedidosAbiertos = new SqlCommand("""
                 SELECT COUNT(*) FROM dbo.Pedidos
@@ -95,6 +107,11 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             if ((int)pedidosAbiertos.ExecuteScalar()! > 0)
                 throw new InvalidOperationException(
                     "No se puede marcar disponible una mesa que todavía tiene pedidos abiertos.");
+        }
+        using (var renumerar = new SqlCommand("SELECT COUNT(*) FROM dbo.Pedidos p JOIN dbo.Mesas m ON m.Id=p.MesaId WHERE p.MesaId=@id AND m.Numero<>@numero AND p.Estado IN(N'Abierto',N'En preparación');",conexion,transaccion))
+        {
+            renumerar.Parameters.AddWithValue("@id",id);renumerar.Parameters.AddWithValue("@numero",numero);
+            if((int)renumerar.ExecuteScalar()!>0)throw new InvalidOperationException("No renumere una mesa con pedido activo. Resuelva la atención primero.");
         }
 
         using var comando = new SqlCommand("""
@@ -120,6 +137,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public void EliminarMesa(int id)
     {
+        ExigirSesion(true);
         if (id <= 0) throw new ArgumentOutOfRangeException(nameof(id), "Seleccione una mesa válida.");
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("DELETE dbo.Mesas WHERE Id = @id;", conexion);
@@ -190,7 +208,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         var resultado = new List<PedidoResumen>();
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
-            SELECT p.Id, m.Numero, COALESCE(c.Nombre,'Público general'),
+            SELECT p.Id, COALESCE(p.MesaHistorica,m.Numero), COALESCE(p.ClienteHistorico,N'Público general'),
              p.Fecha, p.Estado, p.Total, f.NumeroFactura
             FROM dbo.Pedidos p JOIN dbo.Mesas m ON m.Id=p.MesaId
             LEFT JOIN dbo.Clientes c ON c.Id=p.ClienteId
@@ -209,7 +227,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
     {
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand("""
-            SELECT TOP (1) p.Id, m.Numero, COALESCE(c.Nombre,N'Público general'),
+            SELECT TOP (1) p.Id, COALESCE(p.MesaHistorica,m.Numero), COALESCE(p.ClienteHistorico,N'Público general'),
                 p.Fecha, p.Estado, p.Total, f.NumeroFactura
             FROM dbo.Pedidos p
             JOIN dbo.Mesas m ON m.Id=p.MesaId
@@ -246,247 +264,6 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
             resultado.Add(new(lector.GetString(0), lector.GetString(1), lector.GetInt32(2),
                 lector.GetDecimal(3), lector.GetDecimal(4)));
         return resultado;
-    }
-
-    public PedidoCreado CrearPedido(SolicitudPedido solicitud)
-    {
-        ArgumentNullException.ThrowIfNull(solicitud);
-        if (solicitud.Detalles is null) throw new ArgumentException("Debe indicar los detalles del pedido.");
-        if (solicitud.MesaId <= 0 || solicitud.Detalles.Count == 0 ||
-            solicitud.Detalles.Any(x => x.PlatoId <= 0 || x.Cantidad is < 1 or > 50))
-            throw new ArgumentException("Seleccione una mesa y productos con cantidades válidas.");
-
-        using var conexion = AbrirConexion();
-        using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
-        try
-        {
-            using (var mesa = new SqlCommand(
-                "SELECT Estado FROM dbo.Mesas WITH (UPDLOCK, ROWLOCK) WHERE Id=@id;",
-                conexion, transaccion))
-            {
-                mesa.Parameters.Add("@id", SqlDbType.Int).Value = solicitud.MesaId;
-                var estado = mesa.ExecuteScalar() as string;
-                if (estado is null) throw new InvalidOperationException("La mesa indicada no existe.");
-                if (estado != "Disponible") throw new InvalidOperationException("La mesa no está disponible.");
-            }
-
-            if (solicitud.ClienteId.HasValue)
-            {
-                using var cliente = new SqlCommand("SELECT Id FROM dbo.Clientes WHERE Id=@id AND Activo=1;",conexion,transaccion);
-                cliente.Parameters.Add("@id",SqlDbType.Int).Value=solicitud.ClienteId.Value;
-                if (cliente.ExecuteScalar() is null) throw new InvalidOperationException("El cliente ya no está activo.");
-            }
-            var detalles = new List<(DetallePedidoSolicitud Solicitud, ElementoMenu Producto)>();
-            foreach (var detalle in solicitud.Detalles)
-            {
-                using var precio = new SqlCommand(
-                    "SELECT Id,Nombre,Tipo,Categoria,Precio,Alcoholica FROM dbo.Menu WHERE Id=@id AND Activo=1;",
-                    conexion, transaccion);
-                precio.Parameters.Add("@id", SqlDbType.Int).Value = detalle.PlatoId;
-                using var lector = precio.ExecuteReader();
-                if (!lector.Read()) throw new InvalidOperationException($"El producto {detalle.PlatoId} no está disponible.");
-                ElementoMenu producto = lector.GetString(2) == "Bebida"
-                    ? new Bebida(lector.GetInt32(0),lector.GetString(1),lector.GetString(3),lector.GetDecimal(4),lector.GetBoolean(5))
-                    : new Plato(lector.GetInt32(0),lector.GetString(1),lector.GetString(3),lector.GetDecimal(4));
-                detalles.Add((detalle, producto));
-            }
-
-            var total = detalles.Sum(x => x.Producto.CalcularImporte(x.Solicitud.Cantidad));
-            int pedidoId;
-            using (var pedido = new SqlCommand("""
-                INSERT dbo.Pedidos (MesaId, ClienteId, Estado, Total)
-                OUTPUT INSERTED.Id VALUES (@mesa,@cliente,N'Abierto',@total);
-                """, conexion, transaccion))
-            {
-                pedido.Parameters.Add("@mesa", SqlDbType.Int).Value = solicitud.MesaId;
-                pedido.Parameters.Add("@cliente", SqlDbType.Int).Value =
-                    (object?)solicitud.ClienteId ?? DBNull.Value;
-                AgregarDecimal(pedido, "@total", total, 12);
-                pedidoId = (int)pedido.ExecuteScalar()!;
-            }
-
-            foreach (var detalle in detalles)
-            {
-                using var linea = new SqlCommand("""
-                    INSERT dbo.DetallesPedido (PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)
-                    VALUES (@pedido,@menu,@cantidad,@precio,@nombre,@tipo);
-                    """, conexion, transaccion);
-                linea.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                linea.Parameters.Add("@menu", SqlDbType.Int).Value = detalle.Solicitud.PlatoId;
-                linea.Parameters.Add("@cantidad", SqlDbType.Int).Value = detalle.Solicitud.Cantidad;
-                AgregarDecimal(linea, "@precio", detalle.Producto.Precio, 10);
-                linea.Parameters.Add("@nombre", SqlDbType.NVarChar, 120).Value = detalle.Producto.Nombre;
-                linea.Parameters.Add("@tipo", SqlDbType.NVarChar, 20).Value = detalle.Producto.Tipo;
-                linea.ExecuteNonQuery();
-            }
-
-            using (var actualizar = new SqlCommand(
-                "UPDATE dbo.Mesas SET Estado='Ocupada' WHERE Id=@id;",
-                conexion, transaccion))
-            {
-                actualizar.Parameters.Add("@id", SqlDbType.Int).Value = solicitud.MesaId;
-                actualizar.ExecuteNonQuery();
-            }
-            transaccion.Commit();
-            return new(pedidoId, total, null);
-        }
-        catch
-        {
-            try { transaccion.Rollback(); } catch (Exception ex) when (ex is SqlException or InvalidOperationException) { /* Preserve the original failure. */ }
-            throw;
-        }
-    }
-
-    public decimal AgregarProductoAPedido(int pedidoId, int menuId, int cantidad)
-    {
-        if (pedidoId <= 0) throw new ArgumentOutOfRangeException(nameof(pedidoId));
-        if (menuId <= 0) throw new ArgumentOutOfRangeException(nameof(menuId));
-        if (cantidad is < 1 or > 50)
-            throw new ArgumentOutOfRangeException(nameof(cantidad), "La cantidad debe estar entre 1 y 50.");
-
-        using var conexion = AbrirConexion();
-        using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
-        try
-        {
-            using var pedido = new SqlCommand("""
-                SELECT Estado FROM dbo.Pedidos WITH (UPDLOCK, ROWLOCK)
-                WHERE Id=@pedido;
-                """, conexion, transaccion);
-            pedido.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-            var estado = pedido.ExecuteScalar() as string;
-            if (estado is null) throw new InvalidOperationException("El pedido ya no existe.");
-            if (estado is not ("Abierto" or "En preparación"))
-                throw new InvalidOperationException("No se pueden añadir productos a un pedido facturado o cerrado.");
-
-            using var precio = new SqlCommand(
-                "SELECT Precio,Nombre,Tipo FROM dbo.Menu WHERE Id=@menu AND Activo=1;",
-                conexion, transaccion);
-            precio.Parameters.Add("@menu", SqlDbType.Int).Value = menuId;
-            decimal precioUnitario;
-            string nombreProducto, tipoProducto;
-            using (var lector = precio.ExecuteReader())
-            {
-                if (!lector.Read()) throw new InvalidOperationException("El producto ya no está disponible.");
-                precioUnitario = lector.GetDecimal(0);
-                nombreProducto = lector.GetString(1);
-                tipoProducto = lector.GetString(2);
-            }
-
-            using (var detalle = new SqlCommand("""
-                INSERT dbo.DetallesPedido (PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)
-                VALUES (@pedido,@menu,@cantidad,@precio,@nombre,@tipo);
-                """, conexion, transaccion))
-            {
-                detalle.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                detalle.Parameters.Add("@menu", SqlDbType.Int).Value = menuId;
-                detalle.Parameters.Add("@cantidad", SqlDbType.Int).Value = cantidad;
-                AgregarDecimal(detalle, "@precio", precioUnitario, 10);
-                detalle.Parameters.Add("@nombre", SqlDbType.NVarChar, 120).Value = nombreProducto;
-                detalle.Parameters.Add("@tipo", SqlDbType.NVarChar, 20).Value = tipoProducto;
-                detalle.ExecuteNonQuery();
-            }
-
-            using (var total = new SqlCommand("""
-                UPDATE dbo.Pedidos
-                SET Total = Total + @importe
-                WHERE Id=@pedido AND Estado IN (N'Abierto',N'En preparación');
-                """, conexion, transaccion))
-            {
-                total.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                AgregarDecimal(total, "@importe", precioUnitario * cantidad, 12);
-                if (total.ExecuteNonQuery() != 1)
-                    throw new InvalidOperationException("El pedido dejó de estar abierto.");
-            }
-
-            var nuevoTotal = ObtenerTotalPedido(conexion, transaccion, pedidoId);
-            transaccion.Commit();
-            return nuevoTotal;
-        }
-        catch
-        {
-            try { transaccion.Rollback(); } catch (Exception ex) when (ex is SqlException or InvalidOperationException) { /* Preserve the original failure. */ }
-            throw;
-        }
-    }
-
-    public string FacturarPedido(int pedidoId)
-    {
-        if (pedidoId <= 0) throw new ArgumentOutOfRangeException(nameof(pedidoId));
-        using var conexion = AbrirConexion();
-        using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
-        try
-        {
-            int mesaId;
-            decimal total;
-            using (var pedido = new SqlCommand("""
-                SELECT MesaId, Total, Estado FROM dbo.Pedidos WITH (UPDLOCK, ROWLOCK)
-                WHERE Id=@pedido;
-                """, conexion, transaccion))
-            {
-                pedido.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                using var lector = pedido.ExecuteReader();
-                if (!lector.Read()) throw new InvalidOperationException("El pedido ya no existe.");
-                mesaId = lector.GetInt32(0);
-                total = lector.GetDecimal(1);
-                var estado = lector.GetString(2);
-                if (estado is not ("Abierto" or "En preparación"))
-                    throw new InvalidOperationException("Este pedido ya fue facturado o cerrado.");
-            }
-
-            using (var detalles = new SqlCommand("SELECT COUNT(*) FROM dbo.DetallesPedido WHERE PedidoId=@pedido;", conexion, transaccion))
-            {
-                detalles.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                if ((int)detalles.ExecuteScalar()! == 0)
-                    throw new InvalidOperationException("Agrega al menos un producto antes de facturar.");
-            }
-
-            using (var comprobar = new SqlCommand("SELECT COALESCE(SUM(Cantidad*PrecioUnitario),0) FROM dbo.DetallesPedido WHERE PedidoId=@id;",conexion,transaccion))
-            {
-                comprobar.Parameters.Add("@id",SqlDbType.Int).Value=pedidoId;
-                if ((decimal)comprobar.ExecuteScalar()! != total)
-                    throw new InvalidOperationException("El total no coincide con sus detalles. Revise el pedido antes de facturar.");
-            }
-            string numeroFactura;
-            using (var factura = new SqlCommand("""
-                INSERT dbo.Facturas (PedidoId,Subtotal,Impuesto,Total)
-                OUTPUT INSERTED.NumeroFactura VALUES (@pedido,@subtotal,0,@total);
-                """, conexion, transaccion))
-            {
-                factura.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                AgregarDecimal(factura, "@subtotal", total, 12);
-                AgregarDecimal(factura, "@total", total, 12);
-                numeroFactura = (string)factura.ExecuteScalar()!;
-            }
-
-            using (var cerrarPedido = new SqlCommand("""
-                UPDATE dbo.Pedidos SET Estado=N'Facturado'
-                WHERE Id=@pedido AND Estado IN (N'Abierto',N'En preparación');
-                """, conexion, transaccion))
-            {
-                cerrarPedido.Parameters.Add("@pedido", SqlDbType.Int).Value = pedidoId;
-                if (cerrarPedido.ExecuteNonQuery() != 1)
-                    throw new InvalidOperationException("El pedido dejó de estar abierto.");
-            }
-
-            using (var liberarMesa = new SqlCommand("""
-                UPDATE dbo.Mesas SET Estado=N'Disponible'
-                WHERE Id=@mesa AND NOT EXISTS
-                    (SELECT 1 FROM dbo.Pedidos WHERE MesaId=@mesa
-                     AND Estado IN (N'Abierto',N'En preparación'));
-                """, conexion, transaccion))
-            {
-                liberarMesa.Parameters.Add("@mesa", SqlDbType.Int).Value = mesaId;
-                liberarMesa.ExecuteNonQuery();
-            }
-
-            transaccion.Commit();
-            return numeroFactura;
-        }
-        catch
-        {
-            try { transaccion.Rollback(); } catch (Exception ex) when (ex is SqlException or InvalidOperationException) { /* Preserve the original failure. */ }
-            throw;
-        }
     }
 
     private static decimal ObtenerTotalPedido(SqlConnection conexion, SqlTransaction transaccion, int pedidoId)
@@ -554,6 +331,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public void GuardarRestaurante(string nombre, string ubicacion)
     {
+        ExigirSesion(true);
         nombre = ReglasRestaurante.Texto(nombre, "Nombre", 120);
         ubicacion = ReglasRestaurante.Texto(ubicacion, "Ubicación", 250);
         using var conexion = AbrirConexion();
@@ -565,6 +343,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public void GuardarCliente(int? id, string nombre, string? telefono, string? correo)
     {
+        ExigirSesion();
         ReglasRestaurante.Cliente(nombre, telefono, correo);
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand(id.HasValue
@@ -584,6 +363,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     private void Desactivar(string entidad, int id)
     {
+        ExigirSesion(true);
         if (id<=0) throw new ArgumentException("Seleccione un registro válido.");
         using var conexion = AbrirConexion();
         // SQL choices are fixed; never interpolate user-supplied table names.
@@ -596,6 +376,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
 
     public void GuardarProducto(int? id, string nombre, string categoria, string tipo, decimal precio, bool alcoholica)
     {
+        ExigirSesion(true);
         ReglasRestaurante.Producto(nombre, categoria, tipo, precio, alcoholica);
         using var conexion = AbrirConexion();
         using var comando = new SqlCommand(id.HasValue
@@ -626,7 +407,7 @@ public sealed class RepositorioRestaurante(IConfiguracionConexion configuracion)
         var fechas=ReglasRestaurante.Fechas(desde,hasta);
         using var conexion=AbrirConexion();
         using var comando=new SqlCommand("""
-            SELECT p.Id,m.Numero,COALESCE(c.Nombre,N'Público general'),p.Fecha,p.Estado,p.Total,f.NumeroFactura
+            SELECT p.Id,COALESCE(p.MesaHistorica,m.Numero),COALESCE(p.ClienteHistorico,N'Público general'),p.Fecha,p.Estado,p.Total,f.NumeroFactura
             FROM dbo.Pedidos p JOIN dbo.Mesas m ON m.Id=p.MesaId
             LEFT JOIN dbo.Clientes c ON c.Id=p.ClienteId
             LEFT JOIN dbo.Facturas f ON f.PedidoId=p.Id

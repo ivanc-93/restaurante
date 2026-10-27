@@ -20,5 +20,5 @@ public abstract class ElementoMenu
         if (cantidad is < 1 or > 50) throw new ArgumentOutOfRangeException(nameof(cantidad));
         return Precio * cantidad;
     }
-    public override string ToString() => $"{Nombre} · {Precio:C}";
+    public override string ToString() => $"{Nombre} · {Restaurante.Backend.Servicios.MonedaGuatemala.Formatear(Precio)}";
 }
