@@ -47,10 +47,10 @@ $huella="SET NOCOUNT ON;"+($consultas -join ' UNION ALL ')
 $original=(Sql $BaseDatos $huella | Out-String).Trim()
 $restaurado=(Sql $copia $huella | Out-String).Trim()
 if($original -ne $restaurado){throw "La restauración no coincide con el estado actual. No se migró $BaseDatos. Compruebe actividad concurrente y el respaldo."}
-foreach($archivo in @('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql')) {Script $copia (Join-Path $PSScriptRoot $archivo)}
-Script $copia (Join-Path $PSScriptRoot 'Migracion_004.sql')
-foreach($archivo in @('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql')) {Script $BaseDatos (Join-Path $PSScriptRoot $archivo)}
-$resultado=[ordered]@{Servidor=$Servidor;Base=$BaseDatos;Respaldo=$bak;Restaurada=$copia;Fecha=(Get-Date).ToString('o');TablasVerificadas=$tablas.Count;Verificacion='Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena 002/003/004 probada; 004 repetida en copia';Version=4}
+foreach($archivo in @('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')) {Script $copia (Join-Path $PSScriptRoot $archivo)}
+Script $copia (Join-Path $PSScriptRoot 'Migracion_005.sql')
+foreach($archivo in @('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')) {Script $BaseDatos (Join-Path $PSScriptRoot $archivo)}
+$resultado=[ordered]@{Servidor=$Servidor;Base=$BaseDatos;Respaldo=$bak;Restaurada=$copia;Fecha=(Get-Date).ToString('o');TablasVerificadas=$tablas.Count;Verificacion='Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena 002/003/004/005 probada; 005 repetida en copia';Version=5}
 $registro=Join-Path $ruta ($BaseDatos+'_'+$sufijo+'.json')
 $resultado|ConvertTo-Json|Set-Content $registro -Encoding utf8
 $resultado|ConvertTo-Json

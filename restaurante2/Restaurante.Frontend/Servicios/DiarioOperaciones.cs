@@ -63,6 +63,9 @@ internal static class DiarioOperaciones
             case "Agregar":
                 var agregar=JsonSerializer.Deserialize<SolicitudIncorporacion>(p.Datos)!;
                 return MonedaGuatemala.Formatear(await Ejecutar(repo,p.Tipo,p.Id,agregar,()=>repo.AgregarProductoAPedido(agregar.PedidoId,agregar.MenuId,agregar.Cantidad,agregar.OperacionId)));
+            case "Ajuste":
+                var ajuste=JsonSerializer.Deserialize<SolicitudAjuste>(p.Datos)!;
+                return MonedaGuatemala.Formatear(await Ejecutar(repo,p.Tipo,p.Id,ajuste,()=>repo.AplicarAjuste(ajuste)));
             case "Gestionar":
                 var gestion=JsonSerializer.Deserialize<SolicitudGestionMesa>(p.Datos)!;
                 return await Ejecutar(repo,p.Tipo,p.Id,gestion,()=>repo.GestionarMesa(gestion));

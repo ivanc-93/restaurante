@@ -25,9 +25,14 @@ public sealed partial class FormularioGestionMesa:Form
                     return(m,cuenta:p is null?null:repo.RevisarCuenta(p.Id),incierta:p is null?null:repo.ObtenerPagoIncierto(p.Id));
                 });
                 _cuenta=datos.cuenta;_incierta=datos.incierta;
+                if(_cuenta is not null && _incierta is null)
+                {
+                    var ajuste=new Button{Text="Descuento o cortesía",AutoSize=true};campos.Controls.Add(ajuste);
+                    ajuste.Click+=(_,_)=>{using var f=new FormularioAjuste(_repo,_cuenta);f.ShowDialog(this);DialogResult=DialogResult.OK;Close();};
+                }
                 resumen.Text=$"Mesa {datos.m.Numero} · {datos.m.Estado}\n"+(_cuenta is null?"Sin pedido activo.":$"Pedido #{_cuenta.PedidoId} · {FormatoPresentacion.Moneda(_cuenta.Total)}")+
                     "\nSi hubo preparación o consumo, registre una incidencia; no borre el importe.";
-                var admin=repo.UsuarioActual?.Rol=="Administrador";
+                var admin=true; // meseros pueden solicitar autorización puntual; el servicio decide.
                 if(_incierta.HasValue)
                 {
                     var s=repo.ConsultarSolicitudCobro(_incierta.Value);
@@ -66,12 +71,14 @@ public sealed partial class FormularioGestionMesa:Form
             {
                 var aprobado=resultado.Text=="Confirmado";var razon=motivo.Text;
                 var solicitud=new SolicitudConciliacion(_operacion,_incierta!.Value,aprobado,razon);
+                if(!FormularioAutorizar.Solicitar(this,_repo,_operacion,"ConciliarTarjeta",solicitud,resumen.Text+"\nResultado: "+resultado.Text+"\nMotivo: "+razon))return;
                 var r=await DiarioOperaciones.Ejecutar(_repo,"Conciliar",_operacion,solicitud,()=>_repo.ConciliarTarjeta(solicitud.OperacionIncierta,solicitud.Confirmado,solicitud.Motivo,solicitud.OperacionId));
                 texto=$"Conciliación manual: {r.Estado}. "+(r.NumeroComprobante is null?"La cuenta sigue abierta.":$"Comprobante {r.NumeroComprobante}; mesa en limpieza.");
             }
             else
             {
                 var s=new SolicitudGestionMesa(_operacion,_mesa.Id,_cuenta?.PedidoId,_cuenta?.Version,accion.Text,motivo.Text,declarado.Checked);
+                if(s.Accion!="Confirmar limpieza"&&!FormularioAutorizar.Solicitar(this,_repo,_operacion,"GestionMesa",s,resumen.Text+"\nAcción: "+s.Accion+"\nMotivo: "+s.Motivo))return;
                 texto=await DiarioOperaciones.Ejecutar(_repo,"Gestionar",_operacion,s,()=>_repo.GestionarMesa(s));
             }
             _dialogos.Mostrar(this,texto,"Gestión registrada");_ocupado=false;DialogResult=DialogResult.OK;Close();

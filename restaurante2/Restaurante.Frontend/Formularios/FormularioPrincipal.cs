@@ -25,8 +25,10 @@ public sealed partial class FormularioPrincipal : Form
         AgregarNavegacion(menu, "SERVICIO", "Mesas", MostrarMesasPos);
         AgregarNavegacion(menu, "SERVICIO", "Pedidos", MostrarPedidosPos);
         AgregarNavegacion(menu, "DATOS", "Catálogos", MostrarCatalogos);
-        AgregarNavegacion(menu, "ANÁLISIS", "Reportes", MostrarReportes);
-        if (usuario.Rol == "Administrador")
+        if(usuario.Rol is "Administrador" or "Gerente") AgregarNavegacion(menu, "ANÁLISIS", "Reportes", MostrarReportes);
+        if(usuario.Rol=="Administrador") AgregarNavegacion(menu,"ADMINISTRACIÓN","Usuarios",()=>{using var f=new FormularioUsuarios(_repositorio);f.ShowDialog(this);return Task.CompletedTask;});
+        AgregarNavegacion(menu,"CUENTA","Cambiar contraseña",()=>{using var f=new FormularioCambiarClave(_repositorio);if(f.ShowDialog(this)==DialogResult.OK){SesionCerrada=true;Close();}return Task.CompletedTask;});
+        if (usuario.Rol is "Administrador" or "Gerente")
             AgregarNavegacion(menu, "ADMINISTRACIÓN", "Configuración", MostrarConfiguracion);
         menu.Enabled = false;
         _contenido.Enabled = false;
@@ -113,7 +115,7 @@ public sealed partial class FormularioPrincipal : Form
         var restaurante = await Task.Run(_repositorio.ObtenerRestaurante);
         Text = restaurante.Nombre + " | " + restaurante.Ubicacion;
         var tarjetas = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
-        tarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Color.FromArgb(216, 131, 80)));
+        if(_usuario.Rol is "Administrador" or "Gerente") tarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Color.FromArgb(216, 131, 80)));
         tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "En atención", Color.FromArgb(89, 129, 149)));
         tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para clientes", Componentes.Verde));
         tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú", Color.FromArgb(122, 111, 161)));
@@ -193,7 +195,7 @@ public sealed partial class FormularioPrincipal : Form
         var editar = BotonMesa("Editar", 90);
         var visualizar = BotonMesa("Visualizar", 100);
         var eliminar = BotonMesa("Eliminar", 90, false);
-        crear.Enabled=editar.Enabled=eliminar.Enabled=_repositorio.UsuarioActual?.Rol=="Administrador";
+        crear.Enabled=editar.Enabled=eliminar.Enabled=_repositorio.UsuarioActual?.Rol is "Administrador" or "Gerente";
         herramientasMesas.Controls.AddRange([crear, editar, visualizar, eliminar]);
         tabMesas.Controls.Add(mesas);
         tabMesas.Controls.Add(herramientasMesas);
@@ -296,114 +298,9 @@ public sealed partial class FormularioPrincipal : Form
     }
     private Task MostrarConexion()
     {
-        if (_usuario.Rol != "Administrador")
-        {
-            _dialogos.Mostrar(this, "Solo el administrador puede cambiar la conexión.", "Acceso denegado",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return Task.CompletedTask;
-        }
-        _titulo.Text = "Administración  /  Conexión SQL";
-        LimpiarContenido();
-        var encabezado = Encabezado("Conexión a SQL Server",
-            "Configura el servidor, la base de datos y las credenciales.");
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Top;
-        panel.Height = 500;
-        panel.Padding = new Padding(20);
-        panel.Margin = new Padding(0, 0, 0, 16);
-        var servidor = Componentes.Campo();
-        servidor.PlaceholderText = @"(localdb)\MSSQLLocalDB o servidor SQL";
-        var puerto = new NumericUpDown
-        {
-            Minimum = 1,
-            Maximum = 65535,
-            Value = 1433,
-            Dock = DockStyle.Top,
-            Height = 34,
-            Font = Componentes.Fuente,
-            Margin = new Padding(0, 4, 0, 8)
-        };
-        servidor.TextChanged += (_,_) => puerto.Enabled=!servidor.Text.Trim().StartsWith(@"(localdb)",StringComparison.OrdinalIgnoreCase);
-        var baseDatos = Componentes.Campo();
-        baseDatos.Text = "RestauranteDB";
-        var usuario = Componentes.Campo();
-        usuario.Text = "";
-        usuario.PlaceholderText = "Vacío = autenticación de Windows";
-        var contrasena = Componentes.Campo(true);
-        contrasena.PlaceholderText = "Contraseña del usuario SQL";
-        var certificado = new CheckBox
-        {
-            Text = "Confiar en el certificado SQL",
-            Checked = true,
-            AutoSize = true,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(4, 18, 0, 0)
-        };
-        var estado = new Label
-        {
-            Text = _configuracion.EstaConfigurada ? "●  Conexión configurada" : "●  Falta configurar la base de datos",
-            AutoSize = true,
-            ForeColor = _configuracion.EstaConfigurada ? Componentes.Verde : Color.DarkGoldenrod,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 8, 0, 0)
-        };
-        var campos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 6 };
-        campos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
-        campos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 66));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
-        campos.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        campos.Controls.Add(Campo("IP o nombre del servidor SQL", servidor), 0, 0);
-        campos.Controls.Add(Campo("Puerto SQL Server", puerto), 1, 0);
-        campos.Controls.Add(Campo("Nombre de la base de datos", baseDatos), 0, 1);
-        campos.Controls.Add(Campo("Usuario SQL (vacío = Windows)", usuario), 1, 1);
-        campos.Controls.Add(Campo("Contraseña SQL", contrasena), 0, 2);
-        campos.Controls.Add(certificado, 1, 2);
-        campos.Controls.Add(estado, 0, 3);
-        campos.SetColumnSpan(estado, 2);
-        var guardar = Componentes.Boton("Probar y guardar conexión");
-        guardar.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-        guardar.Width = 230;
-        guardar.Click += async (_, _) =>
-        {
-            guardar.Enabled = false;
-            estado.Text = "Conectando y verificando credenciales…";
-            try
-            {
-                var host = servidor.Text; var port = (int)puerto.Value; var db = baseDatos.Text;
-                var user = usuario.Text; var password = contrasena.Text; var trust = certificado.Checked;
-                await Task.Run(() => _configuracion.ProbarYGuardar(host, port, db, user, password, trust));
-                estado.Text = "●  Conexión probada y guardada de forma protegida.";
-                estado.ForeColor = Componentes.Verde;
-                _dialogos.Mostrar(this, "La conexión SQL Server es válida y se guardó protegida.",
-                    "Conexión correcta", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                SesionCerrada = true;
-                Close();
-            }
-            catch (Exception ex)
-            {
-                estado.Text = "No se pudo conectar.";
-                estado.ForeColor = Color.Firebrick;
-                MostrarError(ex);
-            }
-            finally { guardar.Enabled = true; }
-        };
-        campos.Controls.Add(guardar, 0, 4);
-        var ayuda = new Label
-        {
-            Text = string.Empty,
-            Dock = DockStyle.Fill, ForeColor = Componentes.Secundario,
-            BackColor = Componentes.Fondo, Padding = new Padding(10), Margin = new Padding(0, 4, 0, 0)
-        };
-        ayuda.Text = "Ejemplo: IP 192.168.1.100; puerto 1433; base de datos RestauranteDB; usuario restaurante_app; contrasena TuClaveSegura. Cadena: Server=192.168.1.100,1433;Database=RestauranteDB;User Id=restaurante_app;Password=TuClaveSegura;Encrypt=True;TrustServerCertificate=True.";
-        campos.Controls.Add(ayuda, 0, 5);
-        campos.SetColumnSpan(ayuda, 2);
-        panel.Controls.Add(campos);
-        _contenido.Controls.Add(panel);
-        _contenido.Controls.Add(encabezado);
+        if(_usuario.Rol!="Administrador")throw new UnauthorizedAccessException("Solo administrador.");
+        using var f=new FormularioConexion(_configuracion);
+        if(f.ShowDialog(this)==DialogResult.OK){_repositorio.CerrarSesion();SesionCerrada=true;Close();}
         return Task.CompletedTask;
     }
 

@@ -10,6 +10,11 @@ public static class CicloSesion
         while (true)
         {
             repositorio.CerrarSesion();
+            if(!configuracion.EstaConfigurada)
+            {
+                using var preparar=new FormularioConexion(configuracion);
+                if(preparar.ShowDialog()!=DialogResult.OK)return;
+            }
             using var acceso = new FormularioAcceso(repositorio, configuracion);
             if (acceso.ShowDialog() != DialogResult.OK || acceso.UsuarioActual is null) return;
             using var principal = new FormularioPrincipal(repositorio, configuracion, acceso.UsuarioActual, dialogos);

@@ -47,6 +47,20 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
     public void ProbarYGuardar(string servidor, int puerto, string baseDatos, string usuario,
         string contrasena, bool confiarCertificado)
     {
+        var opciones = new SqlConnectionStringBuilder(CrearCadena(servidor,puerto,baseDatos,usuario,contrasena,confiarCertificado));
+        using (var prueba = new SqlConnection(opciones.ConnectionString)) prueba.Open();
+        new RepositorioRestaurante(new ConfiguracionConexionTemporal(opciones.ConnectionString)).ValidarEsquema();
+        var directorio = Path.GetDirectoryName(_ruta)!;
+        Directory.CreateDirectory(directorio);
+        var protegido = ProtectedData.Protect(Encoding.UTF8.GetBytes(opciones.ConnectionString),null,DataProtectionScope.CurrentUser);
+        var temporal = _ruta + ".tmp";
+        File.WriteAllBytes(temporal, protegido);
+        File.Move(temporal, _ruta, true);
+        lock (_candado) _cadena = opciones.ConnectionString;
+        ErrorCarga = null;
+    }
+    public static string CrearCadena(string servidor,int puerto,string baseDatos,string usuario,string contrasena,bool confiarCertificado)
+    {
         if (string.IsNullOrWhiteSpace(servidor) || string.IsNullOrWhiteSpace(baseDatos))
             throw new ArgumentException("La IP del servidor y la base de datos son obligatorias.");
         if (puerto is < 1 or > 65535)
@@ -65,17 +79,6 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
             ConnectTimeout = 8,
             PersistSecurityInfo = false
         };
-        using (var prueba = new SqlConnection(opciones.ConnectionString))
-            prueba.Open();
-
-        var directorio = Path.GetDirectoryName(_ruta)!;
-        Directory.CreateDirectory(directorio);
-        var protegido = ProtectedData.Protect(Encoding.UTF8.GetBytes(opciones.ConnectionString),
-            null, DataProtectionScope.CurrentUser);
-        var temporal = _ruta + ".tmp";
-        File.WriteAllBytes(temporal, protegido);
-        File.Move(temporal, _ruta, true);
-        lock (_candado) _cadena = opciones.ConnectionString;
-        ErrorCarga = null;
+        return opciones.ConnectionString;
     }
 }

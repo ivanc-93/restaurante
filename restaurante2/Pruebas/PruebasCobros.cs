@@ -8,7 +8,7 @@ using System.Text.Json;
 
 internal static class PruebasCobros
 {
-    internal static RepositorioRestaurante Repo(string cadena,string usuario="admin",string clave="Admin123!")
+    internal static RepositorioRestaurante Repo(string cadena,string usuario="admin",string clave="PruebaAdmin_2026!")
     {
         if(!new SqlConnectionStringBuilder(cadena).InitialCatalog.StartsWith("Restaurante_Pruebas_",StringComparison.Ordinal))throw new Exception("Solo bases aisladas.");
         var repo=new RepositorioRestaurante(new ConexionPrueba(cadena));repo.ValidarEsquema();

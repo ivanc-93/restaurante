@@ -131,6 +131,7 @@ END;
 GO
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Usuarios WHERE Usuario = N'admin')
+   AND COALESCE(TRY_CONVERT(int,SESSION_CONTEXT(N'SaboresSinUsuarioDemo')),0)=0
 BEGIN
     DECLARE @SalAdmin NVARCHAR(64) = N'SaboresAdmin2026';
     INSERT dbo.Usuarios (Nombre, Usuario, ContrasenaHash, Sal, Rol)

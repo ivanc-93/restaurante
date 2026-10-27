@@ -1,3 +1,9 @@
+# Actualización vigente del esquema 5
+
+Consulte [Instalación usuarios y autorizaciones](../Pruebas/RolesYAcceso.md). InstalarOActualizar.ps1 ahora ensaya y aplica 002 003 004 y 005, con respaldo y restauración comprobados. Para bases nuevas sin credenciales fijas utilice InstalarNuevaBase.ps1 con token de un solo uso. La aplicación requiere esquema 5 y no migra al iniciar.
+
+La conexión ahora es un formulario independiente accesible desde el acceso o Configuración. No se permite acceso operativo con credenciales fijas sin SQL. Los apartados de respaldos siguientes conservan la evidencia histórica de esquema 4.
+
 # SQL Server: instalación y actualización del grupo
 
 ## Conexión
@@ -8,7 +14,7 @@ Por instrucción del usuario, este equipo usa **(localdb)\MSSQLLocalDB / Restaur
 
 La configuración se realiza desde Configuración → Avanzado · Conexión SQL. Usuario SQL vacío significa autenticación Windows. Para LocalDB el puerto no se utiliza. Cada integrante debe instalar y actualizar su base, además de configurar su conexión. No compartir `conexion.bin` entre perfiles.
 
-La aplicación requiere esquema 4 y solo lo comprueba: **no ejecuta migraciones al iniciar**. Si falta actualizar, muestra el procedimiento antes de admitir la sesión de operación.
+La aplicación requiere esquema 5 y solo lo comprueba: **no ejecuta migraciones al iniciar**. Si falta actualizar, muestra el procedimiento antes de admitir la sesión de operación.
 
 ## Procedimiento con autenticación Windows
 
@@ -37,9 +43,9 @@ Si falla cualquier paso, no continuar manualmente sin revisar. No elimina bases 
 
 ## Si el integrante usa autenticación SQL
 
-El script anterior usa Windows. Para autenticación SQL, abrir SSMS con la conexión propia y realizar el mismo procedimiento: respaldo, restauración en base separada, comparación y ensayo de migraciones en la copia. Ejecutar después 002 → 003 → 004 sobre la base elegida. Los scripts de migración no cambian automáticamente a otra base; confirmar el destino antes de ejecutarlos.
+El script anterior usa Windows. Para autenticación SQL, abrir SSMS con la conexión propia y realizar el mismo procedimiento: respaldo, restauración en base separada, comparación y ensayo de migraciones en la copia. Ejecutar después 002 → 003 → 004 → 005 sobre la base elegida. Los scripts de migración no cambian automáticamente a otra base; confirmar el destino antes de ejecutarlos.
 
-Para instalaciones nuevas, `CrearBaseDatos.sql` crea `RestauranteDB`; después ejecutar las migraciones hasta 004. No basta con instalar la versión 3. La cuenta usada para actualizar necesita permisos DDL y de respaldo/restauración; no publicar sus credenciales.
+Para instalaciones nuevas, `CrearBaseDatos.sql` crea `RestauranteDB`; después ejecutar las migraciones hasta 005. No basta con instalar la versión 3. La cuenta usada para actualizar necesita permisos DDL y de respaldo/restauración; no publicar sus credenciales.
 
 ## Esquema 4
 

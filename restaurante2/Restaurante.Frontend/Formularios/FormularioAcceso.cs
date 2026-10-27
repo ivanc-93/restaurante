@@ -14,6 +14,9 @@ public sealed partial class FormularioAcceso : Form
     {
         _repositorio = repositorio;
         _configuracion = configuracion;
+        var conexion=new Button{Text="Configurar o recuperar conexión",AutoSize=true};conexion.SetBounds(35,340,420,42);
+        conexion.Click+=(_,_)=>{using var f=new FormularioConexion(_configuracion);f.ShowDialog(this);_repositorio.CerrarSesion();};
+        ayuda.Visible=false;Controls.Add(conexion);
     }
     private async void Entrar_Click(object? sender, EventArgs e)
     {
@@ -23,23 +26,14 @@ public sealed partial class FormularioAcceso : Form
         entrar.Enabled = false;
         try
         {
-            if (!_configuracion.EstaConfigurada &&
-                _usuario.Text.Trim().Equals("admin", StringComparison.OrdinalIgnoreCase) &&
-                _contrasena.Text == "Admin123!")
+            await Task.Run(_repositorio.ValidarEsquema);
+            UsuarioActual=await Task.Run(()=>_repositorio.IniciarSesion(usuario,contrasena));
+            if(UsuarioActual is null){_mensaje.Text="Usuario o contraseña incorrectos, inactivo o temporalmente bloqueado.";return;}
+            if(UsuarioActual.CambioObligatorio)
             {
-                UsuarioActual = new UsuarioAutenticado("Administrador", "Administrador");
-            }
-            else
-            {
-                await Task.Run(_repositorio.ValidarEsquema);
-                UsuarioActual = await Task.Run(() => _repositorio.IniciarSesion(usuario, contrasena));
-                if (UsuarioActual is null)
-                {
-                    _mensaje.Text = _configuracion.EstaConfigurada
-                        ? "Usuario o contraseña incorrectos."
-                        : "Configure primero SQL Server o use el acceso inicial de administrador.";
-                    return;
-                }
+                using var cambio=new FormularioCambiarClave(_repositorio);
+                cambio.ShowDialog(this);_repositorio.CerrarSesion();UsuarioActual=null;
+                _mensaje.Text="Vuelva a entrar con su contraseña personal actualizada.";return;
             }
             DialogResult = DialogResult.OK;
             Close();

@@ -62,7 +62,8 @@ public sealed partial class FormularioReportes : Form
             pestanas.TabPages[3].Controls["resumenOperaciones"]!.Text=
                 $"Cobros confirmados: efectivo {FormatoPresentacion.Moneda(Suma("Pago Efectivo","Confirmado"))} · tarjeta manual {FormatoPresentacion.Moneda(Suma("Pago Tarjeta","Confirmado"))}\n"+
                 $"Cancelado: {FormatoPresentacion.Moneda(Suma("Cancelar","Cancelado"))} · Incidencias generadas: {FormatoPresentacion.Moneda(Suma("Incidencia","Incidencia"))} · Legados sin pago registrado: {FormatoPresentacion.Moneda(Suma("Comprobante legado","Pago no registrado"))}\n"+
-                "No sumar todas las filas: comprobantes, cobros e incidencias representan conceptos distintos. Tarjetas rechazadas o inciertas no son cobros confirmados.";
+                $"Descuentos vigentes: {FormatoPresentacion.Moneda(Suma("Descuento","Vigente"))} · Cortesías vigentes: {FormatoPresentacion.Moneda(Suma("Cortesía","Vigente"))}\n"+
+                "No sumar todas las filas: comprobantes, cobros, ajustes e incidencias representan conceptos distintos. Tarjetas rechazadas o inciertas no son cobros confirmados.";
             total.Text=$"Comprobantes emitidos (no equivale a efectivo cobrado): {FormatoPresentacion.Moneda(datos.Ventas.Sum(x=>x.Total))} · {datos.Ventas.Sum(x=>x.Facturas)} facturas. Semana: lunes a domingo.";
             FormatoPresentacion.Aplicar(this);
         }

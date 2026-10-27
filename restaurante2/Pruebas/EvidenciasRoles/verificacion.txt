@@ -1,0 +1,75 @@
+OK Esquema 5 compatible
+OK Lectura sin sesión rechazada
+OK Base existente no admite primer administrador
+OK Contraseña temporal exige cambio
+OK Cambio obligatorio bloquea operaciones
+OK Gerente no crea administradores
+OK Mesero no consulta usuarios
+OK Mesero no consulta ventas
+OK Mesero no crea mesas
+OK Resumen de mesero no revela ventas
+OK Gerente administra restaurante
+OK Nuevo pedido conserva original
+OK Descuento sin autorización rechazado
+OK Mesero no autoriza descuento
+OK Autorización no admite cambiar importe
+OK Descuento autorizado aplicado
+OK Repetición devuelve resultado sin duplicar ajuste
+OK Un único ajuste persistido
+OK Autorización caducada rechazada
+OK Cambio del pedido invalida autorización
+OK Agregar invalida descuento y restaura original
+OK Cortesía conserva consumo sin inventar dinero
+OK Mesero cierra cortesía previamente autorizada
+OK Cobro recuperado no se duplica
+OK Comprobante conserva descuento
+OK Mesero confirma limpieza
+OK Cancelación requiere gerente
+OK Cancelación puntual mantiene sesión mesero
+OK Autorización no eleva la sesión
+OK Ajuste y cobro concurrentes no aplican versiones incompatibles
+OK Carrera financiera deja un solo comprobante
+OK Cambio de versión del autorizador invalida aprobación pendiente
+OK Tarjeta incierta no se concilia sin autorización
+OK Mesero concilia únicamente la tarjeta autorizada
+OK Conciliación recuperada no duplica cierre
+OK Desactivación invalida sesión existente
+OK Cambio de rol invalida sesión gerente
+OK Último administrador protegido
+OK Intento incorrecto rechazado 0
+OK Intento incorrecto rechazado 1
+OK Intento incorrecto rechazado 2
+OK Intento incorrecto rechazado 3
+OK Intento incorrecto rechazado 4
+OK Bloqueo temporal tras cinco intentos
+OK Equipo sin configuración no tiene acceso inicial implícito
+OK Servidor vacío se rechaza antes de guardar
+OK Configuración protegida reabre en el mismo perfil
+OK Fallo SQL conserva configuración válida
+OK Esquema incompatible no reemplaza configuración válida
+OK Instalación nueva detectada sin usuarios
+OK Token incorrecto rechazado
+OK Intento inicial rechazado conserva instalación pendiente
+OK Dos equipos crean exactamente un primer administrador
+OK Instalación completada no se reinicializa
+OK Primer administrador utiliza contraseña individual
+OK Degradaciones simultáneas conservan un administrador
+OK Último administrador permanece en SQL
+OK Constructor y render FormularioConexion
+OK Constructor y render FormularioUsuarios
+OK Constructor y render FormularioCambiarClave
+OK Constructor y render FormularioPrimerAdministrador
+OK Constructor y render FormularioAutorizar
+OK Constructor y render FormularioAjuste
+OK Constructor y render FormularioAcceso
+OK Interfaz prueba conexión y esquema sin guardar perfil habitual
+OK Interfaz crea mesero con cambio obligatorio
+UI abrir modal FormularioCambiarClave
+UI modal terminado FormularioCambiarClave
+OK Interfaz obliga a volver al acceso tras cambiar contraseña
+OK Interfaz autentica cuenta personal de mesero
+UI abrir modal FormularioAutorizar
+UI modal terminado FormularioAutorizar
+OK Interfaz solicita gerente y aplica solo el ajuste autorizado
+OK Menú mesero oculta administración y reportes
+TOTAL 70 comprobaciones correctas

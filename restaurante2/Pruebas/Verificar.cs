@@ -94,18 +94,18 @@ internal static class Verificar
         int cliente=0,plato=0,bebida=0,pedido=0;
         Caso("Login válido, inválido e inactivo",()=>
         {
-            Verdad(repo.IniciarSesion("admin","Admin123!") is not null,"Login válido rechazado");
+            Verdad(repo.IniciarSesion("admin","PruebaAdmin_2026!") is not null,"Login válido rechazado");
             Verdad(repo.IniciarSesion("admin","incorrecta") is null,"Login inválido aceptado");
             Sql(cadena,"UPDATE dbo.Usuarios SET Activo=0 WHERE Usuario=N'admin';");
-            Verdad(repo.IniciarSesion("admin","Admin123!") is null,"Inactivo aceptado");
+            Verdad(repo.IniciarSesion("admin","PruebaAdmin_2026!") is null,"Inactivo aceptado");
             Sql(cadena,"UPDATE dbo.Usuarios SET Activo=1 WHERE Usuario=N'admin';");
-            repo.IniciarSesion("admin","Admin123!");
+            repo.IniciarSesion("admin","PruebaAdmin_2026!");
         });
         Caso("Instalación SQL conserva caracteres Unicode",()=> Igual("Café de olla",repo.ListarMenu().Single(p=>p.Nombre.StartsWith("Caf")).Nombre));
         Caso("Configuración persistente del restaurante",()=>
         {
             repo.GuardarRestaurante("Restaurante de prueba","Guatemala");
-            Igual("Guatemala",new RepositorioRestaurante(new ConexionPrueba(cadena)).ObtenerRestaurante().Ubicacion);
+            Igual("Guatemala",PruebasCobros.Repo(cadena).ObtenerRestaurante().Ubicacion);
         });
         Caso("Mantenimiento de clientes y productos",()=>
         {

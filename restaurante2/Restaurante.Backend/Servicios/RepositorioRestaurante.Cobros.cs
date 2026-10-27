@@ -11,11 +11,16 @@ public sealed partial class RepositorioRestaurante
     {
         ValidarCobro(solicitud);
         var mesa=MesaDePedido(solicitud.PedidoId);
-        var resultado=Mutacion(solicitud.OperacionId,"Cobro",solicitud,mesa,solicitud.Metodo=="Cortesía",(c,t,actor)=>
+        var resultado=Mutacion(solicitud.OperacionId,"Cobro",solicitud,mesa,solicitud.Metodo=="Cortesía" && solicitud.TotalEsperado!=0,(c,t,actor)=>
         {
             var cuenta=LeerCuenta(c,t,solicitud.PedidoId);ExigirAbierto(cuenta);ExigirVersion(cuenta,solicitud.Version,solicitud.TotalEsperado);
-            if(cuenta.Detalles.Count==0||cuenta.Detalles.Sum(d=>d.Importe)!=cuenta.Total)throw new InvalidOperationException("Los detalles no coinciden con el total.");
+            if(cuenta.Detalles.Count==0||cuenta.Detalles.Sum(d=>d.Importe)!=cuenta.ImporteOriginal || cuenta.ImporteOriginal-cuenta.Descuento!=cuenta.Total)throw new InvalidOperationException("Los detalles no coinciden con el total.");
             SinPagoPendiente(c,t,cuenta.PedidoId);
+            if(solicitud.Metodo=="Cortesía" && cuenta.Total==0 && actor.Rol is not("Administrador" or "Gerente"))
+            {
+                using var permiso=Consulta(c,t,"SELECT COUNT(*) FROM dbo.AjustesPedido WHERE PedidoId=@p AND Vigente=1 AND Tipo=N'Cortesía';",("@p",cuenta.PedidoId));
+                if((int)permiso.ExecuteScalar()!!=1)throw new UnauthorizedAccessException("Una cuenta cero necesita cortesía autorizada del gerente.");
+            }
             if(solicitud.Metodo=="Cortesía" && cuenta.Total!=0)throw new ArgumentException("La cortesía solo cierra cuentas de total cero.");
             if(solicitud.Metodo!="Cortesía"&&cuenta.Total==0)throw new ArgumentException("Una cuenta de cero requiere cortesía autorizada.");
             if(solicitud.Metodo=="Efectivo"&&solicitud.Entregado<cuenta.Total)throw new ArgumentException("El efectivo es insuficiente.");
@@ -66,13 +71,13 @@ public sealed partial class RepositorioRestaurante
         using var q=Consulta(c,t,"""
           DECLARE @emitido TABLE(Numero nvarchar(30));
           INSERT dbo.Facturas(PedidoId,Fecha,Subtotal,Impuesto,Total,Legada,Receptor,Identificacion,Direccion,Correo,
-            RestauranteHistorico,UbicacionHistorica,MesaHistorica,Operador,UsuarioId)
+            RestauranteHistorico,UbicacionHistorica,MesaHistorica,Operador,UsuarioId,ImporteOriginal,Descuento)
           OUTPUT INSERTED.NumeroFactura INTO @emitido
-          SELECT @p,DATEADD(hour,-6,SYSUTCDATETIME()),@importe,0,@importe,0,@nombre,@ident,@dir,@correo,Nombre,Ubicacion,@mesa,@operador,@actor FROM dbo.Restaurante WHERE Id=1;
+          SELECT @p,DATEADD(hour,-6,SYSUTCDATETIME()),@importe,0,@importe,0,@nombre,@ident,@dir,@correo,Nombre,Ubicacion,@mesa,@operador,@actor,@original,@descuento FROM dbo.Restaurante WHERE Id=1;
           SELECT Numero FROM @emitido;
           """,("@p",cuenta.PedidoId),("@importe",cuenta.Total),("@nombre",s.PublicoGeneral?"Público general":s.Receptor.Trim()),
           ("@ident",string.IsNullOrWhiteSpace(s.Identificacion)?null:s.Identificacion.Trim()),("@dir",s.Direccion?.Trim()),("@correo",s.Correo?.Trim()),
-          ("@mesa",cuenta.NumeroMesa),("@operador",actor.Nombre),("@actor",actor.Id));
+          ("@mesa",cuenta.NumeroMesa),("@operador",actor.Nombre),("@actor",actor.Id),("@original",cuenta.ImporteOriginal),("@descuento",cuenta.Descuento));
         var numero=q.ExecuteScalar() as string??throw new InvalidOperationException("Configure la información del restaurante.");
         Ejecutar(c,t,"UPDATE dbo.Pedidos SET Estado=N'Facturado' WHERE Id=@p; UPDATE dbo.Mesas SET Estado=N'En limpieza' WHERE Id=@m;",("@p",cuenta.PedidoId),("@m",cuenta.MesaId));
         return numero;
@@ -80,23 +85,24 @@ public sealed partial class RepositorioRestaurante
 
     public Guid? ObtenerPagoIncierto(int pedidoId)
     {
-        ExigirSesion();using var c=AbrirConexion();using var q=Consulta(c,null,"SELECT OperacionId FROM dbo.PagosManuales WHERE PedidoId=@p AND Estado=N'Incierto';",("@p",pedidoId));
+        ExigirLecturaPedido(pedidoId);using var c=AbrirConexion();using var q=Consulta(c,null,"SELECT OperacionId FROM dbo.PagosManuales WHERE PedidoId=@p AND Estado=N'Incierto';",("@p",pedidoId));
         return q.ExecuteScalar() is Guid id?id:null;
     }
     public SolicitudCobro ConsultarSolicitudCobro(Guid operacionId)
     {
         ExigirSesion();using var c=AbrirConexion();using var q=Consulta(c,null,"SELECT SolicitudOriginal FROM dbo.PagosManuales WHERE OperacionId=@op;",("@op",operacionId));
-        return q.ExecuteScalar() is string json?JsonSerializer.Deserialize<SolicitudCobro>(json)!:throw new InvalidOperationException("No se encontró el registro del pago.");
+        var solicitud=q.ExecuteScalar() is string json?JsonSerializer.Deserialize<SolicitudCobro>(json)!:throw new InvalidOperationException("No se encontró el registro del pago.");
+        ExigirLecturaPedido(solicitud.PedidoId);return solicitud;
     }
     public ResultadoCobro ConciliarTarjeta(Guid operacionIncierta,bool confirmado,string motivo,Guid operacionId)
     {
         motivo=ReglasRestaurante.Texto(motivo,"Motivo y evidencia de conciliación",500);
-        ExigirSesion(true);
+        ExigirSesion();
         int pedidoId;
         using(var c=AbrirConexion())using(var q=Consulta(c,null,"SELECT PedidoId FROM dbo.PagosManuales WHERE OperacionId=@op;",("@op",operacionIncierta)))
             pedidoId=q.ExecuteScalar() is int p?p:throw new InvalidOperationException("La operación no existe.");
         var mesa=MesaDePedido(pedidoId);
-        return Mutacion(operacionId,"ConciliarTarjeta",new{operacionIncierta,confirmado,motivo},mesa,true,(c,t,actor)=>
+        return Mutacion(operacionId,"ConciliarTarjeta",new SolicitudConciliacion(operacionId,operacionIncierta,confirmado,motivo),mesa,true,(c,t,actor)=>
         {
             SolicitudCobro original;
             using(var q=Consulta(c,t,"SELECT SolicitudOriginal,Estado FROM dbo.PagosManuales WITH(UPDLOCK,HOLDLOCK) WHERE OperacionId=@op;",("@op",operacionIncierta)))
@@ -150,11 +156,11 @@ public sealed partial class RepositorioRestaurante
 
     public string ConsultarComprobante(int pedidoId)
     {
-        ExigirSesion();using var c=AbrirConexion();
+        ExigirLecturaPedido(pedidoId);using var c=AbrirConexion();
         using var q=Consulta(c,null,"""
             SELECT f.NumeroFactura,f.Fecha,f.Legada,f.RestauranteHistorico,f.UbicacionHistorica,f.MesaHistorica,
               f.Receptor,f.Identificacion,f.Direccion,f.Correo,f.Total,f.Operador,
-              pm.Metodo,pm.Importe,pm.Entregado,pm.Cambio,pm.Referencia
+              pm.Metodo,pm.Importe,pm.Entregado,pm.Cambio,pm.Referencia,f.ImporteOriginal,f.Descuento
             FROM dbo.Facturas f LEFT JOIN dbo.PagosManuales pm ON pm.PedidoId=f.PedidoId AND pm.Estado=N'Confirmado' WHERE f.PedidoId=@p;
             """,("@p",pedidoId));
         var texto=new StringBuilder("Comprobante interno académico — no válido como documento tributario\r\n\r\n");
@@ -163,6 +169,7 @@ public sealed partial class RepositorioRestaurante
             if(!r.Read())throw new InvalidOperationException("El pedido no tiene comprobante emitido.");
             string D(int i)=>r.IsDBNull(i)?"No registrado":Convert.ToString(r.GetValue(i),System.Globalization.CultureInfo.InvariantCulture)!;
             texto.AppendLine($"{D(3)} | {D(4)}\r\nComprobante: {D(0)} · {r.GetDateTime(1):dd/MM/yyyy HH:mm}\r\nPedido: {pedidoId} · Mesa: {D(5)}\r\nReceptor: {D(6)}\r\nIdentificación: {D(7)}\r\nDirección: {D(8)}\r\nCorreo: {D(9)}");
+            texto.AppendLine($"Original: {MonedaGuatemala.Formatear(r.GetDecimal(17))} · Descuento: {MonedaGuatemala.Formatear(r.GetDecimal(18))}");
             texto.AppendLine($"Total GTQ: {MonedaGuatemala.Formatear(r.GetDecimal(10))}\r\nResponsable: {D(11)}");
             if(r.GetBoolean(2))texto.AppendLine("LEGADO: datos conocidos al migrar; pago no registrado. No equivale a pago confirmado.");
             else texto.AppendLine($"Pago registrado por el operador: {D(12)}\r\nAplicado: {MonedaGuatemala.Formatear(r.GetDecimal(13))}\r\nEntregado: {MonedaGuatemala.Formatear(r.GetDecimal(14))}\r\nCambio: {MonedaGuatemala.Formatear(r.GetDecimal(15))}\r\nReferencia externa: {D(16)}");
@@ -173,13 +180,17 @@ public sealed partial class RepositorioRestaurante
     }
     public IReadOnlyList<MovimientoOperacion> ReportarOperaciones(DateTime desde,DateTime hasta)
     {
-        ExigirSesion();var fechas=ReglasRestaurante.Fechas(desde,hasta);using var c=AbrirConexion();
+        ExigirSesion(true);var fechas=ReglasRestaurante.Fechas(desde,hasta);using var c=AbrirConexion();
         using var q=Consulta(c,null,"""
             SELECT DATEADD(hour,-6,pm.Fecha),pm.PedidoId,N'Pago '+pm.Metodo,pm.Estado,pm.Importe,u.Nombre,COALESCE(pm.Referencia,N'')
               FROM dbo.PagosManuales pm JOIN dbo.Usuarios u ON u.Id=pm.UsuarioId WHERE pm.Fecha>=@desdeUtc AND pm.Fecha<@hastaUtc
             UNION ALL
             SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,a.Accion,a.Posterior,a.Importe,u.Nombre,a.Motivo FROM dbo.AuditoriaOperaciones a JOIN dbo.Usuarios u ON u.Id=a.UsuarioId
               WHERE a.Accion IN(N'Cancelar',N'Incidencia') AND a.Fecha>=@desdeUtc AND a.Fecha<@hastaUtc
+            UNION ALL
+            SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,a.Tipo,
+              CASE WHEN a.Vigente=1 THEN N'Vigente' ELSE N'Invalidado' END,a.Descuento,u.Nombre,a.Motivo
+              FROM dbo.AjustesPedido a JOIN dbo.Usuarios u ON u.Id=a.AutorizadorId WHERE a.Fecha>=@desdeUtc AND a.Fecha<@hastaUtc
             UNION ALL
             SELECT f.Fecha,f.PedidoId,CASE WHEN f.Legada=1 THEN N'Comprobante legado' ELSE N'Comprobante interno' END,
               CASE WHEN f.Legada=1 THEN N'Pago no registrado' ELSE N'Emitido' END,f.Total,COALESCE(f.Operador,N'No registrado'),f.NumeroFactura

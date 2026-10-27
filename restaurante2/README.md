@@ -13,7 +13,7 @@ dotnet restore restaurante2/Restaurante.sln
 dotnet build restaurante2/Restaurante.sln --no-restore
 ```
 
-**Instalación nueva o actualización:** consulte [Actualización SQL para el grupo](BaseDatos/ActualizacionGrupo.md). El procedimiento respalda, restaura en una copia y prueba las migraciones antes de actualizar. Se requiere esquema **4** (002 → 003 → 004); crear solo el esquema 3 no basta. La aplicación no migra automáticamente.
+**Instalación nueva o actualización:** consulte [Actualización SQL para el grupo](BaseDatos/ActualizacionGrupo.md). El procedimiento respalda, restaura en una copia y prueba las migraciones antes de actualizar. Se requiere esquema **5** (002 → 003 → 004 → 005); crear solo el esquema 3 no basta. La aplicación no migra automáticamente.
 
 Por solicitud del usuario, este equipo usa `(localdb)\MSSQLLocalDB`, base `RestauranteDB`, autenticación Windows. Cada integrante conserva su propia configuración Microsoft SQL Server, sin editar fuentes ni compartir contraseñas.
 
@@ -21,25 +21,27 @@ El script configura las opciones SET requeridas por índices filtrados y la colu
 
 ## Primer acceso y conexión
 
-Sin conexión guardada se permite la configuración inicial con `admin` / `Admin123!`. Desde **Configuración → Avanzado · Conexión SQL**, indique servidor, puerto, base de datos y credenciales; dejar vacío el usuario SQL habilita autenticación de Windows. Después de guardar, debe ingresar otra vez y autenticarse contra la base. El script crea el usuario inicial `admin` con esa contraseña; cámbiela en la base antes de utilizar datos reales. Utilice un usuario SQL de mínimo privilegio, no `sa`.
+Sin configuración se abre un asistente exclusivo de conexión. No permite vender ni crea bases. Para una base nueva, consulte [Instalación y roles](Pruebas/RolesYAcceso.md): el responsable prepara una base sin usuarios de demostración y entrega un token de instalación de un solo uso. Para una base existente se autentica su administrador; nunca se reinicia por perder el archivo local.
 
-La conexión se guarda mediante DPAPI en el perfil de Windows. Si el archivo está dañado o no puede descifrarse, el programa avisa y permite reconfigurarlo. Una conexión que abre correctamente no garantiza que el esquema esté actualizado: aplique primero la migración.
+La conexión distingue Windows y SQL Server, prueba esquema 5 antes de guardar y conserva el destino anterior si falla. Desde el acceso existe Configurar o recuperar conexión. Las cuentas iniciales anteriores y contraseñas temporales requieren cambio y nuevo inicio de sesión. La pantalla diaria no publica credenciales fijas. La configuración DPAPI es por perfil y no se comparte.
+
+Los roles son Mesero o Empleado, Gerente y Administrador. El gerente puede vender y administrar la operación; solo el administrador mantiene usuarios roles auditoría de seguridad y conexión SQL. El mesero solicita autorizaciones puntuales sin cambiar de sesión.
 
 ## Operación
 
-La guía actual está en [Cobros manuales y gestión](Pruebas/CobrosManuales.md).
+La guía de roles y primer acceso está en [Instalación usuarios y autorizaciones](Pruebas/RolesYAcceso.md). La guía de cobros anterior se conserva como antecedente y se complementa con esa actualización.
 
 - **Mesas:** seleccionar una disponible para abrir pedido con el primer producto; las ocupadas permiten continuar la cuenta. Las cantidades son de 1 a 50 por incorporación.
 - **Revisar y cobrar:** confirmar receptor, detalle, importe y método. Efectivo calcula cambio; tarjeta registra la comprobación manual de un pago externo. Un resultado incierto bloquea nuevos cobros hasta conciliación.
 - **Comprobante:** documento interno académico, sin validez tributaria. Captura receptor/restaurante y muestra el pago. Se puede consultar nuevamente desde Pedidos sin crear otra venta.
 - **Gestionar cierre:** cancelación autorizada sin preparación/consumo; incidencia con saldo pendiente; corrección de estado inconsistente; confirmación de limpieza. No se borran detalles ni se simula un pago al liberar físicamente una mesa.
 - **Limpieza:** después de cerrar o resolver la atención, confirmar limpieza para que la mesa vuelva a Disponible.
-- **Cortesía:** solo total cero, con declaración y autorización administrativa; no se añaden impuestos no definidos.
+- **Descuento y cortesía:** desde Gestionar cierre de mesa, ajuste autorizado previo al cobro. Conserva consumo original descuento y total final; agregar productos invalida el ajuste. La cortesía completa no inventa dinero.
 - **Recuperar operaciones pendientes:** en Inicio; reutiliza solicitudes cifradas y sus identificadores después de un error o reinicio, evitando duplicados.
 - **Catálogos:** clientes/productos separados. La información del restaurante está en Configuración. Los datos históricos capturados no dependen de futuras ediciones del catálogo.
 - **Cerrar sesión:** vuelve al acceso; la sesión del repositorio se limpia y se autentica al usuario siguiente.
 
-El servicio valida permisos, versión de cuenta, importes y estados. Pago, comprobante, cierre y paso de mesa a limpieza se confirman en una transacción. La API anterior `FacturarPedido(id)` rechaza cierres sin el nuevo flujo. Cancelaciones/conciliaciones requieren administrador; los empleados pueden registrar cobros normales y confirmar limpieza.
+El servicio valida permisos, versión de cuenta, importes y estados. Pago, comprobante, cierre y paso de mesa a limpieza se confirman en una transacción. La API anterior `FacturarPedido(id)` rechaza cierres sin el nuevo flujo. Cancelaciones y conciliaciones requieren gerente o administrador, o autorización puntual ligada a la solicitud del mesero; los empleados pueden registrar cobros normales y confirmar limpieza.
 
 ## Reportes
 

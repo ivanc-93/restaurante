@@ -1,3 +1,7 @@
+# Actualización de primer acceso y roles
+
+Esta guía conserva los recorridos del esquema 4 como antecedente. Para la versión vigente esquema 5 lea [Roles y acceso](RolesYAcceso.md) y el manual actualizado. El acceso inicial fijo se retiró; se añadieron cambio obligatorio de contraseña, Gerente, administración de usuarios, autorización puntual del mesero y ajustes de descuento o cortesía antes del cobro. Las restricciones generales de pago y comprobantes permanecen.
+
 # Cobros manuales y gestión de mesas
 
 ## Alcance

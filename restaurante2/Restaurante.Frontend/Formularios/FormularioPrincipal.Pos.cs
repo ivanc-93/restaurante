@@ -98,7 +98,7 @@ public sealed partial class FormularioPrincipal
 
     private Task MostrarConfiguracion()
     {
-        if (_usuario.Rol != "Administrador") throw new InvalidOperationException("Solo el administrador puede cambiar la configuración.");
+        if (_usuario.Rol is not("Administrador" or "Gerente")) throw new InvalidOperationException("Solo gerente o administrador.");
         _titulo.Text = "Administración / Configuración";
         LimpiarContenido();
         var pagina = CrearPagina();
@@ -107,7 +107,7 @@ public sealed partial class FormularioPrincipal
         restaurante.Click += (_, _) => { using var formulario = new FormularioCatalogos(_repositorio, true, true); formulario.ShowDialog(this); };
         var sql = Componentes.Boton("Avanzado · Conexión SQL", false); sql.AutoSize = true; Iconos.Aplicar(sql, "database");
         sql.Click += async (_, _) => await EjecutarSeguro(MostrarConexion);
-        pagina.Controls.Add(restaurante); pagina.Controls.Add(sql);
+        pagina.Controls.Add(restaurante); if(_usuario.Rol=="Administrador")pagina.Controls.Add(sql);
         return Task.CompletedTask;
     }
 }

@@ -4,6 +4,12 @@ namespace Restaurante.Backend.Servicios;
 
 public interface IRepositorioRestaurante
 {
+    void CambiarMiContrasena(string anterior,string nueva);
+    IReadOnlyList<UsuarioGestion> ListarUsuarios();
+    IReadOnlyList<RegistroSeguridad> ConsultarAuditoriaSeguridad();
+    void GuardarUsuario(int? id,string nombre,string usuario,string rol,bool activo,string? nuevaClave);
+    void AutorizarOperacion(Guid id,string tipo,string solicitudJson,string usuario,string clave);
+    decimal AplicarAjuste(SolicitudAjuste solicitud);
     UsuarioAutenticado? UsuarioActual { get; }
     string IdentificadorBase { get; }
     bool BaseEsPruebas { get; }

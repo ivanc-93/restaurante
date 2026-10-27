@@ -69,6 +69,12 @@ INSERT dbo.Facturas(PedidoId,Subtotal,Impuesto,Total) VALUES(@pedido,20,0,20);
                 if($LASTEXITCODE -ne 0){throw 'Falló la migración 004.'}
             }
         }
+        foreach($nombreBase in @($basePrueba,$baseLegada)) {
+            & sqlcmd -S '(localdb)\MSSQLLocalDB' -E -b -I -f 65001 -d $nombreBase -i (Join-Path $repoRaiz 'restaurante2/BaseDatos/Migracion_005.sql')
+            if($LASTEXITCODE -ne 0){throw 'Falló la migración 005 de pruebas.'}
+            & sqlcmd -S '(localdb)\MSSQLLocalDB' -E -b -d $nombreBase -Q "UPDATE dbo.Usuarios SET ContrasenaHash=CONVERT(varchar(64),HASHBYTES('SHA2_256','SalRegresion:PruebaAdmin_2026!'),2),Sal=N'SalRegresion',Algoritmo=N'SHA256',CambioObligatorio=0 WHERE Usuario=N'admin';"
+            if($LASTEXITCODE -ne 0){throw 'Falló la cuenta ficticia de regresión.'}
+        }
         Write-Host "Base anterior actualizada: $baseLegada."
         Write-Host "Base aislada: $basePrueba (se conserva para inspección)."
     }

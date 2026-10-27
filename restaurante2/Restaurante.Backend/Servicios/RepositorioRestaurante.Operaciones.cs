@@ -29,20 +29,17 @@ public sealed partial class RepositorioRestaurante
     {
         using var c = AbrirConexion();
         using var q = new SqlCommand("SELECT CASE WHEN OBJECT_ID(N'dbo.VersionEsquema',N'U') IS NULL THEN 0 ELSE 1 END;",c);
-        if ((int)q.ExecuteScalar()! == 0) throw new InvalidOperationException("La base necesita la migración 004. Haga un respaldo y ejecute BaseDatos/Migracion_004.sql sobre su base SQL Server. No se actualizará automáticamente.");
+        if ((int)q.ExecuteScalar()! == 0) throw new InvalidOperationException("La base necesita la migración 005. Haga un respaldo y ejecute BaseDatos/Migracion_005.sql sobre su base SQL Server. No se actualizará automáticamente.");
         q.CommandText="SELECT COALESCE(MAX(Version),0) FROM dbo.VersionEsquema;";
-        if ((int)q.ExecuteScalar()! != 4) throw new InvalidOperationException("Versión de esquema incompatible. Esta aplicación requiere el esquema 4; no se modificará automáticamente.");
+        if ((int)q.ExecuteScalar()! != 5) throw new InvalidOperationException("Versión de esquema incompatible. Esta aplicación requiere el esquema 5; no se modificará automáticamente.");
+        q.CommandText="SELECT CASE WHEN OBJECT_ID(N'dbo.AutorizacionesOperacion',N'U') IS NOT NULL AND OBJECT_ID(N'dbo.AjustesPedido',N'U') IS NOT NULL AND OBJECT_ID(N'dbo.AuditoriaSeguridad',N'U') IS NOT NULL AND COL_LENGTH(N'dbo.Usuarios',N'VersionSeguridad') IS NOT NULL AND COL_LENGTH(N'dbo.InstalacionSabores',N'TokenInstalacionHash') IS NOT NULL AND COL_LENGTH(N'dbo.Pedidos',N'ImporteOriginal') IS NOT NULL THEN 1 ELSE 0 END;";
+        if((int)q.ExecuteScalar()!!=1)throw new InvalidOperationException("La estructura está incompleta. Solicite revisión de la instalación; no se guardará esta conexión.");
     }
 
     private UsuarioAutenticado ExigirSesion(bool administrador = false)
     {
-        var sesion = _sesion ?? throw new UnauthorizedAccessException("Inicie sesión para realizar esta operación.");
-        using var c = AbrirConexion();
-        using var q = Consulta(c,null,"SELECT Nombre,Rol FROM dbo.Usuarios WHERE Id=@id AND Activo=1;",("@id",sesion.Id));
-        using var r = q.ExecuteReader();
-        if (!r.Read() || (administrador && r.GetString(1)!="Administrador"))
-            throw new UnauthorizedAccessException("Esta operación requiere un administrador activo.");
-        return new(r.GetString(0),r.GetString(1),sesion.Id);
+        using var c=AbrirConexion();
+        return SesionEn(c,null,gerente:administrador);
     }
 
     private static SqlCommand Consulta(SqlConnection c,SqlTransaction? t,string sql,params (string Nombre,object? Valor)[] parametros)
@@ -61,11 +58,13 @@ public sealed partial class RepositorioRestaurante
     private T Mutacion<T>(Guid id,string tipo,object solicitud,int mesaId,bool admin,Func<SqlConnection,SqlTransaction,UsuarioAutenticado,T> accion)
     {
         if(id==Guid.Empty)throw new ArgumentException("La operación necesita un identificador estable.");
-        var actor=ExigirSesion(admin);
+        var actor=ExigirSesion();
         var hash=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(solicitud))));
         using var c=AbrirConexion(); using var t=c.BeginTransaction(IsolationLevel.Serializable);
         try
         {
+            // Security is revalidated inside the transaction; replay is checked before consuming authorization.
+            actor=SesionEn(c,t);
             // All financial/order mutations acquire locks in this order: operation, table, order.
             using(var q=Consulta(c,t,"SELECT Tipo,SolicitudHash,UsuarioId,Resultado FROM dbo.OperacionesRestaurante WITH(UPDLOCK,HOLDLOCK) WHERE Id=@id;",("@id",id)))
             using(var r=q.ExecuteReader())
@@ -75,6 +74,7 @@ public sealed partial class RepositorioRestaurante
                         throw new InvalidOperationException("El identificador ya pertenece a otra solicitud o usuario. Recupere el resultado original.");
                     var resultado=JsonSerializer.Deserialize<T>(r.GetString(3))!; r.Close(); t.Commit(); return resultado;
                 }
+            var autorizador=admin?ExigirAutorizacion(c,t,id,tipo,hash,actor):actor.Id;
             if(mesaId>0)
             {
                 using var q=Consulta(c,t,"SELECT Id FROM dbo.Mesas WITH(UPDLOCK,HOLDLOCK) WHERE Id=@mesa;",("@mesa",mesaId));
@@ -84,6 +84,7 @@ public sealed partial class RepositorioRestaurante
                 ("@id",id),("@tipo",tipo),("@hash",hash),("@actor",actor.Id));
             var valor=accion(c,t,actor);
             Ejecutar(c,t,"UPDATE dbo.OperacionesRestaurante SET Resultado=@r WHERE Id=@id;",("@r",JsonSerializer.Serialize(valor)),("@id",id));
+            Ejecutar(c,t,"UPDATE dbo.AutorizacionesOperacion SET Consumida=1 WHERE OperacionId=@id;UPDATE dbo.AuditoriaOperaciones SET AutorizadorId=@jefe WHERE OperacionId=@id;",("@id",id),("@jefe",autorizador));
             t.Commit(); return valor;
         }
         catch { try{t.Rollback();}catch(Exception ex)when(ex is SqlException or InvalidOperationException){} throw; }
@@ -99,20 +100,20 @@ public sealed partial class RepositorioRestaurante
     {
         using var q=Consulta(c,t,"""
             SELECT p.MesaId,COALESCE(p.MesaHistorica,m.Numero),p.ClienteId,COALESCE(p.ClienteHistorico,N'Público general'),
-                   p.Estado,p.Total,p.VersionCuenta FROM dbo.Pedidos p WITH(UPDLOCK,HOLDLOCK)
+                   p.Estado,p.Total,p.VersionCuenta,COALESCE(p.ImporteOriginal,p.Total),p.Descuento FROM dbo.Pedidos p WITH(UPDLOCK,HOLDLOCK)
             JOIN dbo.Mesas m ON m.Id=p.MesaId WHERE p.Id=@id;
             """,("@id",pedidoId));
-        int mesa,numero;int? cliente;string nombre,estado,version;decimal total;
+        int mesa,numero;int? cliente;string nombre,estado,version;decimal total,original,descuento;
         using(var r=q.ExecuteReader())
         {
             if(!r.Read())throw new InvalidOperationException("El pedido ya no existe.");
             mesa=r.GetInt32(0);numero=r.GetInt32(1);cliente=r.IsDBNull(2)?null:r.GetInt32(2);nombre=r.GetString(3);
-            estado=r.GetString(4);total=r.GetDecimal(5);version=Convert.ToBase64String((byte[])r[6]);
+            estado=r.GetString(4);total=r.GetDecimal(5);version=Convert.ToBase64String((byte[])r[6]);original=r.GetDecimal(7);descuento=r.GetDecimal(8);
         }
         using var d=Consulta(c,t,"SELECT NombreProducto,TipoProducto,Cantidad,PrecioUnitario,Cantidad*PrecioUnitario FROM dbo.DetallesPedido WHERE PedidoId=@id ORDER BY Id;",("@id",pedidoId));
         using var dr=d.ExecuteReader();var detalles=new List<DetallePedidoResumen>();
         while(dr.Read())detalles.Add(new(dr.GetString(0),dr.GetString(1),dr.GetInt32(2),dr.GetDecimal(3),dr.GetDecimal(4)));
-        return new(pedidoId,mesa,numero,cliente,nombre,estado,total,version,detalles);
+        return new(pedidoId,mesa,numero,cliente,nombre,estado,total,version,detalles,original,descuento);
     }
     public CuentaRevision RevisarCuenta(int pedidoId)
     {
@@ -178,7 +179,7 @@ public sealed partial class RepositorioRestaurante
         var importe=producto.CalcularImporte(cantidad);
         Ejecutar(c,t,"""
             INSERT dbo.DetallesPedido(PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)VALUES(@p,@m,@n,@precio,@nombre,@tipo);
-            UPDATE dbo.Pedidos SET Total=Total+@importe WHERE Id=@p;
+            UPDATE dbo.Pedidos SET Total=Total+@importe,ImporteOriginal=COALESCE(ImporteOriginal,Total)+@importe WHERE Id=@p;
             """,("@p",pedidoId),("@m",menuId),("@n",cantidad),("@precio",producto.Precio),("@nombre",producto.Nombre),("@tipo",producto.Tipo),("@importe",importe));
         return importe;
     }
@@ -189,9 +190,10 @@ public sealed partial class RepositorioRestaurante
         return Mutacion(op,"AgregarProducto",new{pedidoId,menuId,cantidad},mesa,false,(c,t,actor)=>
         {
             var cuenta=LeerCuenta(c,t,pedidoId);ExigirAbierto(cuenta);SinPagoPendiente(c,t,pedidoId);
+            Ejecutar(c,t,"UPDATE dbo.AjustesPedido SET Vigente=0 WHERE PedidoId=@p;UPDATE dbo.Pedidos SET Total=COALESCE(ImporteOriginal,Total),Descuento=0 WHERE Id=@p;",("@p",pedidoId));
             var importe=InsertarLinea(c,t,pedidoId,menuId,cantidad);
             Auditar(c,t,op,actor,pedidoId,mesa,"AgregarProducto",cuenta.Estado,cuenta.Estado,"Incorporación de producto",importe);
-            return cuenta.Total+importe;
+            return cuenta.ImporteOriginal+importe;
         });
     }
 

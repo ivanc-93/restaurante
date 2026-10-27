@@ -79,7 +79,7 @@ internal static class PruebasHistorial
         var anterior=Environment.GetEnvironmentVariable("RESTAURANTE_TEST_ANTERIOR");
         if(!string.IsNullOrEmpty(anterior)) caso("Historial: actualización de versión 2 conserva factura e inicializa solo lo conocido",()=>
         {
-            var legado=new RepositorioRestaurante(new ConexionPrueba(anterior));
+            var legado=PruebasCobros.Repo(anterior);
             var pedido=legado.ListarPedidos().Single(); var detalle=legado.ListarDetallesPedido(pedido.Id).Single();
             Igual("Producto legado",detalle.Producto); Igual("Plato",detalle.Tipo); Igual(20m,detalle.Importe); Igual(20m,pedido.Total);
             Igual("20.00",Escalar(anterior,"SELECT CONVERT(varchar(30),Total) FROM dbo.Facturas;"));

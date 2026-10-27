@@ -10,6 +10,7 @@ public sealed partial class FormularioCatalogos : Form
     private bool _sucio;
     private int _modoAnterior;
     private bool _cambiandoModo;
+    private bool _puedeAdministrar;
     private bool ConfirmarSalida() => !_sucio || MessageBox.Show(this,
         "Hay cambios sin guardar. ¿Deseas descartarlos?", "Cambios pendientes", MessageBoxButtons.YesNo,
         MessageBoxIcon.Question) == DialogResult.Yes;
@@ -17,8 +18,10 @@ public sealed partial class FormularioCatalogos : Form
     public FormularioCatalogos(IRepositorioRestaurante repositorio, bool administrador, bool soloRestaurante = false) : this()
     {
         _repositorio = repositorio;
+        _puedeAdministrar=repositorio.UsuarioActual?.Rol is "Administrador" or "Gerente";
+        if(!_puedeAdministrar)modo.Items.Remove("Productos");
         Componentes.EstilizarTabla(tabla);
-        if (administrador) modo.Items.Add("Restaurante");
+        if (administrador&&_puedeAdministrar) modo.Items.Add("Restaurante");
         if (soloRestaurante) { modo.Items.Clear(); modo.Items.Add("Restaurante"); }
         modo.SelectedIndex = 0;
         Text = soloRestaurante ? "Información del restaurante" : "Catálogos · Clientes y productos";
@@ -53,7 +56,7 @@ public sealed partial class FormularioCatalogos : Form
             categoria.Visible = categoriaLabel.Visible = tipo.Visible = tipoLabel.Visible = precio.Visible = precioLabel.Visible = alcoholica.Visible = entidad == "Productos";
             ubicacion.Visible = ubicacionLabel.Visible = entidad == "Restaurante";
             editar.Visible = nuevo.Visible = entidad != "Restaurante";
-            desactivar.Enabled = entidad != "Restaurante";
+            desactivar.Enabled = _puedeAdministrar && entidad != "Restaurante";
             if (entidad == "Restaurante")
             {
                 var datos = await Task.Run(_repositorio.ObtenerRestaurante);

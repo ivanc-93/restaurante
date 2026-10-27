@@ -35,7 +35,7 @@ partial class FormularioAcceso
         usuarioEtiqueta.Text = "Usuario";
         usuarioEtiqueta.SetBounds(35, 90, 420, 24);
         _usuario.SetBounds(35, 116, 420, 30);
-        _usuario.Text = "admin";
+        _usuario.Text = "";
         _usuario.MaxLength = 50;
         claveEtiqueta.Text = "Contraseña";
         claveEtiqueta.SetBounds(35, 156, 420, 24);
@@ -48,7 +48,7 @@ partial class FormularioAcceso
         entrar.BackColor = Color.FromArgb(49, 86, 62);
         entrar.ForeColor = Color.White;
         entrar.Click += Entrar_Click;
-        ayuda.Text = "Configuración inicial: admin / Admin123!\r\nDespués configure SQL Server desde Administración.";
+        ayuda.Text = "Utilice su cuenta individual de Sabores.";
         ayuda.SetBounds(35, 340, 420, 55);
         Controls.AddRange(new Control[] { titulo, usuarioEtiqueta, _usuario, claveEtiqueta, _contrasena, _mensaje, entrar, ayuda });
         AcceptButton = entrar;

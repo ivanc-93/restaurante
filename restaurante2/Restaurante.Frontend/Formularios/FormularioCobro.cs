@@ -19,9 +19,9 @@ public sealed partial class FormularioCobro : Form
         _repo=repo;_cuenta=cuenta;_dialogos=dialogos??new DialogosUsuario();
         detalle.Text=$"Mesa {cuenta.NumeroMesa} · Pedido #{cuenta.PedidoId}\r\n\r\n"+
             string.Join("\r\n",cuenta.Detalles.Select(d=>$"{d.Cantidad} × {d.Producto}\r\n{FormatoPresentacion.Moneda(d.PrecioUnitario)} = {FormatoPresentacion.Moneda(d.Importe)}\r\n"))+
-            $"\r\nTOTAL: {FormatoPresentacion.Moneda(cuenta.Total)}";
+            $"\r\nOriginal: {FormatoPresentacion.Moneda(cuenta.ImporteOriginal)}\r\nDescuento: {FormatoPresentacion.Moneda(cuenta.Descuento)}\r\nTOTAL: {FormatoPresentacion.Moneda(cuenta.Total)}";
         receptor.Text=cuenta.Cliente;publico.Checked=cuenta.ClienteId is null;
-        if(cuenta.Total==0 && repo.UsuarioActual?.Rol=="Administrador")metodo.Items.Add("Cortesía");
+        if(cuenta.Total==0)metodo.Items.Add("Cortesía");
         cliente.SelectedIndexChanged+=(_,_)=> {
             if(cliente.SelectedItem is Cliente c && c.Id>0) {publico.Checked=false;receptor.Text=c.Nombre;correo.Text=c.Correo;opcionales.Checked=!string.IsNullOrWhiteSpace(c.Correo);}
         };

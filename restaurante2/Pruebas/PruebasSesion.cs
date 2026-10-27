@@ -20,7 +20,7 @@ internal static class PruebasSesion
             try{cfg.ProbarYGuardar("",1,"","","",false);throw new Exception("Se permitió guardar configuración.");}catch(InvalidOperationException){}
         });
         var repo=new RepositorioRestaurante(new ConfiguracionConexionPruebas(cadena));
-        repo.IniciarSesion("admin","Admin123!");
+        repo.IniciarSesion("admin","PruebaAdmin_2026!");
         repo.CrearMesa(9100,4);
         repo.GuardarProducto(null,"Sesión plato","Sesión","Plato",8,false);
         repo.GuardarProducto(null,"Sesión bebida","Sesión","Bebida",3,false);
@@ -87,7 +87,7 @@ internal static class PruebasSesion
                 if(acceso is not null && (estado==0||estado==6))
                 {
                     Campo<TextBox>(acceso,"_usuario").Text=estado==0?"admin":"segundo";
-                    Campo<TextBox>(acceso,"_contrasena").Text=estado==0?"Admin123!":"ClavePrueba123!";
+                    Campo<TextBox>(acceso,"_contrasena").Text=estado==0?"PruebaAdmin_2026!":"ClavePrueba123!";
                     cantidadLogin++; estado=estado==0?1:7;
                     ((Button)acceso.AcceptButton!).PerformClick();
                 }
@@ -213,7 +213,8 @@ internal static class PruebasSesion
         timer.Stop();
         if(fallo is not null){Console.Error.WriteLine(fallo);return 1;}
         if(estado!=8||cantidadLogin!=(modo=="crear"?2:1)){Console.Error.WriteLine("Sesión incompleta.");return 1;}
-        var guardado=repo.ListarPedidos().Single(p=>p.Id==pedidoId);
+        // The second employee must not inherit the first operator's closed-order history.
+        var guardado=PruebasCobros.Repo(Environment.GetEnvironmentVariable("RESTAURANTE_TEST_CONNECTION")!).ListarPedidos().Single(p=>p.Id==pedidoId);
         File.WriteAllText(archivo,JsonSerializer.Serialize(new{Estado=estado,PedidoId=pedidoId,Total=guardado.Total,Factura=guardado.NumeroFactura,Pid=Environment.ProcessId,Logins=cantidadLogin,Dpi=dpi,Monitores=Screen.AllScreens.Length}));
         return 0;
     }
