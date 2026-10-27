@@ -10,4 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Restaurante.Backend\Restaurante.Backend.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Recursos/Iconos/**/*.png" />
+  </ItemGroup>
 </Project>

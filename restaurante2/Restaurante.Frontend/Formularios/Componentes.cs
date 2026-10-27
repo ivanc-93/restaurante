@@ -9,9 +9,9 @@ internal static class Componentes
     public static readonly Color VerdeOscuro = Color.FromArgb(38, 67, 48);
     public static readonly Color Fondo = Color.FromArgb(247, 247, 243);
     public static readonly Color Tinta = Color.FromArgb(40, 43, 37);
-    public static readonly Color Secundario = Color.FromArgb(130, 134, 124);
-    public static readonly Font Fuente = new("Segoe UI", 9.5f);
-    public static readonly Font FuenteTitulo = new("Georgia", 24f, FontStyle.Bold);
+    public static readonly Color Secundario = Color.FromArgb(93, 100, 91);
+    public static readonly Font Fuente = new("Segoe UI", 10f);
+    public static readonly Font FuenteTitulo = new("Segoe UI", 24f, FontStyle.Bold);
 
     public static Label Etiqueta(string texto, int tamano = 10, bool negrita = false)
     {
@@ -37,13 +37,14 @@ internal static class Componentes
 
     public static Button Boton(string texto, bool primario = true) => new()
     {
+        AutoSize = true,
         Text = texto,
-        Height = 42,
+        Height = 44,
         FlatStyle = FlatStyle.Flat,
         FlatAppearance = { BorderSize = primario ? 0 : 1, BorderColor = Color.FromArgb(220, 222, 215) },
         BackColor = primario ? Verde : Color.White,
         ForeColor = primario ? Color.White : Tinta,
-        Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+        Font = new Font("Segoe UI", 10f, FontStyle.Bold),
         Cursor = Cursors.Hand,
         Margin = new Padding(0, 6, 0, 6),
         Padding = new Padding(10, 0, 10, 0)
