@@ -14,16 +14,24 @@ public sealed partial class FormularioAcceso : Form
     {
         _repositorio = repositorio;
         _configuracion = configuracion;
-        var conexion=new Button{Text="Configurar o recuperar conexión",AutoSize=true};conexion.SetBounds(35,340,420,42);
-        conexion.Click+=(_,_)=>{using var f=new FormularioConexion(_configuracion);f.ShowDialog(this);_repositorio.CerrarSesion();};
-        ayuda.Visible=false;Controls.Add(conexion);
     }
+    private bool ocupado;
+    private void Conexion_Click(object? sender,EventArgs e)
+    {
+        if(ocupado||_configuracion is null)return;
+        using var f=new FormularioConexion(_configuracion);f.ShowDialog(this);_repositorio.CerrarSesion();
+    }
+
     private async void Entrar_Click(object? sender, EventArgs e)
     {
+        if(ocupado)return;
+        _mensaje.ForeColor=Color.Firebrick;
+        if(string.IsNullOrWhiteSpace(_usuario.Text)){_mensaje.Text="Escribe tu usuario de Sabores.";_usuario.Focus();return;}
+        if(string.IsNullOrEmpty(_contrasena.Text)){_mensaje.Text="Escribe tu contraseña actual.";_contrasena.Focus();return;}
         var usuario = _usuario.Text;
         var contrasena = _contrasena.Text;
-        _mensaje.Text = "";
-        entrar.Enabled = false;
+        ocupado=true;_mensaje.ForeColor=Color.Firebrick;_mensaje.Text="Comprobando acceso…";
+        entrar.Enabled=conexion.Enabled=false;entrar.Text="Comprobando…";UseWaitCursor=true;
         try
         {
             await Task.Run(_repositorio.ValidarEsquema);
@@ -40,8 +48,8 @@ public sealed partial class FormularioAcceso : Form
         }
         catch (Exception ex)
         {
-            _mensaje.Text = ex.Message;
+            _mensaje.Text = ex is Microsoft.Data.SqlClient.SqlException ? "No se pudo consultar SQL Server. Comprueba servidor, base y permisos desde Configurar o recuperar conexión." : ex.Message;
         }
-        finally { entrar.Enabled = true; }
+        finally { ocupado=false;if(!IsDisposed){entrar.Enabled=conexion.Enabled=true;entrar.Text="Entrar al sistema";UseWaitCursor=false;_contrasena.Clear();mostrarClave.Checked=false;} }
     }
 }

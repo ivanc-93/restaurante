@@ -8,7 +8,7 @@ public sealed partial class FormularioCambiarClave:Form
     private async void Guardar_Click(object? sender,EventArgs e)
     {
         if(ocupado)return;
-        if(nueva.Text!=repetir.Text){mensaje.Text="Las contraseñas nuevas no coinciden.";return;}
+        if(!ValidacionCredenciales.Campo(actual,mensaje,"la contraseña actual")||!ValidacionCredenciales.Nueva(nueva,mensaje,repetir,actual))return;
         var a=actual.Text;var n=nueva.Text;ocupado=true;guardar.Enabled=false;
         bool terminado=false;
         try{await Task.Run(()=>repo.CambiarMiContrasena(a,n));terminado=true;}

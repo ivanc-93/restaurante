@@ -1,0 +1,25 @@
+OK Mínimo 12 sin requisitos inventados
+OK Máximo 128 válido
+OK Más de 128 rechazado
+OK Espacios rechazados
+OK Cambio valida antes del servicio
+OK Corrección y reintento sin reiniciar
+OK Crear usuario valida y conserva nombre
+OK Administrador inicial valida antes de SQL
+ENTORNO DPI observado 168; tamaños de ventana en píxeles, sin cambiar escalado de Windows.
+OK Usuario vacío no consulta SQL
+OK Contraseña vacía tiene mensaje específico
+OK Mostrar contraseña
+OK Ocultar contraseña
+OK Sin superposición con mensaje largo 1280
+OK Control visible sin recorte entrar en 1280
+OK Control visible sin recorte conexion en 1280
+OK Control visible sin recorte _mensaje en 1280
+OK Control visible sin recorte mostrarClave en 1280
+OK Sin superposición con mensaje largo 1366
+OK Control visible sin recorte entrar en 1366
+OK Control visible sin recorte conexion en 1366
+OK Control visible sin recorte _mensaje en 1366
+OK Control visible sin recorte mostrarClave en 1366
+OK Enter y tabulación configurados
+TOTAL 23 comprobaciones de acceso

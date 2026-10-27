@@ -21,6 +21,7 @@ internal static class PruebasInterfazRoles
     {
         Mostrar(gestion);Esperar(()=>Campo<DataGridView>(gestion,"lista").DataSource is not null);
         Campo<TextBox>(gestion,"nombre").Text="Mesero de interfaz";Campo<TextBox>(gestion,"usuario").Text=usuario;Campo<TextBox>(gestion,"clave").Text="PruebaTemporal_2026!";Campo<ComboBox>(gestion,"rol").SelectedItem="Mesero";
+        Campo<TextBox>(gestion,"confirmarClave").Text="PruebaTemporal_2026!";
         Campo<Button>(gestion,"guardar").PerformClick();Esperar(()=>Campo<Label>(gestion,"mensaje").Text.StartsWith("Usuario guardado"));Capturar(gestion,dir,"UsuariosConDatos");ok(admin.ListarUsuarios().Any(x=>x.Usuario==usuario),"Interfaz crea mesero con cambio obligatorio");gestion.Close();
     }
     var repo=new RepositorioRestaurante(new ConfiguracionConexionTemporal(cadena));

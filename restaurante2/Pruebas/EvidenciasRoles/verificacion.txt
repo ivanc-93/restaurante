@@ -1,4 +1,6 @@
 OK Esquema 5 compatible
+OK Contraseña antigua corta permite llegar al cambio obligatorio
+OK Contraseña antigua corta puede cambiarse por una válida
 OK Lectura sin sesión rechazada
 OK Base existente no admite primer administrador
 OK Contraseña temporal exige cambio
@@ -72,4 +74,4 @@ UI abrir modal FormularioAutorizar
 UI modal terminado FormularioAutorizar
 OK Interfaz solicita gerente y aplica solo el ajuste autorizado
 OK Menú mesero oculta administración y reportes
-TOTAL 70 comprobaciones correctas
+TOTAL 72 comprobaciones correctas

@@ -12,6 +12,8 @@ internal static class Program
  {
   try
   {
+   if(args.Length==2&&args[0]=="--validar-acceso")
+   {PruebasRoles.PruebasValidacionAcceso.Ejecutar(args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de acceso");return 0;}
    cadena=Environment.GetEnvironmentVariable("SABORES_ROLES_PRUEBAS")??throw new Exception("Defina SABORES_ROLES_PRUEBAS.");
    var cb=new SqlConnectionStringBuilder(cadena);if(!cb.InitialCatalog.StartsWith("Restaurante_Pruebas_",StringComparison.Ordinal))throw new Exception("Solo se admiten bases aisladas.");
    sufijo=Guid.NewGuid().ToString("N")[..8];
@@ -20,6 +22,11 @@ internal static class Program
    var h=Contrasenas.Crear(Personal);
    Sql("UPDATE dbo.Usuarios SET ContrasenaHash=@h,Sal=@s,Algoritmo=N'PBKDF2-SHA256',Iteraciones=600000,CambioObligatorio=0,IntentosFallidos=0,BloqueadoHasta=NULL WHERE Usuario=N'admin';",("@h",h.Hash),("@s",h.Sal));
    admin=Repo("admin",Personal);admin.ValidarEsquema();Ok(true,"Esquema 5 compatible");
+   var legadoNombre="legado"+sufijo;
+   admin.GuardarUsuario(null,"Acceso legado de prueba",legadoNombre,"Mesero",true,Inicial);
+   Sql("UPDATE dbo.Usuarios SET ContrasenaHash=CONVERT(varchar(64),HASHBYTES('SHA2_256','SalLegada:corta'),2),Sal=N'SalLegada',Algoritmo=N'SHA256',Iteraciones=0,CambioObligatorio=1 WHERE Usuario=@u;",("@u",legadoNombre));
+   var accesoLegado=Repo(legadoNombre,"corta");Ok(accesoLegado.UsuarioActual!.CambioObligatorio,"Contraseña antigua corta permite llegar al cambio obligatorio");
+   accesoLegado.CambiarMiContrasena("corta",Personal);Ok(!Repo(legadoNombre,Personal).UsuarioActual!.CambioObligatorio,"Contraseña antigua corta puede cambiarse por una válida");
    if(args.Length==2&&args[0]=="--solo-interfaz")
    {Render(args[1]);PruebasRoles.PruebasInterfazRoles.Ejecutar(cadena,admin,args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de interfaz");return 0;}
    Deniega(()=>new RepositorioRestaurante(new ConfiguracionConexionTemporal(cadena)).ListarMesas(),"Lectura sin sesión rechazada");
