@@ -28,3 +28,7 @@ No se generaron .resx vacíos: no hay recursos localizados ni binarios asociados
 ## Revisión POS del 26/10/2026
 
 La construcción y el render se volvieron a comprobar para los seis formularios. Se preparó la copia .codex-build/DesignerPos y se intentó abrir otra instancia de Visual Studio, sin obtener una ventana de esa copia accesible para el controlador. Abrir, editar, guardar y reabrir dentro del IDE continúa pendiente. Véase InterfazPOS.md para separar las comprobaciones realizadas de las pendientes.
+
+## Formularios del flujo de cobro
+
+FormularioCobro, FormularioGestionMesa, FormularioComprobante y FormularioRecuperacion conservan constructor sin parámetros y Designer. La construcción/render se prueba sin SQL en ese constructor. Abrir, editar, guardar y reabrir en Visual Studio sigue pendiente para los diez formularios; las capturas no sustituyen esa verificación.

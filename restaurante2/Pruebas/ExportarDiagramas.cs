@@ -15,8 +15,8 @@ internal static class ExportarDiagramas
         var nombres=Regex.Matches(fuente,@"(?m)^    class (\w+)").Select(m=>m.Groups[1].Value).ToArray();
         var grupos=new Dictionary<string,int>();
         foreach(var nombre in nombres)
-            grupos[nombre]=nombre.StartsWith("Formulario")||nombre is "Program" or "Componentes" or "OpcionFiltro" or "CicloSesion" or "DialogosUsuario" or "IDialogosUsuario"?3:
-                nombre.StartsWith("IRepositorio")||nombre.Contains("Conexion")||nombre is "RepositorioRestaurante" or "ReglasRestaurante"?2:0;
+            grupos[nombre]=nombre.StartsWith("Formulario")||nombre is "Program" or "Componentes" or "OpcionFiltro" or "CicloSesion" or "DialogosUsuario" or "IDialogosUsuario" or "DiarioOperaciones" or "OperacionPendienteLocal"?3:
+                nombre.StartsWith("IRepositorio")||nombre.Contains("Conexion")||nombre is "RepositorioRestaurante" or "ReglasRestaurante" or "MonedaGuatemala" or "RelojGuatemala"?2:0;
         var posiciones=new Dictionary<string,Rectangle>();
         int dominio=0,servicios=0,ui=0;
         foreach(var nombre in nombres)
@@ -56,33 +56,40 @@ internal static class ExportarDiagramas
     private static void BaseDatos(string directorio)
     {
         var fuente=File.ReadAllText(Path.Combine(directorio,"DiagramaBaseDatos.mmd"));
-        using var imagen=new Bitmap(1550,1350); using var g=Graphics.FromImage(imagen);
-        Preparar(g,"Base de datos: relaciones e integridad");
-        var posiciones=new Dictionary<string,Rectangle>{
-            ["USUARIOS"]=new(35,130,430,300),["CLIENTES"]=new(35,480,430,240),["MESAS"]=new(35,790,430,210),
-            ["PEDIDOS"]=new(550,400,430,300),["MENU"]=new(1060,130,430,300),["DETALLESPEDIDO"]=new(1060,480,430,310),
-            ["FACTURAS"]=new(550,830,430,300),["RESTAURANTE"]=new(1060,930,430,190)};
-        using var linea=new Pen(Color.SlateGray,2);
-        linea.CustomEndCap=new AdjustableArrowCap(5,6);
-        foreach(var par in new[]{("CLIENTES","PEDIDOS"),("MESAS","PEDIDOS"),("PEDIDOS","DETALLESPEDIDO"),("MENU","DETALLESPEDIDO"),("PEDIDOS","FACTURAS")})
+        var tablas=Regex.Matches(fuente,@"(?ms)^    (\w+) \{(.*?)^    \}").Cast<Match>().ToArray();
+        var posiciones=new Dictionary<string,Rectangle>();
+        int y=120;
+        for(int inicio=0;inicio<tablas.Length;inicio+=3)
         {
-            var a=posiciones[par.Item1]; var b=posiciones[par.Item2];
-            g.DrawLine(linea,a.Left+a.Width/2,a.Bottom,b.Left+b.Width/2,b.Top);
+            int alto=0;
+            for(int i=inicio;i<Math.Min(inicio+3,tablas.Length);i++)
+            {
+                int campos=tablas[i].Groups[2].Value.Split('\n').Count(s=>!string.IsNullOrWhiteSpace(s));
+                var rect=new Rectangle(35+(i-inicio)*440,y,400,75+campos*25);
+                posiciones[tablas[i].Groups[1].Value]=rect;alto=Math.Max(alto,rect.Height);
+            }
+            y+=alto+90;
         }
-        using var titulo=new Font("Segoe UI",17,FontStyle.Bold); using var texto=new Font("Consolas",12);
-        foreach(Match tabla in Regex.Matches(fuente,@"(?ms)^    (\w+) \{(.*?)^    \}"))
+        using var imagen=new Bitmap(1360,y+100);using var g=Graphics.FromImage(imagen);
+        Preparar(g,"SQL Server · esquema 4 · cobros académicos");
+        using var linea=new Pen(Color.FromArgb(150,170,180),1.5f);linea.CustomEndCap=new AdjustableArrowCap(4,5);
+        foreach(Match relacion in Regex.Matches(fuente,@"(?m)^    (\w+)\s+[^\r\n]*?--[^\r\n]*?\s+(\w+)\s+:"))
         {
-            var nombre=tabla.Groups[1].Value;if(!posiciones.TryGetValue(nombre,out var r))continue;
-            g.FillRectangle(Brushes.White,r); g.DrawRectangle(Pens.SlateGray,r);
-            g.FillRectangle(Brushes.DarkSlateGray,r.X,r.Y,r.Width,42);
-            g.DrawString(nombre,titulo,Brushes.White,r.X+12,r.Y+5);
-            var y=r.Y+55;
-            foreach(var campo in tabla.Groups[2].Value.Split('\n').Select(s=>s.Trim()).Where(s=>s.Length>0))
-            {g.DrawString(campo,texto,Brushes.Black,r.X+12,y);y+=25;}
+            if(posiciones.TryGetValue(relacion.Groups[1].Value,out var origen)&&posiciones.TryGetValue(relacion.Groups[2].Value,out var destino))
+                g.DrawLine(linea,origen.Right,origen.Top+origen.Height/2,destino.Left,destino.Top+destino.Height/2);
         }
-        using var nota=new Font("Segoe UI",13);
-        g.DrawString("PK: primaria · FK: foránea · UK: única. Restaurante contiene una fila (Id=1).",nota,Brushes.DimGray,35,1230);
-        g.DrawString("Un pedido puede tener una factura. Los detalles conservan nombre, tipo y precio capturados al agregar el producto.",nota,Brushes.DimGray,35,1265);
+        using var titulo=new Font("Segoe UI",15,FontStyle.Bold);using var texto=new Font("Consolas",11);
+        foreach(var tabla in tablas)
+        {
+            var r=posiciones[tabla.Groups[1].Value];g.FillRectangle(Brushes.White,r);g.DrawRectangle(Pens.SlateGray,r);
+            g.FillRectangle(Brushes.DarkSlateGray,r.X,r.Y,r.Width,42);g.DrawString(tabla.Groups[1].Value,titulo,Brushes.White,r.X+10,r.Y+6);
+            int fila=r.Y+55;
+            foreach(var campo in tabla.Groups[2].Value.Split('\n').Select(x=>x.Trim()).Where(x=>x.Length>0))
+            {g.DrawString(campo,texto,Brushes.Black,r.X+10,fila);fila+=25;}
+        }
+        using var nota=new Font("Segoe UI",12);
+        g.DrawString("Esquema principal abreviado. PK: primaria · FK: foránea · UK: única. Fuente: DiagramaBaseDatos.mmd",nota,Brushes.DimGray,35,y+15);
+        g.DrawString("Pagos manuales y comprobantes internos; sin integración SAT/FEL ni bancaria.",nota,Brushes.DimGray,35,y+45);
         imagen.Save(Path.Combine(directorio,"DiagramaBaseDatos.png"));
     }
     private static void Preparar(Graphics g,string titulo)

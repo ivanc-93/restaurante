@@ -1,6 +1,6 @@
 # Sabores — gestión de restaurante
 
-Aplicación C# Windows Forms sobre .NET 8 para mesas, clientes, menú, pedidos, facturación y reportes. La solución contiene dos proyectos: `Restaurante.Frontend` y `Restaurante.Backend`.
+Aplicación académica C# Windows Forms sobre .NET 8 para mesas, clientes, menú, pedidos, cobros manuales, comprobantes internos y reportes. Sin conexión SAT/FEL ni bancaria. La solución contiene dos proyectos: `Restaurante.Frontend` y `Restaurante.Backend`.
 
 ## Abrir y preparar
 
@@ -13,29 +13,33 @@ dotnet restore restaurante2/Restaurante.sln
 dotnet build restaurante2/Restaurante.sln --no-restore
 ```
 
-**Instalación nueva:** ejecute `BaseDatos/CrearBaseDatos.sql` en SQL Server. Crea `RestauranteDB`, las tablas y datos iniciales, incluida la estructura de la versión 3.
+**Instalación nueva o actualización:** consulte [Actualización SQL para el grupo](BaseDatos/ActualizacionGrupo.md). El procedimiento respalda, restaura en una copia y prueba las migraciones antes de actualizar. Se requiere esquema **4** (002 → 003 → 004); crear solo el esquema 3 no basta. La aplicación no migra automáticamente.
 
-**Base existente:** haga un respaldo, seleccione explícitamente la base correspondiente y ejecute en orden `BaseDatos/Migracion_002.sql` y `BaseDatos/Migracion_003.sql`. Si la 002 ya fue aplicada, basta con la 003. La aplicación no ejecuta migraciones automáticamente. El script es transaccional e idempotente; ante duplicados o datos inválidos aborta y explica la causa, sin borrar registros. Si cambia el nombre de la base en una instalación nueva, adapte las referencias `RestauranteDB` del script antes de ejecutarlo.
+Por solicitud del usuario, este equipo usa `(localdb)\MSSQLLocalDB`, base `RestauranteDB`, autenticación Windows. Cada integrante conserva su propia configuración Microsoft SQL Server, sin editar fuentes ni compartir contraseñas.
 
 El script configura las opciones SET requeridas por índices filtrados y la columna calculada del número de factura. La cuenta utilizada para migrar necesita permisos DDL; la cuenta de operación no necesita esos permisos.
 
 ## Primer acceso y conexión
 
-Sin conexión guardada se permite la configuración inicial con `admin` / `Admin123!`. Desde **Conexión SQL**, indique servidor, puerto, base de datos y credenciales; dejar vacío el usuario SQL habilita autenticación de Windows. Después de guardar, debe ingresar otra vez y autenticarse contra la base. El script crea el usuario inicial `admin` con esa contraseña; cámbiela en la base antes de utilizar datos reales. Utilice un usuario SQL de mínimo privilegio, no `sa`.
+Sin conexión guardada se permite la configuración inicial con `admin` / `Admin123!`. Desde **Configuración → Avanzado · Conexión SQL**, indique servidor, puerto, base de datos y credenciales; dejar vacío el usuario SQL habilita autenticación de Windows. Después de guardar, debe ingresar otra vez y autenticarse contra la base. El script crea el usuario inicial `admin` con esa contraseña; cámbiela en la base antes de utilizar datos reales. Utilice un usuario SQL de mínimo privilegio, no `sa`.
 
 La conexión se guarda mediante DPAPI en el perfil de Windows. Si el archivo está dañado o no puede descifrarse, el programa avisa y permite reconfigurarlo. Una conexión que abre correctamente no garantiza que el esquema esté actualizado: aplique primero la migración.
 
 ## Operación
 
-- **Clientes y productos:** registrar, editar y desactivar. No se borran pedidos ni facturas al desactivar. Los clientes activos no pueden compartir un correo no nulo; los productos activos no pueden repetir nombre, tipo y categoría. Se permiten clientes diferentes con el mismo nombre.
-- **Restaurante:** el administrador configura nombre y ubicación desde el selector de esa misma pantalla. Estos datos se almacenan en SQL y aparecen en el título principal.
-- **Menú y mesas:** consultar menú; crear, editar, visualizar y eliminar mesas sin historial. Una mesa con pedidos asociados no se elimina.
-- **Pedidos y facturas:** seleccionar mesa disponible, producto, cantidad y cliente o **Público general**. Abrir el pedido no lo factura.
-- **Detalle de mesa:** agregar productos; al terminar, **Facturar y liberar mesa**. Las cantidades van de 1 a 50 por operación. Cada detalle captura nombre, tipo y precio al agregar el producto; conserva esos valores aunque después se renombre, reclasifique, cambie de categoría o precio, o se desactive el producto del menú.
-- **Cortesías:** precio cero permitido. Un pedido con detalles puede facturarse por total cero y libera la mesa. Un pedido vacío no puede facturarse. No se agregaron impuestos no especificados: el impuesto sigue siendo cero.
-- **Cerrar sesión:** regresa al acceso para iniciar otra sesión. Cerrar la ventana principal termina el programa.
+La guía actual está en [Cobros manuales y gestión](Pruebas/CobrosManuales.md).
 
-Las aperturas y cambios de estado bloquean la fila de mesa dentro de una transacción. La facturación bloquea el pedido y además existe una restricción única por pedido. Antes de facturar se comprueba que el total coincida con los detalles. No se agregan productos a pedidos cerrados.
+- **Mesas:** seleccionar una disponible para abrir pedido con el primer producto; las ocupadas permiten continuar la cuenta. Las cantidades son de 1 a 50 por incorporación.
+- **Revisar y cobrar:** confirmar receptor, detalle, importe y método. Efectivo calcula cambio; tarjeta registra la comprobación manual de un pago externo. Un resultado incierto bloquea nuevos cobros hasta conciliación.
+- **Comprobante:** documento interno académico, sin validez tributaria. Captura receptor/restaurante y muestra el pago. Se puede consultar nuevamente desde Pedidos sin crear otra venta.
+- **Gestionar cierre:** cancelación autorizada sin preparación/consumo; incidencia con saldo pendiente; corrección de estado inconsistente; confirmación de limpieza. No se borran detalles ni se simula un pago al liberar físicamente una mesa.
+- **Limpieza:** después de cerrar o resolver la atención, confirmar limpieza para que la mesa vuelva a Disponible.
+- **Cortesía:** solo total cero, con declaración y autorización administrativa; no se añaden impuestos no definidos.
+- **Recuperar operaciones pendientes:** en Inicio; reutiliza solicitudes cifradas y sus identificadores después de un error o reinicio, evitando duplicados.
+- **Catálogos:** clientes/productos separados. La información del restaurante está en Configuración. Los datos históricos capturados no dependen de futuras ediciones del catálogo.
+- **Cerrar sesión:** vuelve al acceso; la sesión del repositorio se limpia y se autentica al usuario siguiente.
+
+El servicio valida permisos, versión de cuenta, importes y estados. Pago, comprobante, cierre y paso de mesa a limpieza se confirman en una transacción. La API anterior `FacturarPedido(id)` rechaza cierres sin el nuevo flujo. Cancelaciones/conciliaciones requieren administrador; los empleados pueden registrar cobros normales y confirmar limpieza.
 
 ## Reportes
 
@@ -44,13 +48,14 @@ El intervalo incluye ambos días. Una fecha inicial posterior a la final se rech
 - Ventas por día, semana o mes, calculadas sobre facturas. Las semanas comienzan el lunes; su etiqueta es la fecha de ese lunes, incluso si pertenece al año anterior. Los meses se identifican por su primer día. Las agrupaciones se limitan siempre al intervalo seleccionado.
 - Los diez platos más vendidos incluyen únicamente platos de pedidos facturados, por fecha de factura y por identificador de producto y tipo histórico del detalle. Se excluyen bebidas históricas, pedidos abiertos y cancelados. Si un producto tuvo varios nombres, se muestra el último nombre histórico de sus ventas como plato dentro del intervalo (desempate por factura y detalle). Sus cantidades e importes se suman una sola vez por MenuId.
 - Pedidos por mesa y cliente: se filtran por fecha del pedido; incluyen estados y facturas. El selector incluye clientes inactivos para consultar su historial y público general. Por eso este reporte no debe sumarse como si todos sus pedidos fueran ventas facturadas.
-- Los filtros se actualizan al cambiar; la lista operativa ya no oculta pedidos abiertos por un límite de 100 registros.
+- Elegir filtros y pulsar Consultar. Mesa/cliente solo se muestran para pedidos. La pestaña financiera distingue efectivo, tarjeta manual, cancelaciones, incidencias y legados; rechazos e inciertos no son dinero recibido. No sumar conjuntamente pagos y comprobantes.
+- Los eventos financieros nuevos usan UTC y se filtran/presentan por día Guatemala (UTC−6); las fechas legadas se conservan. La lista operativa no limita los pedidos abiertos a 100.
 
 Los cálculos son `decimal`. Las consultas SQL del repositorio conservan conexiones independientes y recursos `using`. La interfaz ejecuta esas operaciones en tareas de fondo y aplica sus resultados en el hilo de Windows Forms.
 
 ## Organización y POO
 
-Cada clase, record e interfaz tiene un archivo propio. Los formularios usan `.cs` y `.Designer.cs` parciales, con constructor sin argumentos para diseño y constructor con dependencias para ejecución. Las consultas no se ejecutan en el constructor de diseño. No se necesitan `.resx` porque actualmente no hay recursos localizados ni binarios asociados a controles.
+Cada clase, record e interfaz tiene un archivo propio. Los formularios usan `.cs` y `.Designer.cs` parciales, con constructor sin argumentos para diseño y constructor con dependencias para ejecución. Las consultas no se ejecutan en el constructor de diseño. Los iconos se incluyen como recursos incrustados locales, con licencia; no se crean archivos `.resx` vacíos.
 
 `ElementoMenu` es abstracta; `Plato` y `Bebida` implementan `Tipo`. El repositorio construye ambos como `ElementoMenu` y utiliza su cálculo monetario. Las interfaces `IRepositorioRestaurante` e `IConfiguracionConexion` separan consumidores e implementaciones. `IDialogosUsuario` aísla las notificaciones y confirmaciones para probar los mismos eventos de los formularios sin bloquear el ejecutor con ventanas modales; en ejecución normal `DialogosUsuario` sigue mostrando MessageBox. `CicloSesion` contiene el ciclo de login, ventana principal y logout compartido por el ejecutable y las pruebas. `ReglasRestaurante` centraliza validaciones y límites temporales. SQL permanece en el Backend.
 
@@ -105,4 +110,4 @@ La matriz trazable de requisitos está en `Requerimientos.md`. Los pendientes ac
 
 ## Interfaz POS y respaldo
 
-Consulta [cambios, pruebas, limitaciones y recuperación](Pruebas/InterfazPOS.md). La rama de respaldo conserva el código previo; la base habitual no se migró ni se reemplazó.
+Consulta [cambios, pruebas, limitaciones y recuperación](Pruebas/InterfazPOS.md). Ese documento describe la etapa visual anterior. Para la implementación vigente, el esquema 4 y los respaldos SQL, consultar [Cobros manuales](Pruebas/CobrosManuales.md) y [Actualización del grupo](BaseDatos/ActualizacionGrupo.md).

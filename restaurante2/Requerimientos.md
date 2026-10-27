@@ -1,18 +1,18 @@
 # Requisitos y trazabilidad
 
-Esta matriz convierte el enunciado aportado por el usuario en requisitos verificables. No acredita la entrega académica ni la autoría del grupo. La implementación se encuentra en la rama `correcciones/auditoria-final`.
+Esta matriz convierte el enunciado aportado por el usuario en requisitos verificables. No acredita la entrega académica ni la autoría del grupo. La implementación se encuentra en la rama `mejoras/cobros-cancelaciones-20261026`.
 
 ## Funcionales del enunciado
 
 | ID | Requisito / aceptación | Pantalla | Implementación / tablas | Evidencia de prueba |
 |---|---|---|---|---|
-| RF01 | Guardar nombre y ubicación y recuperarlos con otra conexión | Catálogos → Restaurante | GuardarRestaurante / ObtenerRestaurante; Restaurante | Configuración persistente del restaurante |
+| RF01 | Guardar nombre y ubicación y recuperarlos con otra conexión | Configuración → Restaurante | GuardarRestaurante / ObtenerRestaurante; Restaurante | Configuración persistente del restaurante |
 | RF02 | Crear, editar y consultar mesas; rechazar números duplicados y eliminar solo sin historial | Menú y mesas | CrearMesa / ActualizarMesa / EliminarMesa; Mesas | Mesa: duplicados y validaciones |
 | RF03 | Registrar, editar y desactivar platos y bebidas con precios válidos | Catálogos → Productos | GuardarProducto / DesactivarProducto; Menu | Mantenimiento; validación de productos |
 | RF04 | Registrar, editar y desactivar clientes sin borrar su historial | Catálogos → Clientes | GuardarCliente / DesactivarCliente; Clientes | Mantenimiento y desactivación conserva historial |
 | RF05 | Abrir pedido en mesa disponible y asignar cliente o público general | Pedidos y facturas | CrearPedido; Pedidos, Mesas, Clientes | Pedido y recorrido de interfaz |
 | RF06 | Agregar varios productos con cantidades válidas y total decimal exacto | Detalle de mesa | AgregarProductoAPedido; DetallesPedido | Pedido y recorrido de dos productos |
-| RF07 | Emitir una sola factura, cerrar pedido y liberar mesa | Detalle / Pedidos y facturas | FacturarPedido; Facturas, Pedidos, Mesas | Facturación única, concurrente y cortesía cero |
+| RF07 | Registrar pago manual y comprobante interno único; cerrar pedido y pasar a limpieza | Revisar y cobrar / Gestionar cierre | RegistrarCobro / GestionarMesa; PagosManuales, Facturas, Pedidos, Mesas | Cierres concurrentes, efectivo/tarjeta/cortesía; limpieza posterior |
 | RF08 | Reportar ventas por día | Reportes → Ventas | ReportarVentas / ReportarVentasPeriodo; Facturas | Reportes reconciliados |
 | RF09 | Reportar ventas semanales de lunes a domingo | Reportes → Ventas | InicioPeriodo / ReportarVentasPeriodo | Agrupación semanal entre años |
 | RF10 | Reportar ventas por mes | Reportes → Ventas | InicioPeriodo / ReportarVentasPeriodo | Agrupación mensual separada |
@@ -57,3 +57,18 @@ Esta matriz convierte el enunciado aportado por el usuario en requisitos verific
 | EA06 | Defensa de 30 minutos ±5 y una entrega por grupo | Guion, responsables y ensayo |
 
 Fecha indicada por la guía: 1 de noviembre de 2026 o, en su defecto, último día de clases. La alternativa confirmada por el docente no se ha verificado. No se inventan autores, participación, fuentes o enlaces de entrega.
+
+## Alcance adicional de cobros académicos
+
+| ID | Requisito | Implementación / evidencia |
+|---|---|---|
+| RC01 | Receptor y confirmación local, sin SAT | FormularioCobro / SolicitudCobro / snapshot Facturas |
+| RC02 | Efectivo con cambio y tarjeta declarada | RegistrarCobro / PagosManuales / pruebas de resultados |
+| RC03 | Cancelación e incidencia sin borrar historial | GestionarMesa / AuditoriaOperaciones / IncidenciasConsumo |
+| RC04 | Mesa en limpieza antes de disponibilidad | GestionarMesa / confirmación explícita |
+| RC05 | Reintentos y recuperación entre procesos | OperacionesRestaurante / DiarioOperaciones cifrado / caso de pérdida de respuesta |
+| RC06 | Importes GTQ y reportes separados | MonedaGuatemala / ReportarOperaciones |
+| RC07 | Respaldo y restauración antes de migrar | InstalarOActualizar.ps1 / registros de ocho y trece tablas |
+| RC08 | Configuración individual SQL Server | ConfiguracionConexion DPAPI; LocalDB solo por solicitud de este usuario |
+
+La suite vigente y sus límites están documentados en Pruebas/CobrosManuales.md. No se incluye FEL, procesamiento bancario, pagos parciales/mixtos, crédito, cocina, reembolsos ni correcciones financieras posteriores a un comprobante.

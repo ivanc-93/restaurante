@@ -50,7 +50,14 @@ classDiagram
         +ListarDetallesPedido(pedidoId) IReadOnlyList
         +CrearPedido(solicitud) PedidoCreado
         +AgregarProductoAPedido(pedidoId, menuId, cantidad) decimal
-        +FacturarPedido(pedidoId) string
+        +RevisarCuenta(pedidoId) CuentaRevision
+        +RegistrarCobro(solicitud) ResultadoCobro
+        +GestionarMesa(solicitud) string
+        +ConciliarTarjeta(operacion, confirmado, motivo, id) ResultadoCobro
+        +ConsultarComprobante(pedidoId) string
+        +ReportarOperaciones(desde, hasta) IReadOnlyList
+        +ValidarEsquema() void
+        +CerrarSesion() void
         +ReportarVentas(desde, hasta) IReadOnlyList
         +ReportarVentasPeriodo(desde, hasta, agrupacion) IReadOnlyList
         +ReportarPedidos(desde, hasta, mesaId, clienteId) IReadOnlyList
@@ -78,7 +85,8 @@ classDiagram
     class FormularioPrincipal {
         +bool SesionCerrada
         -MostrarInicio() Task
-        -MostrarPedidos() Task
+        -MostrarPedidosPos() Task
+        -MostrarMesasPos() Task
         -MostrarMenuMesas() Task
         -MostrarReportes() Task
         -MostrarCatalogos() Task
@@ -133,3 +141,35 @@ classDiagram
     CicloSesion --> IDialogosUsuario
     FormularioPrincipal --> IDialogosUsuario
     FormularioDetalleMesa --> IDialogosUsuario
+
+    class CuentaRevision
+    class SolicitudCobro
+    class ResultadoCobro
+    class SolicitudGestionMesa
+    class SolicitudIncorporacion
+    class SolicitudConciliacion
+    class MovimientoOperacion
+    class MonedaGuatemala
+    class RelojGuatemala
+    class FormularioCobro
+    class FormularioGestionMesa
+    class FormularioComprobante
+    class FormularioRecuperacion
+    class DiarioOperaciones
+    class OperacionPendienteLocal
+    FormularioDetalleMesa ..> FormularioCobro
+    FormularioDetalleMesa ..> FormularioGestionMesa
+    FormularioPrincipal ..> FormularioComprobante
+    FormularioPrincipal ..> FormularioRecuperacion
+    FormularioCobro --> IRepositorioRestaurante
+    FormularioGestionMesa --> IRepositorioRestaurante
+    FormularioCobro --> CuentaRevision
+    FormularioCobro ..> SolicitudCobro
+    FormularioCobro ..> DiarioOperaciones
+    DiarioOperaciones --> OperacionPendienteLocal
+    DiarioOperaciones --> IRepositorioRestaurante
+    RepositorioRestaurante ..> SolicitudCobro
+    RepositorioRestaurante ..> ResultadoCobro
+    RepositorioRestaurante ..> CuentaRevision
+    RepositorioRestaurante --> MonedaGuatemala
+    RepositorioRestaurante --> RelojGuatemala

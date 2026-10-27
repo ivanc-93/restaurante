@@ -20,6 +20,7 @@ internal static class PruebasSesion
             try{cfg.ProbarYGuardar("",1,"","","",false);throw new Exception("Se permitió guardar configuración.");}catch(InvalidOperationException){}
         });
         var repo=new RepositorioRestaurante(new ConfiguracionConexionPruebas(cadena));
+        repo.IniciarSesion("admin","Admin123!");
         repo.CrearMesa(9100,4);
         repo.GuardarProducto(null,"Sesión plato","Sesión","Plato",8,false);
         repo.GuardarProducto(null,"Sesión bebida","Sesión","Bebida",3,false);
@@ -33,6 +34,8 @@ internal static class PruebasSesion
             comando.ExecuteNonQuery();
         }
         var archivo=Path.Combine(salida,"sesion-proceso-1.json");
+        if(File.Exists(archivo))File.Delete(archivo);
+        var segundo=Path.Combine(salida,"sesion-proceso-2.json");if(File.Exists(segundo))File.Delete(segundo);
         caso("Interfaz: login, pedido de dos productos, factura, logout y segundo usuario",()=>
         {
             Lanzar(cadena,"crear",archivo,"0");
@@ -64,16 +67,18 @@ internal static class PruebasSesion
     }
     public static int Proceso(string modo,string archivo,int pedidoId)
     {
-        ApplicationConfiguration.Initialize();
+        File.WriteAllText(archivo+".pasos.txt","");
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
         var cfg=new ConfiguracionConexionPruebas(Environment.GetEnvironmentVariable("RESTAURANTE_TEST_CONNECTION")!);
         var repo=new RepositorioRestaurante(cfg); var dialogos=new DialogosPrueba();
         Exception? fallo=null; int estado=0; bool ocupado=false; int cantidadLogin=0; int dpi=0;
-        var reloj=Stopwatch.StartNew(); FormularioDetalleMesa? detalle=null;
+        var reloj=Stopwatch.StartNew(); FormularioDetalleMesa? detalle=null;int ultimoEstado=-1;
         using var timer=new System.Windows.Forms.Timer {Interval=100};
         timer.Tick+=async (_,_)=>
         {
-            if(reloj.Elapsed.TotalSeconds>65){fallo=new TimeoutException("Se agotó el tiempo del recorrido.");timer.Stop();Application.Exit();return;}
+            if(reloj.Elapsed.TotalSeconds>65){Console.Error.WriteLine("Se agotó el tiempo del recorrido aislado.");Environment.Exit(1);return;}
             if(ocupado)return; ocupado=true;
+            if(estado!=ultimoEstado){File.AppendAllText(archivo+".pasos.txt",$"{reloj.Elapsed.TotalSeconds:F1}s · Estado {estado}\n");ultimoEstado=estado;}
             try
             {
                 var acceso=Application.OpenForms.OfType<FormularioAcceso>().FirstOrDefault();
@@ -103,7 +108,7 @@ internal static class PruebasSesion
                         detalle=new FormularioDetalleMesa(repo,mesa,dialogos){Opacity=0,ShowInTaskbar=false};
                         detalle.Show(principal);estado=2;
                     }
-                    else if(estado==5 && (detalle is null || detalle.IsDisposed))
+                    else if(estado==10 && (detalle is null || detalle.IsDisposed))
                     {
                         var factura=repo.ListarPedidos().Single(p=>p.Id==pedidoId);
                         if(factura.Estado!="Facturado"||factura.Total!=14m)throw new Exception("No se facturó desde la interfaz.");
@@ -114,6 +119,39 @@ internal static class PruebasSesion
                         if(Campo<UsuarioAutenticado>(principal,"_usuario").Nombre!="Segundo usuario")throw new Exception("No cambió el usuario.");
                         estado=8;principal.Close();
                     }
+                }
+                var cobro=Application.OpenForms.OfType<FormularioCobro>().FirstOrDefault();
+                if(cobro is not null && estado==5)
+                {
+                    File.AppendAllText(archivo+".pasos.txt","Configurar cobro\n");
+                    Campo<ComboBox>(cobro,"metodo").SelectedItem="Efectivo";
+                    File.AppendAllText(archivo+".pasos.txt","Método seleccionado\n");
+                    Campo<NumericUpDown>(cobro,"entregado").Value=14;
+                    Campo<CheckBox>(cobro,"datosConfirmados").Checked=true;
+                    Campo<CheckBox>(cobro,"pagoConfirmado").Checked=true;
+                    var previo=cobro.Size;
+                    foreach(var tamano in new[]{new System.Drawing.Size(1280,720),new System.Drawing.Size(1366,768)})
+                    {
+                        File.AppendAllText(archivo+".pasos.txt","Redimensionar "+tamano+"\n");
+                        cobro.Size=tamano;cobro.PerformLayout();Application.DoEvents();
+                        File.AppendAllText(archivo+".pasos.txt","Capturar "+tamano+"\n");
+                        var confirmar=Campo<Button>(cobro,"confirmar");
+                        using var captura=new System.Drawing.Bitmap(cobro.Width,cobro.Height);
+                        cobro.DrawToBitmap(captura,new System.Drawing.Rectangle(0,0,captura.Width,captura.Height));
+                        captura.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"cobro-"+tamano.Width+".png"));
+                        if(!cobro.ClientRectangle.Contains(cobro.RectangleToClient(confirmar.RectangleToScreen(confirmar.ClientRectangle))))
+                            throw new Exception($"Confirmar cobro queda fuera del área visible: ventana {cobro.ClientRectangle}, acción {cobro.RectangleToClient(confirmar.RectangleToScreen(confirmar.ClientRectangle))}.");
+                    }
+                    cobro.Size=previo;
+                    Campo<Button>(cobro,"confirmar").PerformClick();estado=10;
+                }
+                var documento=Application.OpenForms.OfType<FormularioComprobante>().FirstOrDefault();
+                if(documento is not null && Campo<TextBox>(documento,"contenido").Text.Contains("no válido como documento tributario"))
+                {
+                    using var captura=new System.Drawing.Bitmap(documento.Width,documento.Height);
+                    documento.DrawToBitmap(captura,new System.Drawing.Rectangle(0,0,captura.Width,captura.Height));
+                    captura.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"comprobante-cobro.png"));
+                    documento.Close();
                 }
                 if(detalle is not null&&!detalle.IsDisposed)
                 {
@@ -167,7 +205,7 @@ internal static class PruebasSesion
                     }
                 }
             }
-            catch(Exception ex){fallo=ex;timer.Stop();Application.Exit();}
+            catch(Exception ex){fallo=ex;timer.Stop();Console.Error.WriteLine(ex);Environment.Exit(1);}
             finally{ocupado=false;}
         };
         timer.Start();

@@ -8,7 +8,7 @@ $fuentes=[System.Security.SecurityElement]::Escape($PSScriptRoot)
 @"
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
-  <ItemGroup><ProjectReference Include="$frontend" /><Compile Include="$fuentes/Verificar.cs" Link="Verificar.cs" /><Compile Include="$fuentes/ConexionPrueba.cs" Link="ConexionPrueba.cs" /><Compile Include="$fuentes/ExportarDiagramas.cs" Link="ExportarDiagramas.cs" /><Compile Include="$fuentes/PruebasHistorial.cs" Link="PruebasHistorial.cs" /><Compile Include="$fuentes/PruebasSesion.cs" Link="PruebasSesion.cs" /><Compile Include="$fuentes/DialogosPrueba.cs" Link="DialogosPrueba.cs" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="$frontend" /><Compile Include="$fuentes/Verificar.cs" Link="Verificar.cs" /><Compile Include="$fuentes/ConexionPrueba.cs" Link="ConexionPrueba.cs" /><Compile Include="$fuentes/ExportarDiagramas.cs" Link="ExportarDiagramas.cs" /><Compile Include="$fuentes/PruebasHistorial.cs" Link="PruebasHistorial.cs" /><Compile Include="$fuentes/PruebasSesion.cs" Link="PruebasSesion.cs" /><Compile Include="$fuentes/DialogosPrueba.cs" Link="DialogosPrueba.cs" /><Compile Include="$fuentes/PruebasCobros.cs" Link="PruebasCobros.cs" /></ItemGroup>
 </Project>
 "@ | Set-Content (Join-Path $trabajo 'Verificador.csproj') -Encoding utf8
 $conexionAnterior=$env:RESTAURANTE_TEST_CONNECTION
@@ -63,6 +63,12 @@ INSERT dbo.Facturas(PedidoId,Subtotal,Impuesto,Total) VALUES(@pedido,20,0,20);
         & sqlcmd -S '(localdb)\MSSQLLocalDB' -E -b -I -f 65001 -d $baseLegada -i $env:RESTAURANTE_MIGRACION_003
         if($LASTEXITCODE -ne 0){throw 'Falló la repetición de la actualización histórica.'}
         $env:RESTAURANTE_TEST_ANTERIOR="Server=(localdb)\MSSQLLocalDB;Database=$baseLegada;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;Connect Timeout=10"
+        foreach($nombreBase in @($basePrueba,$baseLegada)) {
+            foreach($repeticion in @(1,2)) {
+                & sqlcmd -S '(localdb)\MSSQLLocalDB' -E -b -I -f 65001 -d $nombreBase -i (Join-Path $repoRaiz 'restaurante2/BaseDatos/Migracion_004.sql')
+                if($LASTEXITCODE -ne 0){throw 'Falló la migración 004.'}
+            }
+        }
         Write-Host "Base anterior actualizada: $baseLegada."
         Write-Host "Base aislada: $basePrueba (se conserva para inspección)."
     }

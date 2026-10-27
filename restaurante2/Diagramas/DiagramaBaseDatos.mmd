@@ -36,6 +36,10 @@ erDiagram
         datetime Fecha
         nvarchar Estado
         decimal Total
+        rowversion VersionCuenta
+        nvarchar ClienteHistorico
+        int MesaHistorica
+        bit CapturaLegada
     }
     DETALLESPEDIDO {
         int Id PK
@@ -54,6 +58,17 @@ erDiagram
         decimal Subtotal
         decimal Impuesto
         decimal Total
+        bit Legada
+        nvarchar Receptor
+        nvarchar Identificacion
+        nvarchar Direccion
+        nvarchar Correo
+        nvarchar RestauranteHistorico
+        nvarchar UbicacionHistorica
+        int MesaHistorica
+        nvarchar Operador
+        int UsuarioId
+        char Moneda
     }
     MESAS ||--o{ PEDIDOS : atiende
     CLIENTES o|--o{ PEDIDOS : realiza
@@ -65,3 +80,61 @@ erDiagram
         nvarchar Nombre
         nvarchar Ubicacion
     }
+    VERSIONESQUEMA {
+        int Version PK
+        datetime2 Fecha
+    }
+    OPERACIONESRESTAURANTE {
+        uniqueidentifier Id PK
+        nvarchar Tipo
+        char SolicitudHash
+        int UsuarioId FK
+        datetime2 Fecha
+        nvarchar Resultado
+    }
+    PAGOSMANUALES {
+        uniqueidentifier OperacionId PK,FK
+        int PedidoId FK
+        nvarchar Metodo
+        nvarchar Estado
+        decimal Importe
+        decimal Entregado
+        decimal Cambio
+        nvarchar Referencia
+        nvarchar Observacion
+        nvarchar SolicitudOriginal
+        int UsuarioId FK
+        datetime2 Fecha
+    }
+    AUDITORIAOPERACIONES {
+        bigint Id PK
+        uniqueidentifier OperacionId FK
+        int PedidoId FK
+        int MesaId FK
+        nvarchar Accion
+        nvarchar Anterior
+        nvarchar Posterior
+        nvarchar Motivo
+        decimal Importe
+        int UsuarioId FK
+        datetime2 Fecha
+    }
+    INCIDENCIASCONSUMO {
+        int PedidoId PK,FK
+        decimal ImportePendiente
+        nvarchar Motivo
+        uniqueidentifier OperacionId FK
+        int UsuarioId FK
+        datetime2 Fecha
+    }
+    USUARIOS ||--o{ OPERACIONESRESTAURANTE : registra
+    USUARIOS ||--o{ PAGOSMANUALES : declara
+    USUARIOS ||--o{ AUDITORIAOPERACIONES : responde
+    USUARIOS ||--o{ INCIDENCIASCONSUMO : autoriza
+    OPERACIONESRESTAURANTE ||--o| PAGOSMANUALES : identifica
+    OPERACIONESRESTAURANTE ||--o{ AUDITORIAOPERACIONES : documenta
+    OPERACIONESRESTAURANTE ||--o| INCIDENCIASCONSUMO : origina
+    PEDIDOS ||--o{ PAGOSMANUALES : recibe_intentos
+    PEDIDOS ||--o{ AUDITORIAOPERACIONES : conserva
+    PEDIDOS ||--o| INCIDENCIASCONSUMO : conserva_saldo
+    MESAS ||--o{ AUDITORIAOPERACIONES : registra_estado

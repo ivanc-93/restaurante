@@ -10,7 +10,7 @@ internal static class PruebasHistorial
     {
         if (!new SqlConnectionStringBuilder(cadena).InitialCatalog.StartsWith("Restaurante_Pruebas_",StringComparison.Ordinal))
             throw new InvalidOperationException("Se requiere una base aislada.");
-        var repo=new RepositorioRestaurante(new ConexionPrueba(cadena));
+        var repo=PruebasCobros.Repo(cadena);
         var hoy=DateTime.Today;
         int numero=9000;
         int Producto(string nombre,string tipo,decimal precio)
@@ -23,7 +23,7 @@ internal static class PruebasHistorial
             repo.CrearMesa(++numero,4);
             var mesa=repo.ListarMesas().Single(m=>m.Numero==numero);
             var pedido=repo.CrearPedido(new(){MesaId=mesa.Id,Detalles=[new(menu,cantidad)]});
-            if(facturar) repo.FacturarPedido(pedido.Id);
+            if(facturar) PruebasCobros.Facturar(repo,pedido.Id);
             return pedido;
         }
         caso("Historial: plato facturado conserva tipo, nombre e importe tras edición y baja",()=>
@@ -53,7 +53,7 @@ internal static class PruebasHistorial
             var pedido=Pedido(id,2,false);
             repo.GuardarProducto(id,"Nombre C nuevo","Historial","Plato",12.5m,false);
             Igual(57.5m,repo.AgregarProductoAPedido(pedido.Id,id,3));
-            repo.FacturarPedido(pedido.Id);
+            PruebasCobros.Facturar(repo,pedido.Id);
             var detalles=repo.ListarDetallesPedido(pedido.Id);
             Igual(2,detalles.Count); Igual(20m,detalles.Single(d=>d.Producto=="Nombre C anterior").Importe);
             Igual(37.5m,detalles.Single(d=>d.Producto=="Nombre C nuevo").Importe);

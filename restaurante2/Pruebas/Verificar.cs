@@ -12,8 +12,17 @@ internal static class Verificar
     [STAThread]
     private static int Main(string[] args)
     {
+        if(args.Length==3 && args[0]=="--recuperar-diario")return PruebasCobros.RecuperarProceso(args[1],Guid.Parse(args[2]));
+        if(args.Length==1 && args[0]=="--preparar-sesion-aislada")
+        {
+            var r=PruebasCobros.Repo(Environment.GetEnvironmentVariable("RESTAURANTE_TEST_CONNECTION")!);
+            var mesa=r.ListarMesas().Single(m=>m.Numero==9100);var pedido=r.ObtenerPedidoAbierto(mesa.Id);
+            if(pedido is not null)r.GestionarMesa(new(Guid.NewGuid(),mesa.Id,pedido.Id,r.RevisarCuenta(pedido.Id).Version,"Cancelar","Reinicio de fixture aislada sin preparación",true));
+            if(r.ListarMesas().Single(m=>m.Id==mesa.Id).Estado=="En limpieza")r.GestionarMesa(new(Guid.NewGuid(),mesa.Id,null,null,"Confirmar limpieza","Reinicio de fixture aislada",false));
+            return 0;
+        }
         if(args.Length==4 && args[0]=="--sesion-ui") return PruebasSesion.Proceso(args[1],args[2],int.Parse(args[3]));
-        ApplicationConfiguration.Initialize();
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
         salida=args[0]; Directory.CreateDirectory(salida);
         if(args.Length>1) ExportarDiagramas.Guardar(args[1]);
         Caso("Cálculo decimal y objetos derivados",()=>
@@ -51,7 +60,7 @@ internal static class Verificar
             Igual(false,config.EstaConfigurada); Verdad(config.ErrorCarga is not null,"Falta advertencia de recuperación");
             Rechaza(()=>config.CrearConexion());
         });
-        foreach(var crear in new Func<Form>[] {()=>new FormularioAcceso(),()=>new FormularioPrincipal(),()=>new FormularioMesa(),()=>new FormularioDetalleMesa(),()=>new FormularioCatalogos(),()=>new FormularioReportes()})
+        foreach(var crear in new Func<Form>[] {()=>new FormularioAcceso(),()=>new FormularioPrincipal(),()=>new FormularioMesa(),()=>new FormularioDetalleMesa(),()=>new FormularioCatalogos(),()=>new FormularioReportes(),()=>new FormularioCobro(),()=>new FormularioGestionMesa(),()=>new FormularioComprobante(),()=>new FormularioRecuperacion()})
         {
             using var formulario=crear();
             Caso("Construcción y render de "+formulario.GetType().Name,()=>
@@ -72,7 +81,7 @@ internal static class Verificar
                 Verdad(form.ClientRectangle.Contains(boton.Bounds),"Botón recortado: "+boton.Text);
         });
         var cadena=Environment.GetEnvironmentVariable("RESTAURANTE_TEST_CONNECTION");
-        if(!string.IsNullOrWhiteSpace(cadena)) { Integracion(cadena); PruebasHistorial.Ejecutar(cadena,Caso); PruebasSesion.Ejecutar(cadena,Caso,salida); }
+        if(!string.IsNullOrWhiteSpace(cadena)) { Integracion(cadena); PruebasHistorial.Ejecutar(cadena,Caso); PruebasSesion.Ejecutar(cadena,Caso,salida); PruebasCobros.Ejecutar(cadena,Caso,salida); }
         else Console.WriteLine("PENDIENTE: integración SQL (sin RESTAURANTE_TEST_CONNECTION).");
         Console.WriteLine($"RESULTADO: {correctas} correctas; {fallidas} fallidas.");
         return fallidas==0?0:1;
@@ -81,7 +90,7 @@ internal static class Verificar
     {
         var opciones=new SqlConnectionStringBuilder(cadena);
         Verdad(opciones.InitialCatalog.StartsWith("Restaurante_Pruebas_",StringComparison.Ordinal),"Solo se permite una base aislada de pruebas.");
-        var repo=new RepositorioRestaurante(new ConexionPrueba(cadena));
+        var repo=PruebasCobros.Repo(cadena);
         int cliente=0,plato=0,bebida=0,pedido=0;
         Caso("Login válido, inválido e inactivo",()=>
         {
@@ -90,6 +99,7 @@ internal static class Verificar
             Sql(cadena,"UPDATE dbo.Usuarios SET Activo=0 WHERE Usuario=N'admin';");
             Verdad(repo.IniciarSesion("admin","Admin123!") is null,"Inactivo aceptado");
             Sql(cadena,"UPDATE dbo.Usuarios SET Activo=1 WHERE Usuario=N'admin';");
+            repo.IniciarSesion("admin","Admin123!");
         });
         Caso("Instalación SQL conserva caracteres Unicode",()=> Igual("Café de olla",repo.ListarMenu().Single(p=>p.Nombre.StartsWith("Caf")).Nombre));
         Caso("Configuración persistente del restaurante",()=>
@@ -124,8 +134,8 @@ internal static class Verificar
             pedido=creado.Id; Igual(24.70m,creado.Total);
             Igual(37.05m,repo.AgregarProductoAPedido(pedido,plato,1));
             Rechaza(()=>repo.ActualizarMesa(mesa.Id,1,2,"Disponible"));
-            Verdad(repo.FacturarPedido(pedido).StartsWith("F-"),"Sin factura");
-            Rechaza(()=>repo.FacturarPedido(pedido)); Rechaza(()=>repo.AgregarProductoAPedido(pedido,plato,1));
+            Verdad(PruebasCobros.Facturar(repo,pedido).StartsWith("F-"),"Sin factura");
+            Rechaza(()=>PruebasCobros.Facturar(repo,pedido)); Rechaza(()=>repo.AgregarProductoAPedido(pedido,plato,1));
             Igual("Disponible",repo.ListarMesas().Single(m=>m.Id==mesa.Id).Estado);
             Rechaza(()=>repo.EliminarMesa(mesa.Id));
         });
@@ -133,7 +143,7 @@ internal static class Verificar
         {
             var mesa=repo.ListarMesas().Single(m=>m.Numero==2);
             var creado=repo.CrearPedido(new(){MesaId=mesa.Id,Detalles=[new(bebida,1)]});
-            Igual(0m,creado.Total); repo.FacturarPedido(creado.Id);
+            Igual(0m,creado.Total); PruebasCobros.Facturar(repo,creado.Id);
             Igual("Disponible",repo.ListarMesas().Single(m=>m.Id==mesa.Id).Estado);
         });
         Caso("Rollback si un producto no existe",()=>
@@ -157,7 +167,7 @@ internal static class Verificar
             var abierto=repo.ObtenerPedidoAbierto(repo.ListarMesas().Single(m=>m.Numero==4).Id)!;
             var resultados=Task.WhenAll(Enumerable.Range(0,2).Select(_=>Task.Run(()=>
             {
-                try {repo.FacturarPedido(abierto.Id);return true;} catch(InvalidOperationException){return false;}
+                try {PruebasCobros.Facturar(repo,abierto.Id);return true;} catch(InvalidOperationException){return false;}
             }))).GetAwaiter().GetResult();
             Igual(1,resultados.Count(x=>x));
         });
@@ -167,7 +177,7 @@ internal static class Verificar
             var mesa=repo.ListarMesas().Single(m=>m.Numero==5);
             var abierto=repo.CrearPedido(new(){MesaId=mesa.Id,Detalles=[new(plato,50)]});
             var cancelado=repo.CrearPedido(new(){MesaId=repo.ListarMesas().Single(m=>m.Numero==6).Id,Detalles=[new(plato,50)]});
-            Sql(cadena,$"UPDATE dbo.Pedidos SET Estado=N'Cancelado' WHERE Id={cancelado.Id};");
+            repo.GestionarMesa(new(Guid.NewGuid(),repo.ListarMesas().Single(m=>m.Numero==6).Id,cancelado.Id,repo.RevisarCuenta(cancelado.Id).Version,"Cancelar","Fixture sin preparación",true));
             var mas=repo.ReportarPlatosMasVendidos(hoy,hoy).Single(p=>p.Nombre=="Plato prueba");
             Igual(4,mas.Cantidad); Igual(49.40m,mas.Total);
             Igual(49.40m,repo.ReportarVentasPeriodo(hoy,hoy,"Día").Sum(v=>v.Total));
