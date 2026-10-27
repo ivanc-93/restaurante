@@ -1,0 +1,35 @@
+OK Esquema 5 compatible
+OK Servidor rechaza campos vacíos como resultado tipado
+OK Contraseña incorrecta no lanza excepción normal
+OK Cuenta inactiva no revela existencia
+OK Cuenta autenticada recibe instrucción de cambio obligatorio
+OK Mesero autenticado recibe mensaje de falta de rol
+OK Rechazos no aplican gestión ni dejan aprobación
+OK Importe y pedido permanecen abiertos tras rechazos
+OK Gerente válido autoriza
+OK Reintento incorrecto revoca aprobación anterior no consumida
+OK Bloqueo temporal conserva mensaje no enumerativo
+OK Administrador válido autoriza sin elevar sesión solicitante
+OK Sesión del mesero permanece sin cambios
+OK Rechazos esperados no generan UnauthorizedAccessException en API de interfaz
+OK Cancelar revoca aprobación previa y no ejecuta gestión
+OK Aprobación vencida no permite ejecutar
+OK Cuenta modificada devuelve instrucción de actualizar
+OK Cambio de cuenta autorizadora invalida aprobación
+OK Interfaz valida usuario vacío sin enviar
+OK Interfaz valida contraseña vacía sin nueva política de longitud
+OK Mostrar contraseña funciona en autorización
+OK Rechazo mantiene usuario limpia y vuelve a ocultar contraseña
+OK Control visible autorizar en 1280
+OK Control visible cancelar en 1280
+OK Control visible mensaje en 1280
+OK Control visible autorizar en 1366
+OK Control visible cancelar en 1366
+OK Control visible mensaje en 1366
+OK Campo de contraseña conserva el hilo de interfaz después del rechazo
+OK Contraseña de reintento permanece en el campo antes de enviar
+OK Mismo diálogo permite reintento correcto sin reiniciar
+OK Recuperación del resultado no duplica gestión
+OK Solicitud ya aplicada exige recuperación y no otra aprobación
+OK Error SQL no se presenta como contraseña incorrecta ni autoriza
+TOTAL 34 comprobaciones de autorización

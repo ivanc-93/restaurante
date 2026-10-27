@@ -52,7 +52,7 @@ internal static class PruebasInterfazRoles
     }
  }
  static T Campo<T>(Form f,string nombre)=>(T)f.GetType().GetField(nombre,BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(f)!;
- static void Mostrar(Form f){f.ShowInTaskbar=false;f.StartPosition=FormStartPosition.Manual;f.Location=new Point(-20000,-20000);f.Show();Application.DoEvents();}
+ static void Mostrar(Form f){f.ShowInTaskbar=false;f.StartPosition=FormStartPosition.Manual;f.Location=new Point(-20000,-20000);f.Show();SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());Application.DoEvents();}
  static void Modal<T>(Action disparar,Action<T> completar) where T:Form
  {
     bool atendido=false;long visibleDesde=-1;var reloj=Stopwatch.StartNew();using var timer=new System.Windows.Forms.Timer{Interval=50};

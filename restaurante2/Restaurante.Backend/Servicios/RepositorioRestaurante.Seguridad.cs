@@ -108,25 +108,10 @@ public sealed partial class RepositorioRestaurante
 
     public void AutorizarOperacion(Guid id,string tipo,string json,string usuario,string clave)
     {
-        var actor=ExigirSesion();var autorizador=VerificarAcceso(usuario,clave,true);
-        if(autorizador is null||autorizador.CambioObligatorio||autorizador.Rol is not("Administrador" or "Gerente"))throw new UnauthorizedAccessException("Autorización rechazada. Compruebe rol, contraseña y cambio obligatorio.");
-        object solicitud=tipo switch {
-            "GestionMesa"=>JsonSerializer.Deserialize<SolicitudGestionMesa>(json)??throw new ArgumentException("Solicitud inválida"),
-            "ConciliarTarjeta"=>JsonSerializer.Deserialize<SolicitudConciliacion>(json)??throw new ArgumentException("Solicitud inválida"),
-            "Ajuste"=>JsonSerializer.Deserialize<SolicitudAjuste>(json)??throw new ArgumentException("Solicitud inválida"),
-            _=>throw new ArgumentException("Acción no autorizable.")};
-        int pedido=solicitud switch{SolicitudGestionMesa s=>s.PedidoId??0,SolicitudAjuste s=>s.PedidoId,_=>0};
-        var solicitudId=solicitud switch{SolicitudGestionMesa s=>s.OperacionId,SolicitudAjuste s=>s.OperacionId,SolicitudConciliacion s=>s.OperacionId,_=>Guid.Empty};
-        if(id==Guid.Empty||id!=solicitudId)throw new ArgumentException("Identificador incompatible.");
-        if(pedido>0){var cuenta=RevisarCuenta(pedido);if(solicitud is SolicitudAjuste ajuste)ExigirVersion(cuenta,ajuste.Version,ajuste.TotalEsperado);if(solicitud is SolicitudGestionMesa gestion)ExigirVersion(cuenta,gestion.Version??"");}
-        var hash=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(solicitud,solicitud.GetType()))));
-        using var c=AbrirConexion();using var t=c.BeginTransaction(IsolationLevel.Serializable);SesionEn(c,t);
-        using(var q=Consulta(c,t,"SELECT VersionSeguridad FROM dbo.Usuarios WITH(UPDLOCK,HOLDLOCK) WHERE Id=@id AND Activo=1 AND CambioObligatorio=0 AND Rol IN(N'Administrador',N'Gerente');",("@id",autorizador.Id)))
-            if(q.ExecuteScalar() is not int v||v!=autorizador.VersionSeguridad)throw new UnauthorizedAccessException("El acceso del autorizador cambió.");
-        using(var q=Consulta(c,t,"SELECT COUNT(*) FROM dbo.OperacionesRestaurante WHERE Id=@id;",("@id",id)))if((int)q.ExecuteScalar()!>0)throw new InvalidOperationException("Recupere la operación ya aplicada.");
-        Ejecutar(c,t,"DELETE dbo.AutorizacionesOperacion WHERE OperacionId=@id AND Consumida=0;INSERT dbo.AutorizacionesOperacion(OperacionId,Tipo,SolicitudHash,SolicitanteId,AutorizadorId,VersionAutorizador,Caduca)VALUES(@id,@tipo,@hash,@actor,@jefe,@v,DATEADD(minute,2,SYSUTCDATETIME()));",("@id",id),("@tipo",tipo),("@hash",hash),("@actor",actor.Id),("@jefe",autorizador.Id),("@v",autorizador.VersionSeguridad));
-        Seguridad(c,t,actor.Id,autorizador.Id,"Autorizar operación",$"{tipo}; operación {id}");t.Commit();
+        var resultado=IntentarAutorizarOperacion(id,tipo,json,usuario,clave);
+        if(!resultado.Autorizada)throw new UnauthorizedAccessException(resultado.Mensaje);
     }
+
     private static int ExigirAutorizacion(SqlConnection c,SqlTransaction t,Guid id,string tipo,string hash,UsuarioAutenticado actor)
     {
         if(actor.Rol is "Administrador" or "Gerente")return actor.Id;
