@@ -9,6 +9,7 @@ public static class CicloSesion
     {
         while (true)
         {
+            repositorio.CerrarSesion();
             using var acceso = new FormularioAcceso(repositorio, configuracion);
             if (acceso.ShowDialog() != DialogResult.OK || acceso.UsuarioActual is null) return;
             using var principal = new FormularioPrincipal(repositorio, configuracion, acceso.UsuarioActual, dialogos);

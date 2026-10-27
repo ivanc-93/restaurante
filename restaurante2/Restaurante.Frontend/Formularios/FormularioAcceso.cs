@@ -31,6 +31,7 @@ public sealed partial class FormularioAcceso : Form
             }
             else
             {
+                await Task.Run(_repositorio.ValidarEsquema);
                 UsuarioActual = await Task.Run(() => _repositorio.IniciarSesion(usuario, contrasena));
                 if (UsuarioActual is null)
                 {

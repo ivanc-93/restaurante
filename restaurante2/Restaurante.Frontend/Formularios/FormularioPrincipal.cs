@@ -113,7 +113,7 @@ public sealed partial class FormularioPrincipal : Form
         var restaurante = await Task.Run(_repositorio.ObtenerRestaurante);
         Text = restaurante.Nombre + " | " + restaurante.Ubicacion;
         var tarjetas = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
-        tarjetas.Controls.Add(TarjetaEstadistica("VENTAS DE HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Facturación del día", Color.FromArgb(216, 131, 80)));
+        tarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Color.FromArgb(216, 131, 80)));
         tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "En atención", Color.FromArgb(89, 129, 149)));
         tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para clientes", Componentes.Verde));
         tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú", Color.FromArgb(122, 111, 161)));
@@ -124,6 +124,11 @@ public sealed partial class FormularioPrincipal : Form
         nuevo.AutoSize = true;
         nuevo.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
         bienvenida.Controls.Add(nuevo); pagina.Controls.Add(bienvenida);
+        var recuperar=Componentes.Boton("Recuperar operaciones pendientes",false);
+        recuperar.Click+=async(_,_)=>await EjecutarSeguro(async()=>{using var formulario=new FormularioRecuperacion(_repositorio);formulario.ShowDialog(this);await MostrarInicio();});
+        pagina.Controls.Add(recuperar);
+        var pendientes=DiarioOperaciones.Listar(_repositorio);
+        if(pendientes.Count>0)pagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupere antes de repetir acciones.",11,true));
         var abiertos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").Take(5).ToList();
         pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos", 14, true));
         if (abiertos.Count == 0) pagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Selecciona una mesa para comenzar."));
@@ -188,6 +193,7 @@ public sealed partial class FormularioPrincipal : Form
         var editar = BotonMesa("Editar", 90);
         var visualizar = BotonMesa("Visualizar", 100);
         var eliminar = BotonMesa("Eliminar", 90, false);
+        crear.Enabled=editar.Enabled=eliminar.Enabled=_repositorio.UsuarioActual?.Rol=="Administrador";
         herramientasMesas.Controls.AddRange([crear, editar, visualizar, eliminar]);
         tabMesas.Controls.Add(mesas);
         tabMesas.Controls.Add(herramientasMesas);
@@ -306,7 +312,7 @@ public sealed partial class FormularioPrincipal : Form
         panel.Padding = new Padding(20);
         panel.Margin = new Padding(0, 0, 0, 16);
         var servidor = Componentes.Campo();
-        servidor.PlaceholderText = "192.168.1.100 o localhost";
+        servidor.PlaceholderText = @"(localdb)\MSSQLLocalDB o servidor SQL";
         var puerto = new NumericUpDown
         {
             Minimum = 1,
@@ -317,11 +323,12 @@ public sealed partial class FormularioPrincipal : Form
             Font = Componentes.Fuente,
             Margin = new Padding(0, 4, 0, 8)
         };
+        servidor.TextChanged += (_,_) => puerto.Enabled=!servidor.Text.Trim().StartsWith(@"(localdb)",StringComparison.OrdinalIgnoreCase);
         var baseDatos = Componentes.Campo();
         baseDatos.Text = "RestauranteDB";
         var usuario = Componentes.Campo();
-        usuario.Text = "restaurante_app";
-        usuario.PlaceholderText = "restaurante_app";
+        usuario.Text = "";
+        usuario.PlaceholderText = "Vacío = autenticación de Windows";
         var contrasena = Componentes.Campo(true);
         contrasena.PlaceholderText = "Contraseña del usuario SQL";
         var certificado = new CheckBox
@@ -352,7 +359,7 @@ public sealed partial class FormularioPrincipal : Form
         campos.Controls.Add(Campo("IP o nombre del servidor SQL", servidor), 0, 0);
         campos.Controls.Add(Campo("Puerto SQL Server", puerto), 1, 0);
         campos.Controls.Add(Campo("Nombre de la base de datos", baseDatos), 0, 1);
-        campos.Controls.Add(Campo("Usuario SQL", usuario), 1, 1);
+        campos.Controls.Add(Campo("Usuario SQL (vacío = Windows)", usuario), 1, 1);
         campos.Controls.Add(Campo("Contraseña SQL", contrasena), 0, 2);
         campos.Controls.Add(certificado, 1, 2);
         campos.Controls.Add(estado, 0, 3);

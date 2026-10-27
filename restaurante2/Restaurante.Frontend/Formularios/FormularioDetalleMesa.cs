@@ -31,14 +31,17 @@ public sealed partial class FormularioDetalleMesa : Form
                 var pedido = _repositorio.ObtenerPedidoAbierto(_mesa.Id);
                 var productos = _repositorio.ListarMenu().ToList();
                 var clientes = _repositorio.ListarClientes().ToList();
+                var revision = pedido is null ? null : _repositorio.RevisarCuenta(pedido.Id);
+                var incierta = pedido is null ? null : _repositorio.ObtenerPagoIncierto(pedido.Id);
                 var detalles = pedido is null ? new List<DetallePedidoResumen>() : _repositorio.ListarDetallesPedido(pedido.Id).ToList();
-                return (actual, pedido, productos, clientes, detalles);
+                return (actual, pedido, productos, clientes, detalles, revision, incierta);
             });
             var clienteId = (_clientes.SelectedItem as Cliente)?.Id ?? 0;
             var productoId = (_productos.SelectedItem as ElementoMenu)?.Id;
             var categoria = _categoria.Text;
             _pedido = datos.pedido; _menu=datos.productos;
-            _clientes.DataSource = new List<Cliente>{new(0,"Público general",null,null)}.Concat(datos.clientes).ToList();
+            _clientes.DataSource = datos.revision is null ? new List<Cliente>{new(0,"Público general",null,null)}.Concat(datos.clientes).ToList()
+                : new List<Cliente>{new(datos.revision.ClienteId??0,datos.revision.Cliente,null,null)};
             if (_pedido is null) _clientes.SelectedItem = _clientes.Items.Cast<Cliente>().FirstOrDefault(c=>c.Id==clienteId) ?? _clientes.Items[0];
             _clientes.Enabled = _pedido is null && datos.actual.Estado=="Disponible";
             _categoria.Items.Clear(); _categoria.Items.Add("Todas las categorías");
@@ -48,10 +51,14 @@ public sealed partial class FormularioDetalleMesa : Form
             _resumen.Text=$"Mesa {_mesa.Numero} · " + (_pedido is null ? datos.actual.Estado : $"Pedido #{_pedido.Id} · {_pedido.Estado} · {_pedido.Cliente}");
             _total.Text=_pedido is null ? "Sin pedido registrado" : $"Total: {FormatoPresentacion.Moneda(_pedido.Total)}";
             _estado.Text=_pedido is null ? "El primer producto abre y guarda el pedido." : "Productos guardados. Cada incorporación se registra al agregar.";
-            _recuperacionPendiente=false;
-            _agregar.Enabled=_menu.Count>0 && (_pedido is not null || datos.actual.Estado=="Disponible");
+            _recuperacionPendiente=DiarioOperaciones.Listar(_repositorio).Count>0;
+            _agregar.Enabled=_menu.Count>0 && (_pedido is not null || datos.actual.Estado=="Disponible") && datos.incierta is null;
             _catalogo.Enabled=_agregar.Enabled;
-            _facturar.Enabled=_pedido is not null && datos.detalles.Count>0;
+            if(_recuperacionPendiente)_agregar.Enabled=_catalogo.Enabled=false;
+            _facturar.Enabled=_pedido is not null && datos.detalles.Count>0 && datos.incierta is null && !_recuperacionPendiente;
+            _gestionar.Enabled=!_recuperacionPendiente;
+            if(_recuperacionPendiente)_estado.Text="Hay operaciones pendientes. Cierre la mesa y use Recuperar operaciones desde Inicio.";
+            if(datos.incierta is not null)_estado.Text="Tarjeta incierta: no repita el cobro. Utilice Gestionar cierre para conciliar.";
             _cargando=false; DibujarCatalogo();
             if (productoId is not null) _productos.SelectedItem=_productos.Items.Cast<ElementoMenu>().FirstOrDefault(p=>p.Id==productoId) ?? _productos.SelectedItem;
             FormatoPresentacion.Aplicar(this);
@@ -93,12 +100,14 @@ public sealed partial class FormularioDetalleMesa : Form
         try
         {
             if(_pedido is null)
-                await Task.Run(()=>_repositorio.CrearPedido(new SolicitudPedido {MesaId=_mesa.Id,ClienteId=cliente>0?cliente:null,
-                    Detalles=[new DetallePedidoSolicitud(producto.Id,cantidad)]}));
+            {
+                var solicitud=new SolicitudPedido {MesaId=_mesa.Id,ClienteId=cliente>0?cliente:null,Detalles=[new DetallePedidoSolicitud(producto.Id,cantidad)]};
+                await DiarioOperaciones.Ejecutar(_repositorio,"Abrir",solicitud.OperacionId,solicitud,()=>_repositorio.CrearPedido(solicitud));
+            }
             else
             {
-                var id=_pedido.Id;
-                await Task.Run(()=>_repositorio.AgregarProductoAPedido(id,producto.Id,cantidad));
+                var solicitud=new SolicitudIncorporacion(Guid.NewGuid(),_pedido.Id,producto.Id,cantidad);
+                await DiarioOperaciones.Ejecutar(_repositorio,"Agregar",solicitud.OperacionId,solicitud,()=>_repositorio.AgregarProductoAPedido(solicitud.PedidoId,solicitud.MenuId,solicitud.Cantidad,solicitud.OperacionId));
             }
             _cantidad.Value=1;
         }
@@ -111,20 +120,26 @@ public sealed partial class FormularioDetalleMesa : Form
     private async void Facturar_Click(object? sender, EventArgs e)
     {
         if(_ocupado || _recuperacionPendiente || _pedido is null)return;
-        if(_dialogos.Mostrar(this,$"¿Facturar el pedido #{_pedido.Id} por {FormatoPresentacion.Moneda(_pedido.Total)} y liberar la mesa?",
-            "Confirmar factura",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
-        _ocupado=true; _agregar.Enabled=_facturar.Enabled=_catalogo.Enabled=false;
+        _ocupado=true; _facturar.Enabled=false;
         try
         {
-            var id=_pedido.Id; var factura=await Task.Run(()=>_repositorio.FacturarPedido(id));
-            _dialogos.Mostrar(this,$"Factura {factura} emitida. La mesa {_mesa.Numero} quedó disponible.","Pedido facturado",MessageBoxButtons.OK,MessageBoxIcon.Information);
-            _ocupado=false; DialogResult=DialogResult.OK; Close();
+            var revision=await Task.Run(()=>_repositorio.RevisarCuenta(_pedido.Id));
+            using var cobro=new FormularioCobro(_repositorio,revision,_dialogos);
+            cobro.ShowDialog(this);
+            if(cobro.Resultado?.Estado=="Confirmado")
+            {
+                using var comprobante=new FormularioComprobante(_repositorio,revision.PedidoId);
+                comprobante.ShowDialog(this);
+                _ocupado=false;DialogResult=DialogResult.OK;Close();return;
+            }
         }
-        catch(Exception ex)
-        {
-            _dialogos.Mostrar(this,ex.Message,"No se pudo facturar",MessageBoxButtons.OK,MessageBoxIcon.Error);
-            await RecargarSeguroAsync();
-        }
-        finally { _ocupado=false; }
+        catch(Exception ex){_dialogos.Mostrar(this,ex.Message,"No se pudo revisar el cobro",MessageBoxButtons.OK,MessageBoxIcon.Error);}
+        finally{if(!IsDisposed)await RecargarSeguroAsync();_ocupado=false;}
+    }
+    private async void Gestionar_Click(object? sender,EventArgs e)
+    {
+        if(_ocupado||_cargando)return;
+        using var gestion=new FormularioGestionMesa(_repositorio,_mesa,_dialogos);
+        gestion.ShowDialog(this);await RecargarSeguroAsync();
     }
 }

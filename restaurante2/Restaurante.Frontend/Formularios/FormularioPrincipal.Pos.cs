@@ -13,7 +13,7 @@ public sealed partial class FormularioPrincipal
         var herramientas = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         var buscar = new TextBox { Width = 170, PlaceholderText = "Buscar mesa", Margin = new Padding(0, 10, 12, 10) };
         var filtro = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160, Margin = new Padding(0, 10, 12, 10) };
-        filtro.Items.AddRange(["Todas", "Disponible", "Ocupada", "Reservada"]); filtro.SelectedIndex = 0;
+        filtro.Items.AddRange(["Todas", "Disponible", "Ocupada", "Reservada", "En limpieza"]); filtro.SelectedIndex = 0;
         var actualizar = Componentes.Boton("Actualizar", false);
         var administrar = Componentes.Boton("Administrar mesas", false);
         administrar.Click += async (_, _) => await EjecutarSeguro(MostrarMenuMesas);
@@ -40,7 +40,7 @@ public sealed partial class FormularioPrincipal
                     mesa.Estado == "Ocupada" ? Color.FromArgb(255, 244, 219) : Color.FromArgb(235, 239, 244);
                 boton.AccessibleName = $"Mesa {mesa.Numero}, {mesa.Estado}";
                 Iconos.Aplicar(boton, "armchair");
-                boton.Enabled = mesa.Estado is "Disponible" or "Ocupada" || pedido is not null;
+                boton.Enabled = true;
                 boton.Click += async (_, _) => await EjecutarSeguro(async () => { AbrirMesa(mesa); await MostrarMesasPos(); });
                 tarjetas.Controls.Add(boton);
             }
@@ -85,6 +85,13 @@ public sealed partial class FormularioPrincipal
             await MostrarPedidosPos();
         });
         pagina.Controls.Add(abrir);
+        var consultar=Componentes.Boton("Consultar comprobante seleccionado",false);
+        consultar.Click+=(_,_)=> {
+            if(tabla.CurrentRow?.DataBoundItem is PedidoResumen p && p.NumeroFactura is not null)
+            {using var documento=new FormularioComprobante(_repositorio,p.Id);documento.ShowDialog(this);}
+            else _dialogos.Mostrar(this,"Seleccione un pedido con comprobante emitido.","Consultar comprobante");
+        };
+        pagina.Controls.Add(consultar);
         if (datos.Count == 0) pagina.Controls.Add(Componentes.Etiqueta("Todavía no hay pedidos. Comienza seleccionando una mesa."));
         FormatoPresentacion.Aplicar(this);
     }

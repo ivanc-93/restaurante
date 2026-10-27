@@ -13,4 +13,5 @@
   <ItemGroup>
     <EmbeddedResource Include="Recursos/Iconos/**/*.png" />
   </ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="Verificador" /></ItemGroup>
 </Project>

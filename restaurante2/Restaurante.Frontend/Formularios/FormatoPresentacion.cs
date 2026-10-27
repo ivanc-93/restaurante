@@ -6,7 +6,7 @@ internal static class FormatoPresentacion
 {
     // Restaurant in Guatemala: presentation only, no conversion of stored amounts.
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-GT");
-    public static string Moneda(decimal importe) => importe.ToString("C2", Cultura);
+    public static string Moneda(decimal importe) => Restaurante.Backend.Servicios.MonedaGuatemala.Formatear(importe);
     public static void Aplicar(Form formulario)
     {
         formulario.BackColor = Componentes.Fondo;
@@ -37,7 +37,7 @@ internal static class FormatoPresentacion
                 foreach (DataGridViewColumn columna in tabla.Columns)
                     if (columna.Name is "Precio" or "PrecioUnitario" or "Importe" or "Total" or "Subtotal" or "Impuesto")
                     {
-                        columna.DefaultCellStyle.Format = "C2";
+                        columna.DefaultCellStyle.Format = "'Q '#,##0.00";
                         columna.DefaultCellStyle.FormatProvider = Cultura;
                         columna.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                     }

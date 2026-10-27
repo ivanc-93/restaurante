@@ -11,8 +11,12 @@ public sealed partial class FormularioReportes : Form
     {
         _repositorio=repositorio;
         Componentes.EstilizarTabla(ventas); Componentes.EstilizarTabla(platos); Componentes.EstilizarTabla(pedidos);
-        inicio.Value=DateTime.Today.AddDays(-30); fin.Value=DateTime.Today;
+        inicio.Value=RelojGuatemala.Hoy.AddDays(-30); fin.Value=RelojGuatemala.Hoy;
         agrupacion.SelectedIndex=0;
+        var operaciones=new TabPage("Cobros, cancelaciones e incidencias");
+        operaciones.Controls.Add(new DataGridView {Name="operaciones",Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,AutoGenerateColumns=true});
+        operaciones.Controls.Add(new Label {Name="resumenOperaciones",Dock=DockStyle.Bottom,AutoSize=true,MaximumSize=new Size(950,0),Padding=new Padding(10)});
+        pestanas.TabPages.Add(operaciones);
         Pestana_Cambio(this,EventArgs.Empty);
                 Shown+=async (_,_)=>
         {
@@ -50,9 +54,16 @@ public sealed partial class FormularioReportes : Form
             var datos=await Task.Run(()=> (
                 Ventas:_repositorio.ReportarVentasPeriodo(desde,hasta,grupo),
                 Platos:_repositorio.ReportarPlatosMasVendidos(desde,hasta),
-                Pedidos:_repositorio.ReportarPedidos(desde,hasta,mesaId,clienteId)));
+                Pedidos:_repositorio.ReportarPedidos(desde,hasta,mesaId,clienteId),
+                Operaciones:_repositorio.ReportarOperaciones(desde,hasta)));
             ventas.DataSource=datos.Ventas.ToList(); platos.DataSource=datos.Platos.ToList(); pedidos.DataSource=datos.Pedidos.ToList();
-            total.Text=$"Ventas facturadas: {FormatoPresentacion.Moneda(datos.Ventas.Sum(x=>x.Total))} · {datos.Ventas.Sum(x=>x.Facturas)} facturas. Semana: lunes a domingo.";
+            ((DataGridView)pestanas.TabPages[3].Controls["operaciones"]!).DataSource=datos.Operaciones.ToList();
+            decimal Suma(string concepto,string estado)=>datos.Operaciones.Where(x=>x.Concepto==concepto&&x.Estado==estado).Sum(x=>x.Importe);
+            pestanas.TabPages[3].Controls["resumenOperaciones"]!.Text=
+                $"Cobros confirmados: efectivo {FormatoPresentacion.Moneda(Suma("Pago Efectivo","Confirmado"))} · tarjeta manual {FormatoPresentacion.Moneda(Suma("Pago Tarjeta","Confirmado"))}\n"+
+                $"Cancelado: {FormatoPresentacion.Moneda(Suma("Cancelar","Cancelado"))} · Incidencias generadas: {FormatoPresentacion.Moneda(Suma("Incidencia","Incidencia"))} · Legados sin pago registrado: {FormatoPresentacion.Moneda(Suma("Comprobante legado","Pago no registrado"))}\n"+
+                "No sumar todas las filas: comprobantes, cobros e incidencias representan conceptos distintos. Tarjetas rechazadas o inciertas no son cobros confirmados.";
+            total.Text=$"Comprobantes emitidos (no equivale a efectivo cobrado): {FormatoPresentacion.Moneda(datos.Ventas.Sum(x=>x.Total))} · {datos.Ventas.Sum(x=>x.Facturas)} facturas. Semana: lunes a domingo.";
             FormatoPresentacion.Aplicar(this);
         }
         catch(Exception ex) { MessageBox.Show(this,ex.Message,"Reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
