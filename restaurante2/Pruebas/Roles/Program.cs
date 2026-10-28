@@ -22,6 +22,8 @@ internal static class Program
    var h=Contrasenas.Crear(Personal);
    Sql("UPDATE dbo.Usuarios SET ContrasenaHash=@h,Sal=@s,Algoritmo=N'PBKDF2-SHA256',Iteraciones=600000,CambioObligatorio=0,IntentosFallidos=0,BloqueadoHasta=NULL WHERE Usuario=N'admin';",("@h",h.Hash),("@s",h.Sal));
    admin=Repo("admin",Personal);admin.ValidarEsquema();Ok(true,"Esquema 5 compatible");
+   if(args.Length==2&&args[0]=="--validar-recuperacion")
+   {PruebasRoles.PruebasRecuperacion.Ejecutar(cadena,admin,args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de recuperación");return 0;}
    if(args.Length==2&&args[0]=="--validar-autorizacion")
    {PruebasRoles.PruebasRechazosAutorizacion.Ejecutar(cadena,admin,args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de autorización");return 0;}
    var legadoNombre="legado"+sufijo;

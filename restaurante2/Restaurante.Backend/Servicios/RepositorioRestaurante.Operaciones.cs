@@ -31,7 +31,9 @@ public sealed partial class RepositorioRestaurante
         using var q = new SqlCommand("SELECT CASE WHEN OBJECT_ID(N'dbo.VersionEsquema',N'U') IS NULL THEN 0 ELSE 1 END;",c);
         if ((int)q.ExecuteScalar()! == 0) throw new InvalidOperationException("La base necesita la migración 005. Haga un respaldo y ejecute BaseDatos/Migracion_005.sql sobre su base SQL Server. No se actualizará automáticamente.");
         q.CommandText="SELECT COALESCE(MAX(Version),0) FROM dbo.VersionEsquema;";
-        if ((int)q.ExecuteScalar()! != 5) throw new InvalidOperationException("Versión de esquema incompatible. Esta aplicación requiere el esquema 5; no se modificará automáticamente.");
+        if ((int)q.ExecuteScalar()! is not (5 or 6)) throw new InvalidOperationException("Versión de esquema incompatible. Esta aplicación admite esquemas 5 y 6; no se modificará automáticamente.");
+        q.CommandText="SELECT COUNT(*) FROM dbo.VersionEsquema WHERE Version=5;";
+        if((int)q.ExecuteScalar()!!=1)throw new InvalidOperationException("Falta el esquema base 5. Solicita revisión técnica.");
         q.CommandText="SELECT CASE WHEN OBJECT_ID(N'dbo.AutorizacionesOperacion',N'U') IS NOT NULL AND OBJECT_ID(N'dbo.AjustesPedido',N'U') IS NOT NULL AND OBJECT_ID(N'dbo.AuditoriaSeguridad',N'U') IS NOT NULL AND COL_LENGTH(N'dbo.Usuarios',N'VersionSeguridad') IS NOT NULL AND COL_LENGTH(N'dbo.InstalacionSabores',N'TokenInstalacionHash') IS NOT NULL AND COL_LENGTH(N'dbo.Pedidos',N'ImporteOriginal') IS NOT NULL THEN 1 ELSE 0 END;";
         if((int)q.ExecuteScalar()!!=1)throw new InvalidOperationException("La estructura está incompleta. Solicite revisión de la instalación; no se guardará esta conexión.");
     }

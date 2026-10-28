@@ -1,6 +1,13 @@
 namespace Restaurante.Frontend.Formularios;
 internal static class DisenoFormulario
 {
+    public static void EnInterfaz(Form form,Action accion)
+    {
+        if(form.IsDisposed||!form.IsHandleCreated)return;
+        if(!form.InvokeRequired){accion();return;}
+        try{form.BeginInvoke((Action)(()=>{if(!form.IsDisposed)accion();}));}
+        catch(InvalidOperationException)when(form.IsDisposed||!form.IsHandleCreated){/* La ventana ya terminó; no se actualizan controles destruidos. */}
+    }
     public static FlowLayoutPanel Preparar(Form form,string titulo)
     {
         form.Text=titulo;form.Size=new Size(760,780);form.MinimumSize=new Size(560,520);form.StartPosition=FormStartPosition.CenterParent;form.Font=new Font("Segoe UI",10);form.AutoScaleMode=AutoScaleMode.Dpi;form.BackColor=Color.FromArgb(248,248,245);

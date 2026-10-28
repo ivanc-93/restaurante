@@ -40,9 +40,12 @@ partial class FormularioAcceso
         cabeceraClave.Controls.Add(claveEtiqueta,0,0);cabeceraClave.Controls.Add(mostrarClave,1,0);
         Control[] controles=[ayuda,titulo,usuarioEtiqueta,_usuario,cabeceraClave,_contrasena];
         for(var i=0;i<controles.Length;i++)estructura.Controls.Add(controles[i],0,i);
-        var pie=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=1,RowCount=3,Padding=new Padding(24,8,24,12)};
+        var pie=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=1,RowCount=4,Padding=new Padding(24,8,24,12)};
         pie.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        pie.Controls.Add(_mensaje,0,0);pie.Controls.Add(entrar,0,1);pie.Controls.Add(conexion,0,2);
+        var recuperar=new LinkLabel{Text="¿Olvidaste tu contraseña?",AutoSize=true,TabIndex=4,Margin=new Padding(0,6,0,10),LinkColor=Color.FromArgb(49,86,62)};
+        recuperar.LinkClicked+=(_,_)=>{if(!ocupado){using var f=new FormularioRecuperarClave(_repositorio);f.ShowDialog(this);_contrasena.Clear();}};
+        conexion.TabIndex=5;
+        pie.Controls.Add(_mensaje,0,0);pie.Controls.Add(entrar,0,1);pie.Controls.Add(recuperar,0,2);pie.Controls.Add(conexion,0,3);
         pie.SizeChanged+=(_,_)=>_mensaje.MaximumSize=new Size(Math.Max(180,pie.ClientSize.Width-pie.Padding.Horizontal),0);
         var contenedor=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2};
         contenedor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));contenedor.RowStyles.Add(new RowStyle(SizeType.Percent,100));contenedor.RowStyles.Add(new RowStyle(SizeType.AutoSize));

@@ -16,7 +16,7 @@ public sealed partial class FormularioAutorizar:Form
     private void Procesando(bool valor)
     {ocupado=valor;usuario.Enabled=clave.Enabled=mostrarClave.Enabled=autorizar.Enabled=cancelar.Enabled=!valor;autorizar.Text=valor?"Comprobando…":"Autorizar esta operación";UseWaitCursor=valor;}
     private void EnInterfaz(Action accion)
-    {if(IsDisposed)return;if(InvokeRequired)Invoke(accion);else accion();}
+    =>DisenoFormulario.EnInterfaz(this,accion);
     private async void Autorizar_Click(object? sender,EventArgs e)
     {
         if(ocupado)return;Resultado=null;

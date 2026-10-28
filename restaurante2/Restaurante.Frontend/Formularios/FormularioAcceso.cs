@@ -14,6 +14,7 @@ public sealed partial class FormularioAcceso : Form
     {
         _repositorio = repositorio;
         _configuracion = configuracion;
+        FormClosing+=(_,e)=>e.Cancel=ocupado;
     }
     private bool ocupado;
     private void Conexion_Click(object? sender,EventArgs e)
@@ -32,24 +33,24 @@ public sealed partial class FormularioAcceso : Form
         var contrasena = _contrasena.Text;
         ocupado=true;_mensaje.ForeColor=Color.Firebrick;_mensaje.Text="Comprobando acceso…";
         entrar.Enabled=conexion.Enabled=false;entrar.Text="Comprobando…";UseWaitCursor=true;
-        try
+        UsuarioAutenticado? verificado=null;string? error=null;
+        try{verificado=await Task.Run(()=>{_repositorio.ValidarEsquema();return _repositorio.IniciarSesion(usuario,contrasena);}).ConfigureAwait(false);}
+        catch(Exception ex){error=ex is Microsoft.Data.SqlClient.SqlException?"No se pudo consultar SQL Server. Comprueba servidor, base y permisos desde Configurar o recuperar conexión.":ex.Message;}
+        DisenoFormulario.EnInterfaz(this,()=>
         {
-            await Task.Run(_repositorio.ValidarEsquema);
-            UsuarioActual=await Task.Run(()=>_repositorio.IniciarSesion(usuario,contrasena));
-            if(UsuarioActual is null){_mensaje.Text="Usuario o contraseña incorrectos, inactivo o temporalmente bloqueado.";return;}
-            if(UsuarioActual.CambioObligatorio)
+            try
             {
-                using var cambio=new FormularioCambiarClave(_repositorio);
-                cambio.ShowDialog(this);_repositorio.CerrarSesion();UsuarioActual=null;
-                _mensaje.Text="Vuelva a entrar con su contraseña personal actualizada.";return;
+                UsuarioActual=verificado;
+                if(error is not null){_mensaje.Text=error;return;}
+                if(UsuarioActual is null){_mensaje.Text="Usuario o contraseña incorrectos, inactivo o temporalmente bloqueado.";return;}
+                if(UsuarioActual.CambioObligatorio)
+                {
+                    using var cambio=new FormularioCambiarClave(_repositorio);cambio.ShowDialog(this);_repositorio.CerrarSesion();UsuarioActual=null;
+                    _mensaje.Text="Vuelva a entrar con su contraseña personal actualizada.";return;
+                }
+                ocupado=false;DialogResult=DialogResult.OK;Close();
             }
-            DialogResult = DialogResult.OK;
-            Close();
-        }
-        catch (Exception ex)
-        {
-            _mensaje.Text = ex is Microsoft.Data.SqlClient.SqlException ? "No se pudo consultar SQL Server. Comprueba servidor, base y permisos desde Configurar o recuperar conexión." : ex.Message;
-        }
-        finally { ocupado=false;if(!IsDisposed){entrar.Enabled=conexion.Enabled=true;entrar.Text="Entrar al sistema";UseWaitCursor=false;_contrasena.Clear();mostrarClave.Checked=false;} }
+            finally{ocupado=false;if(!IsDisposed){entrar.Enabled=conexion.Enabled=true;entrar.Text="Entrar al sistema";UseWaitCursor=false;_contrasena.Clear();mostrarClave.Checked=false;}}
+        });
     }
 }

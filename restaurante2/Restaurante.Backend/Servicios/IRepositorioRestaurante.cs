@@ -4,6 +4,12 @@ namespace Restaurante.Backend.Servicios;
 
 public interface IRepositorioRestaurante
 {
+    bool NecesitaCodigoRecuperacion();
+    string GenerarCodigoRecuperacion(string claveActual);
+    void ConfirmarCodigoRecuperacion(string codigo);
+    ResultadoRecuperacion RecuperarConAdministrador(Guid operacion,string recibo,string objetivo,string administrador,string claveAdministrador,string nueva);
+    ResultadoRecuperacion RecuperarConCodigo(Guid operacion,string recibo,string usuario,string codigo,string nueva);
+    ResultadoRecuperacion ConsultarRecuperacion(Guid operacion,string recibo);
     void CambiarMiContrasena(string anterior,string nueva);
     IReadOnlyList<UsuarioGestion> ListarUsuarios();
     IReadOnlyList<RegistroSeguridad> ConsultarAuditoriaSeguridad();
