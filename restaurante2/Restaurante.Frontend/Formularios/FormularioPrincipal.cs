@@ -129,6 +129,9 @@ public sealed partial class FormularioPrincipal : Form
         var recuperar=Componentes.Boton("Recuperar operaciones pendientes",false);
         recuperar.Click+=async(_,_)=>await EjecutarSeguro(async()=>{using var formulario=new FormularioRecuperacion(_repositorio);formulario.ShowDialog(this);await MostrarInicio();});
         pagina.Controls.Add(recuperar);
+        var incidencias=Componentes.Boton("Incidencias de consumo",false);
+        incidencias.Click+=async(_,_)=>await EjecutarSeguro(async()=>{using var f=new FormularioIncidencias(_repositorio);f.ShowDialog(this);await MostrarInicio();});
+        pagina.Controls.Add(incidencias);
         var pendientes=DiarioOperaciones.Listar(_repositorio);
         if(pendientes.Count>0)pagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupere antes de repetir acciones.",11,true));
         var abiertos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").Take(5).ToList();
@@ -140,7 +143,7 @@ public sealed partial class FormularioPrincipal : Form
             continuar.AutoSize = true;
             continuar.Click += async (_, _) => await EjecutarSeguro(async () => {
                 var mesas = await Task.Run(_repositorio.ListarMesas);
-                AbrirMesa(mesas.Single(m => m.Numero == pedido.NumeroMesa)); await MostrarInicio();
+                await AbrirMesa(mesas.Single(m => m.Numero == pedido.NumeroMesa)); await MostrarInicio();
             });
             pagina.Controls.Add(continuar);
         }

@@ -18,7 +18,7 @@ partial class FormularioRecuperacion
         lista.Dock=DockStyle.Fill;lista.DisplayMember="Tipo";lista.SelectedIndexChanged+=Seleccion_Cambio;
         detalle.Dock=DockStyle.Fill;detalle.Multiline=true;detalle.ReadOnly=true;detalle.ScrollBars=ScrollBars.Vertical;
         recuperar.Text="Recuperar la misma operación";recuperar.AutoSize=true;recuperar.Dock=DockStyle.Fill;recuperar.Click+=Recuperar_Click;
-        descartar.Text="Descartar solo si SQL confirma que no fue aplicada";descartar.AutoSize=true;descartar.Dock=DockStyle.Fill;descartar.Click+=Descartar_Click;
+        descartar.Text="Abandonar solicitud sin aplicar (queda registrada en SQL)";descartar.AutoSize=true;descartar.Dock=DockStyle.Fill;descartar.Click+=Descartar_Click;
         estructura.Controls.Add(lista,0,0);estructura.Controls.Add(detalle,0,1);estructura.Controls.Add(recuperar,0,2);estructura.Controls.Add(descartar,0,3);
         Controls.Add(estructura);AutoScaleDimensions=new SizeF(7F,15F);AutoScaleMode=AutoScaleMode.Font;ClientSize=new Size(760,580);MinimumSize=new Size(500,380);StartPosition=FormStartPosition.CenterParent;Text="Recuperación de operaciones locales";ResumeLayout(false);
     }

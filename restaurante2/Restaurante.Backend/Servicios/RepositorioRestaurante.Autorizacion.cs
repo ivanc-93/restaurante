@@ -37,10 +37,10 @@ public sealed partial class RepositorioRestaurante
             solicitud=tipo switch {
                 "GestionMesa"=>JsonSerializer.Deserialize<SolicitudGestionMesa>(json),
                 "ConciliarTarjeta"=>JsonSerializer.Deserialize<SolicitudConciliacion>(json),
-                "Ajuste"=>JsonSerializer.Deserialize<SolicitudAjuste>(json),_=>null};
+                "Ajuste"=>JsonSerializer.Deserialize<SolicitudAjuste>(json),"CorreccionLinea"=>JsonSerializer.Deserialize<SolicitudCorreccionLinea>(json),_=>null};
         }
         catch(JsonException){return R(EstadoAutorizacion.SolicitudInvalida,"La solicitud es inválida. Cierra esta ventana y vuelve a revisar la cuenta.");}
-        var solicitudId=solicitud switch{SolicitudGestionMesa s=>s.OperacionId,SolicitudAjuste s=>s.OperacionId,SolicitudConciliacion s=>s.OperacionId,_=>Guid.Empty};
+        var solicitudId=solicitud switch{SolicitudCorreccionLinea s=>s.OperacionId,SolicitudGestionMesa s=>s.OperacionId,SolicitudAjuste s=>s.OperacionId,SolicitudConciliacion s=>s.OperacionId,_=>Guid.Empty};
         if(id==Guid.Empty||id!=solicitudId||solicitud is null)return R(EstadoAutorizacion.SolicitudInvalida,"La solicitud es inválida. Cierra esta ventana y vuelve a revisar la cuenta.");
         var hash=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(solicitud,solicitud.GetType()))));
         using var c=AbrirConexion();using var t=c.BeginTransaction(IsolationLevel.Serializable);
@@ -59,6 +59,7 @@ public sealed partial class RepositorioRestaurante
             if(g.Accion is not("Cancelar" or "Incidencia" or "Corregir estado"))return R(EstadoAutorizacion.SolicitudInvalida,"Acción no autorizable.");
             mesa=g.MesaId;pedido=g.PedidoId;version=g.Version;motivo=g.Motivo;
         }
+        else if(solicitud is SolicitudCorreccionLinea linea){pedido=linea.PedidoId;version=linea.Version;total=linea.TotalEsperado;motivo=linea.Motivo;}
         else if(solicitud is SolicitudAjuste a){pedido=a.PedidoId;version=a.Version;total=a.TotalEsperado;motivo=a.Motivo;}
         else if(solicitud is SolicitudConciliacion conciliacion)
         {

@@ -75,7 +75,11 @@ partial class FormularioDetalleMesa
         _facturar.BackColor=Componentes.Verde; _facturar.ForeColor=Color.White; Iconos.Aplicar(_facturar,"receipt-text");
         derecha.Controls.Add(clienteLabel,0,0); derecha.Controls.Add(_clientes,0,1); derecha.Controls.Add(_detalles,0,2);
         _gestionar.Text="Gestionar cierre de mesa";_gestionar.AutoSize=true;_gestionar.Dock=DockStyle.Fill;_gestionar.Enabled=false;_gestionar.Click+=Gestionar_Click;
-        derecha.Controls.Add(_gestionar,0,6);
+        var gestionAcciones=new FlowLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,WrapContents=true};
+        var corregir=new Button{Text="Corregir unidades",AutoSize=true};corregir.Click+=Corregir_Click;
+        var preparar=new Button{Text="Declarar preparación",AutoSize=true};preparar.Click+=Preparar_Click;
+        gestionAcciones.Controls.AddRange(new Control[]{_gestionar,corregir,preparar});
+        derecha.Controls.Add(gestionAcciones,0,6);
         derecha.Controls.Add(_estado,0,3); derecha.Controls.Add(_total,0,4); derecha.Controls.Add(_facturar,0,5);
         layout.Controls.Add(izquierda,0,1); layout.Controls.Add(derecha,1,1); Controls.Add(layout);
         AutoScaleDimensions=new SizeF(7F,15F); AutoScaleMode=AutoScaleMode.Font;

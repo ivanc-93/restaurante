@@ -1,8 +1,10 @@
+#requires -Version 7.0
 param(
  [Parameter(Mandatory=$true)][string]$Servidor,
  [Parameter(Mandatory=$true)][ValidatePattern('^[A-Za-z][A-Za-z0-9_]{0,79}$')][string]$BaseDatos,
  [Parameter(Mandatory=$true)][securestring]$TokenInstalacion,
- [switch]$ConRecuperacion
+ [switch]$ConRecuperacion,
+ [switch]$ConOperaciones
 )
 $ErrorActionPreference='Stop'
 # Solo bases inexistentes: no borra usuarios ni reinicia bases del grupo.
@@ -17,7 +19,7 @@ try {
 } finally {[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($puntero);$token=$null}
 $archivo=Join-Path ([IO.Path]::GetTempPath()) ('SaboresInstalacion_'+[guid]::NewGuid().ToString('N')+'.sql')
 try {
- $base=(Get-Content (Join-Path $PSScriptRoot 'CrearBaseDatos.sql') -Raw).Replace('RestauranteDB',$BaseDatos)
+ $base=(Get-Content (Join-Path $PSScriptRoot 'CrearBaseDatos.sql') -Raw -Encoding UTF8).Replace('RestauranteDB',$BaseDatos)
  $base="EXEC sys.sp_set_session_context @key=N'SaboresSinUsuarioDemo',@value=1;`nGO`n"+$base
  $base|Set-Content -LiteralPath $archivo -Encoding utf8
  & sqlcmd -S $Servidor -E -b -I -f 65001 -d master -i $archivo
@@ -26,9 +28,13 @@ try {
   & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot "Migracion_$n.sql")
   if($LASTEXITCODE -ne 0){throw "Falló migración $n. No continuar."}
  }
- if($ConRecuperacion){
+ if($ConRecuperacion -or $ConOperaciones){
   & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot 'Migracion_006.sql')
   if($LASTEXITCODE -ne 0){throw 'Falló migración 006. No continuar.'}
+ }
+ if($ConOperaciones){
+  & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot 'Migracion_007.sql')
+  if($LASTEXITCODE -ne 0){throw 'Falló migración 007. No continuar.'}
  }
  & sqlcmd -S $Servidor -E -b -d $BaseDatos -Q "UPDATE dbo.InstalacionSabores SET TokenInstalacionHash='$hash' WHERE Id=1 AND Completada=0 AND NOT EXISTS(SELECT 1 FROM dbo.Usuarios);"
  if($LASTEXITCODE -ne 0){throw 'No se pudo completar el aprovisionamiento.'}

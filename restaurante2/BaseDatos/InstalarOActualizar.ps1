@@ -1,7 +1,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$Servidor,
     [ValidatePattern('^[A-Za-z][A-Za-z0-9_]{0,79}$')][string]$BaseDatos='RestauranteDB',
-    [Parameter(Mandatory=$true)][string]$RutaRespaldos
+    [Parameter(Mandatory=$true)][string]$RutaRespaldos,
+    [switch]$ConFuncionesAuditadas
 )
 $ErrorActionPreference='Stop'
 # Windows authentication. For SQL authentication use the SQL scripts from SSMS with that connection.
@@ -20,7 +21,7 @@ $existe=(Sql 'master' "SET NOCOUNT ON;SELECT COUNT(*) FROM sys.databases WHERE n
 if($existe -eq '0') {
     $temporal=Join-Path ([IO.Path]::GetTempPath()) ('Sabores_'+[guid]::NewGuid().ToString('N')+'.sql')
     try {
-        (Get-Content (Join-Path $PSScriptRoot 'CrearBaseDatos.sql') -Raw).Replace('RestauranteDB',$BaseDatos)|Set-Content $temporal -Encoding utf8
+        (Get-Content (Join-Path $PSScriptRoot 'CrearBaseDatos.sql') -Raw -Encoding UTF8).Replace('RestauranteDB',$BaseDatos)|Set-Content $temporal -Encoding utf8
         Script 'master' $temporal
     } finally {if(Test-Path -LiteralPath $temporal){Remove-Item -LiteralPath $temporal}}
 }
@@ -47,10 +48,12 @@ $huella="SET NOCOUNT ON;"+($consultas -join ' UNION ALL ')
 $original=(Sql $BaseDatos $huella | Out-String).Trim()
 $restaurado=(Sql $copia $huella | Out-String).Trim()
 if($original -ne $restaurado){throw "La restauración no coincide con el estado actual. No se migró $BaseDatos. Compruebe actividad concurrente y el respaldo."}
-foreach($archivo in @('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')) {Script $copia (Join-Path $PSScriptRoot $archivo)}
-Script $copia (Join-Path $PSScriptRoot 'Migracion_005.sql')
-foreach($archivo in @('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')) {Script $BaseDatos (Join-Path $PSScriptRoot $archivo)}
-$resultado=[ordered]@{Servidor=$Servidor;Base=$BaseDatos;Respaldo=$bak;Restaurada=$copia;Fecha=(Get-Date).ToString('o');TablasVerificadas=$tablas.Count;Verificacion='Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena 002/003/004/005 probada; 005 repetida en copia';Version=5}
+$migraciones=@('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')
+if($ConFuncionesAuditadas){$migraciones+=@('Migracion_006.sql','Migracion_007.sql')}
+foreach($archivo in $migraciones) {Script $copia (Join-Path $PSScriptRoot $archivo)}
+Script $copia (Join-Path $PSScriptRoot $migraciones[-1])
+foreach($archivo in $migraciones) {Script $BaseDatos (Join-Path $PSScriptRoot $archivo)}
+$resultado=[ordered]@{Servidor=$Servidor;Base=$BaseDatos;Respaldo=$bak;Restaurada=$copia;Fecha=(Get-Date).ToString('o');TablasVerificadas=$tablas.Count;Verificacion='Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena 002/003/004/005 probada; última migración repetida en copia';Version=[int]((Sql $BaseDatos 'SET NOCOUNT ON;SELECT MAX(Version) FROM dbo.VersionEsquema;' | Out-String).Trim())}
 $registro=Join-Path $ruta ($BaseDatos+'_'+$sufijo+'.json')
 $resultado|ConvertTo-Json|Set-Content $registro -Encoding utf8
 $resultado|ConvertTo-Json

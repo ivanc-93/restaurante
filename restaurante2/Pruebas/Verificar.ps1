@@ -20,7 +20,7 @@ try {
     $env:RESTAURANTE_MIGRACION_003=Join-Path $repoRaiz 'restaurante2/BaseDatos/Migracion_003.sql'
     if($ConSql) {
         $basePrueba='Restaurante_Pruebas_'+(Get-Date -Format 'yyyyMMdd_HHmmss')+'_'+[guid]::NewGuid().ToString('N').Substring(0,8)
-        $sql=Get-Content (Join-Path $repoRaiz 'restaurante2/BaseDatos/CrearBaseDatos.sql') -Raw
+        $sql=Get-Content (Join-Path $repoRaiz 'restaurante2/BaseDatos/CrearBaseDatos.sql') -Raw -Encoding UTF8
         $sql=$sql.Replace('RestauranteDB',$basePrueba)
         $instalacion=Join-Path $trabajo 'InstalarPruebas.sql'
         Set-Content $instalacion $sql -Encoding utf8

@@ -17,6 +17,17 @@ public sealed partial class FormularioAcceso : Form
         FormClosing+=(_,e)=>e.Cancel=ocupado;
     }
     private bool ocupado;
+    private async void RecuperarClave_Click(object? sender,LinkLabelLinkClickedEventArgs e)
+    {
+        if(ocupado)return;ocupado=true;entrar.Enabled=conexion.Enabled=false;
+        try
+        {
+            if(!await Task.Run(_repositorio.RecuperacionDisponible)){_mensaje.Text="La recuperación todavía no está habilitada en esta base. Solicita al responsable técnico la actualización respaldada; tus usuarios se conservan.";return;}
+            using var f=new FormularioRecuperarClave(_repositorio);f.ShowDialog(this);
+        }
+        catch(Exception){_mensaje.Text="No se pudo comprobar la recuperación. Revisa la conexión SQL; no se cambió ninguna contraseña.";}
+        finally{ocupado=false;entrar.Enabled=conexion.Enabled=true;_contrasena.Clear();}
+    }
     private void Conexion_Click(object? sender,EventArgs e)
     {
         if(ocupado||_configuracion is null)return;

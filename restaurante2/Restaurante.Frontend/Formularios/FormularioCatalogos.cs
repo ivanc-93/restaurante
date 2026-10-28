@@ -55,7 +55,8 @@ public sealed partial class FormularioCatalogos : Form
             telefono.Visible = telefonoLabel.Visible = correo.Visible = correoLabel.Visible = entidad == "Clientes";
             categoria.Visible = categoriaLabel.Visible = tipo.Visible = tipoLabel.Visible = precio.Visible = precioLabel.Visible = alcoholica.Visible = entidad == "Productos";
             ubicacion.Visible = ubicacionLabel.Visible = entidad == "Restaurante";
-            editar.Visible = nuevo.Visible = entidad != "Restaurante";
+            nuevo.Visible = entidad != "Restaurante";
+            editar.Visible = _puedeAdministrar && entidad != "Restaurante";
             desactivar.Enabled = _puedeAdministrar && entidad != "Restaurante";
             if (entidad == "Restaurante")
             {
@@ -83,7 +84,7 @@ public sealed partial class FormularioCatalogos : Form
     private void Nuevo_Click(object? sender, EventArgs e) { if (ConfirmarSalida()) { Limpiar(); _sucio=false; } }
     private void Seleccionar_Click(object? sender, EventArgs e)
     {
-        if (!ConfirmarSalida()) return;
+        if (!_puedeAdministrar || !ConfirmarSalida()) return;
         switch (tabla.CurrentRow?.DataBoundItem)
         {
             case Cliente c:

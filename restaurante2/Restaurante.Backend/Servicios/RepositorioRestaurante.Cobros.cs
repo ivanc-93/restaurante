@@ -66,7 +66,7 @@ public sealed partial class RepositorioRestaurante
         }
         else if(!s.PagoConfirmado)throw new ArgumentException("Confirme el efectivo recibido o la cortesía autorizada.");
     }
-    private static string EmitirComprobante(SqlConnection c,SqlTransaction t,CuentaRevision cuenta,SolicitudCobro s,UsuarioAutenticado actor)
+    private static string EmitirComprobante(SqlConnection c,SqlTransaction t,CuentaRevision cuenta,SolicitudCobro s,UsuarioAutenticado actor,bool cerrarMesa=true)
     {
         using var q=Consulta(c,t,"""
           DECLARE @emitido TABLE(Numero nvarchar(30));
@@ -79,7 +79,8 @@ public sealed partial class RepositorioRestaurante
           ("@ident",string.IsNullOrWhiteSpace(s.Identificacion)?null:s.Identificacion.Trim()),("@dir",s.Direccion?.Trim()),("@correo",s.Correo?.Trim()),
           ("@mesa",cuenta.NumeroMesa),("@operador",actor.Nombre),("@actor",actor.Id),("@original",cuenta.ImporteOriginal),("@descuento",cuenta.Descuento));
         var numero=q.ExecuteScalar() as string??throw new InvalidOperationException("Configure la información del restaurante.");
-        Ejecutar(c,t,"UPDATE dbo.Pedidos SET Estado=N'Facturado' WHERE Id=@p; UPDATE dbo.Mesas SET Estado=N'En limpieza' WHERE Id=@m;",("@p",cuenta.PedidoId),("@m",cuenta.MesaId));
+        Ejecutar(c,t,"UPDATE dbo.Pedidos SET Estado=N'Facturado' WHERE Id=@p;",("@p",cuenta.PedidoId));
+        if(cerrarMesa)Ejecutar(c,t,"UPDATE dbo.Mesas SET Estado=N'En limpieza' WHERE Id=@m;",("@m",cuenta.MesaId));
         return numero;
     }
 
@@ -144,6 +145,7 @@ public sealed partial class RepositorioRestaurante
             ExigirAbierto(cuenta);ExigirVersion(cuenta,s.Version??"");SinPagoPendiente(c,t,cuenta.PedidoId);
             using(var f=Consulta(c,t,"SELECT COUNT(*) FROM dbo.Facturas WHERE PedidoId=@p;",("@p",cuenta.PedidoId)))
                 if((int)f.ExecuteScalar()!>0)throw new InvalidOperationException("Existe un comprobante. No está habilitada su corrección financiera.");
+            if(s.Accion=="Cancelar"&&cuenta.Estado=="En preparación")throw new InvalidOperationException("Ya se declaró preparación. Registre una incidencia; no se ocultará el consumo mediante cancelación.");
             if(s.Accion=="Cancelar"&&!s.SinPreparacionDeclarada)throw new InvalidOperationException("Solo puede cancelar declarando que no hubo preparación ni consumo. Si los hubo, registre incidencia pendiente de resolución.");
             var posterior=s.Accion=="Cancelar"?"Cancelado":"Incidencia";
             Ejecutar(c,t,"UPDATE dbo.Pedidos SET Estado=@estado WHERE Id=@p; UPDATE dbo.Mesas SET Estado=N'En limpieza' WHERE Id=@m;",("@estado",posterior),("@p",cuenta.PedidoId),("@m",s.MesaId));
@@ -186,7 +188,7 @@ public sealed partial class RepositorioRestaurante
               FROM dbo.PagosManuales pm JOIN dbo.Usuarios u ON u.Id=pm.UsuarioId WHERE pm.Fecha>=@desdeUtc AND pm.Fecha<@hastaUtc
             UNION ALL
             SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,a.Accion,a.Posterior,a.Importe,u.Nombre,a.Motivo FROM dbo.AuditoriaOperaciones a JOIN dbo.Usuarios u ON u.Id=a.UsuarioId
-              WHERE a.Accion IN(N'Cancelar',N'Incidencia') AND a.Fecha>=@desdeUtc AND a.Fecha<@hastaUtc
+              WHERE a.Accion IN(N'Cancelar',N'Incidencia',N'CorreccionLinea',N'ResolverIncidencia') AND a.Fecha>=@desdeUtc AND a.Fecha<@hastaUtc
             UNION ALL
             SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,a.Tipo,
               CASE WHEN a.Vigente=1 THEN N'Vigente' ELSE N'Invalidado' END,a.Descuento,u.Nombre,a.Motivo

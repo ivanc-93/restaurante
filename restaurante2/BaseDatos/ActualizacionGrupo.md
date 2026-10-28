@@ -1,3 +1,7 @@
+# Actualización de funciones del esquema 7
+
+Para las correcciones de octubre de 2026 consulte Pruebas/CorreccionesAuditoria20261028.md y Pruebas/RecuperacionAuditoria20261028.md. InstalarOActualizar.ps1 admite -ConFuncionesAuditadas para ensayar y aplicar hasta 007 con respaldo/restauración. InstalarNuevaBase.ps1 admite -ConOperaciones para una base nueva sin usuarios fijos. La aplicación no migra al iniciar. Los apartados siguientes conservan el procedimiento histórico hasta 005.
+
 # Actualización vigente del esquema 5
 
 Consulte [Instalación usuarios y autorizaciones](../Pruebas/RolesYAcceso.md). InstalarOActualizar.ps1 ahora ensaya y aplica 002 003 004 y 005, con respaldo y restauración comprobados. Para bases nuevas sin credenciales fijas utilice InstalarNuevaBase.ps1 con token de un solo uso. La aplicación requiere esquema 5 y no migra al iniciar.

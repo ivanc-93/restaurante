@@ -43,7 +43,7 @@ partial class FormularioAcceso
         var pie=new TableLayoutPanel{Dock=DockStyle.Fill,AutoSize=true,ColumnCount=1,RowCount=4,Padding=new Padding(24,8,24,12)};
         pie.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         var recuperar=new LinkLabel{Text="¿Olvidaste tu contraseña?",AutoSize=true,TabIndex=4,Margin=new Padding(0,6,0,10),LinkColor=Color.FromArgb(49,86,62)};
-        recuperar.LinkClicked+=(_,_)=>{if(!ocupado){using var f=new FormularioRecuperarClave(_repositorio);f.ShowDialog(this);_contrasena.Clear();}};
+        recuperar.LinkClicked+=RecuperarClave_Click;
         conexion.TabIndex=5;
         pie.Controls.Add(_mensaje,0,0);pie.Controls.Add(entrar,0,1);pie.Controls.Add(recuperar,0,2);pie.Controls.Add(conexion,0,3);
         pie.SizeChanged+=(_,_)=>_mensaje.MaximumSize=new Size(Math.Max(180,pie.ClientSize.Width-pie.Padding.Horizontal),0);

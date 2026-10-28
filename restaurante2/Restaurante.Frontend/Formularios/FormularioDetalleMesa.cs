@@ -142,4 +142,20 @@ public sealed partial class FormularioDetalleMesa : Form
         using var gestion=new FormularioGestionMesa(_repositorio,_mesa,_dialogos);
         gestion.ShowDialog(this);await RecargarSeguroAsync();
     }
+    private async void Corregir_Click(object? sender,EventArgs e)
+    {
+        if(_ocupado||_cargando||_recuperacionPendiente||_pedido is null)return;_ocupado=true;
+        try{var cuenta=await Task.Run(()=>_repositorio.RevisarCuenta(_pedido.Id));using var f=new FormularioCorreccionLinea(_repositorio,cuenta);f.ShowDialog(this);}
+        catch(Exception ex){_dialogos.Mostrar(this,ex.Message,"Corrección de comanda");}
+        finally{_ocupado=false;await RecargarSeguroAsync();}
+    }
+    private async void Preparar_Click(object? sender,EventArgs e)
+    {
+        if(_ocupado||_cargando||_recuperacionPendiente||_pedido is null)return;
+        if(MessageBox.Show(this,"Declara que el pedido entró en preparación. Después no se permite retirar unidades como error de captura; se conservará el consumo y deberá registrarse incidencia. ¿Continuar?","Declarar preparación",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+        _ocupado=true;
+        try{var id=Guid.NewGuid();var pedido=_pedido.Id;await DiarioOperaciones.Ejecutar(_repositorio,"Preparacion",id,pedido,()=>_repositorio.MarcarPreparacion(pedido,id));}
+        catch(Exception ex){_dialogos.Mostrar(this,ex.Message,"Preparación");}
+        finally{_ocupado=false;await RecargarSeguroAsync();}
+    }
 }

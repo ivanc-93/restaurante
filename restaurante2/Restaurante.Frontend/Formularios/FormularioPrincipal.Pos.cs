@@ -41,7 +41,7 @@ public sealed partial class FormularioPrincipal
                 boton.AccessibleName = $"Mesa {mesa.Numero}, {mesa.Estado}";
                 Iconos.Aplicar(boton, "armchair");
                 boton.Enabled = true;
-                boton.Click += async (_, _) => await EjecutarSeguro(async () => { AbrirMesa(mesa); await MostrarMesasPos(); });
+                boton.Click += async (_, _) => await EjecutarSeguro(async () => { await AbrirMesa(mesa); await MostrarMesasPos(); });
                 tarjetas.Controls.Add(boton);
             }
             if (tarjetas.Controls.Count == 0) tarjetas.Controls.Add(Componentes.Etiqueta("No hay mesas para este filtro."));
@@ -52,10 +52,10 @@ public sealed partial class FormularioPrincipal
         if (InvokeRequired) Invoke(Dibujar); else Dibujar();
     }
 
-    private void AbrirMesa(Mesa seleccionada)
+    private async Task AbrirMesa(Mesa seleccionada)
     {
         // Re-read before editing: availability may have changed in another session.
-        var actual = _repositorio.ListarMesas().FirstOrDefault(m => m.Id == seleccionada.Id)
+        var actual = (await Task.Run(_repositorio.ListarMesas)).FirstOrDefault(m => m.Id == seleccionada.Id)
             ?? throw new InvalidOperationException("La mesa ya no existe. Actualiza la vista.");
         using var detalle = new FormularioDetalleMesa(_repositorio, actual, _dialogos);
         detalle.ShowDialog(this);
@@ -81,7 +81,7 @@ public sealed partial class FormularioPrincipal
             if (tabla.CurrentRow?.DataBoundItem is not PedidoResumen p || p.Estado is not ("Abierto" or "En preparación"))
                 throw new InvalidOperationException("Selecciona un pedido abierto. Las facturas cerradas se consultan en Reportes.");
             var mesas = await Task.Run(_repositorio.ListarMesas);
-            AbrirMesa(mesas.Single(m => m.Numero == p.NumeroMesa));
+            await AbrirMesa(mesas.Single(m => m.Numero == p.NumeroMesa));
             await MostrarPedidosPos();
         });
         pagina.Controls.Add(abrir);

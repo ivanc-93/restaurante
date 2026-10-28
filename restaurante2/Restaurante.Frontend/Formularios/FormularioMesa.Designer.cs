@@ -34,7 +34,7 @@ partial class FormularioMesa
         numeroEtiqueta.SetBounds(25, 22, 340, 24);
         _numero.SetBounds(25, 50, 340, 30);
         _numero.Minimum = 1;
-        _numero.Maximum = 10000;
+        _numero.Maximum = int.MaxValue;
         _numero.Value = 1;
         capacidadEtiqueta.Text = "Capacidad (personas)";
         capacidadEtiqueta.SetBounds(25, 95, 340, 24);
@@ -46,7 +46,7 @@ partial class FormularioMesa
         estadoEtiqueta.SetBounds(25, 168, 340, 24);
         _estado.SetBounds(25, 195, 340, 30);
         _estado.DropDownStyle = ComboBoxStyle.DropDownList;
-        _estado.Items.AddRange(new object[] { "Disponible", "Ocupada", "Reservada" });
+        _estado.Items.AddRange(new object[] { "Disponible", "Ocupada", "Reservada", "En limpieza" });
         _estado.SelectedIndex = 0;
         aceptar.Text = "Guardar";
         aceptar.SetBounds(215, 260, 150, 42);

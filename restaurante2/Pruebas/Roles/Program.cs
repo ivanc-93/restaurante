@@ -12,6 +12,12 @@ internal static class Program
  {
   try
   {
+   if(args.Length==1&&args[0]=="--diagnostico-conexion")
+   {
+    var cfg=new ConfiguracionConexion();if(!cfg.EstaConfigurada){Console.WriteLine("No hay conexión habitual guardada para este perfil.");return 0;}
+    using var conexion=cfg.CrearConexion();conexion.Open();using var q=new SqlCommand("SELECT DB_NAME(),IS_SRVROLEMEMBER('sysadmin'),IS_MEMBER('db_owner'),HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','ALTER'),HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','SELECT');",conexion);
+    using var lector=q.ExecuteReader();lector.Read();Console.WriteLine($"Base del perfil: {lector.GetString(0)}; sysadmin={lector.GetInt32(1)}; db_owner={lector.GetInt32(2)}; ALTER={lector.GetInt32(3)}; SELECT={lector.GetInt32(4)}. No se mostraron credenciales ni cadena de conexión.");return 0;
+   }
    if(args.Length==2&&args[0]=="--validar-acceso")
    {PruebasRoles.PruebasValidacionAcceso.Ejecutar(args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de acceso");return 0;}
    cadena=Environment.GetEnvironmentVariable("SABORES_ROLES_PRUEBAS")??throw new Exception("Defina SABORES_ROLES_PRUEBAS.");
@@ -22,6 +28,10 @@ internal static class Program
    var h=Contrasenas.Crear(Personal);
    Sql("UPDATE dbo.Usuarios SET ContrasenaHash=@h,Sal=@s,Algoritmo=N'PBKDF2-SHA256',Iteraciones=600000,CambioObligatorio=0,IntentosFallidos=0,BloqueadoHasta=NULL WHERE Usuario=N'admin';",("@h",h.Hash),("@s",h.Sal));
    admin=Repo("admin",Personal);admin.ValidarEsquema();Ok(true,"Esquema 5 compatible");
+   if(args.Length==2&&args[0]=="--validar-auditoria")
+   {PruebasRoles.PruebasAuditoria.Ejecutar(cadena,admin,args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de auditoría");return 0;}
+   if(args.Length==2&&args[0]=="--auditoria-visual")
+   {PruebasRoles.PruebasAuditoria.Visual(cadena,admin,args[1]);return 0;}
    if(args.Length==2&&args[0]=="--validar-recuperacion")
    {PruebasRoles.PruebasRecuperacion.Ejecutar(cadena,admin,args[1],Ok);Console.WriteLine($"TOTAL {aprobadas} comprobaciones de recuperación");return 0;}
    if(args.Length==2&&args[0]=="--validar-autorizacion")

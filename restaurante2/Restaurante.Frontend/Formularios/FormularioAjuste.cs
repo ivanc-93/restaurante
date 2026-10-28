@@ -14,6 +14,7 @@ public sealed partial class FormularioAjuste:Form
         {
             ReglasRestaurante.Texto(motivo.Text,"Motivo",500);
             var s=new SolicitudAjuste(Guid.NewGuid(),cuenta.PedidoId,cuenta.Version,cuenta.Total,tipo.Text,tipo.Text=="Cortesía"?cuenta.ImporteOriginal:descuento.Value,motivo.Text);
+            ValidacionAjuste.Comprobar(s.Tipo,s.Descuento,cuenta.ImporteOriginal);
             if(!FormularioAutorizar.Solicitar(this,repo,s.OperacionId,"Ajuste",s,resumen.Text+$"\n{s.Tipo}: {MonedaGuatemala.Formatear(s.Descuento)}\nMotivo: {s.Motivo}"))return;
             ocupado=true;aplicar.Enabled=false;
             await DiarioOperaciones.Ejecutar(repo,"Ajuste",s.OperacionId,s,()=>repo.AplicarAjuste(s));ocupado=false;DialogResult=DialogResult.OK;

@@ -11,8 +11,7 @@ public sealed partial class RepositorioRestaurante
         return Mutacion(s.OperacionId,"Ajuste",s,mesa,true,(c,t,actor)=>
         {
             var cuenta=LeerCuenta(c,t,s.PedidoId);ExigirAbierto(cuenta);ExigirVersion(cuenta,s.Version,s.TotalEsperado);SinPagoPendiente(c,t,s.PedidoId);
-            if(s.Descuento>cuenta.ImporteOriginal || s.Tipo=="Cortesía"&&s.Descuento!=cuenta.ImporteOriginal || s.Tipo=="Descuento"&&s.Descuento==cuenta.ImporteOriginal)
-                throw new ArgumentException("La cortesía cubre el consumo completo; el descuento parcial debe ser menor al original.");
+            ValidacionAjuste.Comprobar(s.Tipo,s.Descuento,cuenta.ImporteOriginal);
             var jefe=actor.Id;
             if(actor.Rol is not("Administrador" or "Gerente"))
             {using var q=Consulta(c,t,"SELECT AutorizadorId FROM dbo.AutorizacionesOperacion WHERE OperacionId=@op;",("@op",s.OperacionId));jefe=(int)q.ExecuteScalar()!;}

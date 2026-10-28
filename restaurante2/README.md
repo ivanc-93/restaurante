@@ -1,3 +1,7 @@
+## Correcciones de la auditoría del 28 de octubre de 2026
+
+Consulte [estado y verificaciones](Pruebas/CorreccionesAuditoria20261028.md), [manual actualizado](Documentacion/ManualUsuario/Actualizacion_20261028.md) y [respaldo y recuperación](Pruebas/RecuperacionAuditoria20261028.md). Las funciones de correcciones e incidencias requieren esquema 7. Las bases existentes no se reinicializan ni se migran al iniciar.
+
 # Sabores — gestión de restaurante
 
 Aplicación académica C# Windows Forms sobre .NET 8 para mesas, clientes, menú, pedidos, cobros manuales, comprobantes internos y reportes. Sin conexión SAT/FEL ni bancaria. La solución contiene dos proyectos: `Restaurante.Frontend` y `Restaurante.Backend`.

@@ -4,8 +4,18 @@ namespace Restaurante.Backend.Servicios;
 
 public interface IRepositorioRestaurante
 {
+    bool CorreccionesDisponibles() => false;
+    IReadOnlyList<LineaPedidoCorregible> ListarLineasCorregibles(int pedidoId) => throw new NotSupportedException();
+    decimal CorregirLinea(SolicitudCorreccionLinea s) => throw new NotSupportedException();
+    string MarcarPreparacion(int pedidoId,Guid operacionId) => throw new NotSupportedException();
+    IReadOnlyList<IncidenciaResumen> ListarIncidencias() => throw new NotSupportedException();
+    string ResolverIncidencia(SolicitudResolucionIncidencia s) => throw new NotSupportedException();
+    bool RecuperacionDisponible() => false;
+    void AbandonarOperacion(Guid id) => throw new NotSupportedException("El repositorio no admite abandono seguro.");
     bool NecesitaCodigoRecuperacion();
+    ResultadoGeneracionCodigo IntentarGenerarCodigoRecuperacion(string claveActual)=>new(EstadoGeneracionCodigo.NoDisponible,"Este repositorio no admite generación guiada de códigos.");
     string GenerarCodigoRecuperacion(string claveActual);
+    ResultadoRecuperacion IntentarConfirmarCodigoRecuperacion(string codigo)=>new(false,"Este repositorio no admite confirmación guiada del código.");
     void ConfirmarCodigoRecuperacion(string codigo);
     ResultadoRecuperacion RecuperarConAdministrador(Guid operacion,string recibo,string objetivo,string administrador,string claveAdministrador,string nueva);
     ResultadoRecuperacion RecuperarConCodigo(Guid operacion,string recibo,string usuario,string codigo,string nueva);

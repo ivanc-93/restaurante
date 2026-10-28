@@ -253,10 +253,10 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
         if (pedidoId <= 0) throw new ArgumentOutOfRangeException(nameof(pedidoId));
         var resultado = new List<DetallePedidoResumen>();
         using var conexion = AbrirConexion();
-        using var comando = new SqlCommand("""
+        using var comando = new SqlCommand($"""
             SELECT d.NombreProducto, d.TipoProducto, SUM(d.Cantidad),
                 d.PrecioUnitario, SUM(d.Cantidad*d.PrecioUnitario)
-            FROM dbo.DetallesPedido d
+            FROM {TablaDetalles(conexion,null)} d
             WHERE d.PedidoId=@pedido
             GROUP BY d.MenuId,d.NombreProducto,d.TipoProducto,d.PrecioUnitario
             ORDER BY d.NombreProducto;
@@ -302,12 +302,12 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
         var fechas = ReglasRestaurante.Fechas(desde, hasta);
         var resultado = new List<PlatoVendido>();
         using var conexion = AbrirConexion();
-        using var comando = new SqlCommand("""
+        using var comando = new SqlCommand($"""
             WITH Ventas AS
             (
                 SELECT d.MenuId, d.NombreProducto, d.Cantidad, d.PrecioUnitario,
                     ROW_NUMBER() OVER (PARTITION BY d.MenuId ORDER BY f.Fecha DESC,f.Id DESC,d.Id DESC) AS Orden
-                FROM dbo.DetallesPedido d
+                FROM {TablaDetalles(conexion,null)} d
                 JOIN dbo.Pedidos p ON p.Id=d.PedidoId
                 JOIN dbo.Facturas f ON f.PedidoId=p.Id
                 WHERE p.Estado=N'Facturado' AND d.TipoProducto=N'Plato'
@@ -356,7 +356,7 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
         ReglasRestaurante.Cliente(nombre, telefono, correo);
         using var conexion = AbrirConexion();
         using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
-        SesionEn(conexion,transaccion,gerente:false);
+        SesionEn(conexion,transaccion,gerente:id.HasValue);
         using var comando = new SqlCommand(id.HasValue
             ? "UPDATE dbo.Clientes SET Nombre=@nombre,Telefono=@telefono,Correo=@correo WHERE Id=@id AND Activo=1;"
             : "INSERT dbo.Clientes(Nombre,Telefono,Correo) VALUES(@nombre,@telefono,@correo);", conexion, transaccion);

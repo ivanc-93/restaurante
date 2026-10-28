@@ -10,8 +10,13 @@ public sealed partial class RepositorioRestaurante
 {
     private void ExigirLecturaPedido(int pedidoId)
     {
-        var actor=ExigirSesion();if(actor.Rol is "Administrador" or "Gerente")return;
-        using var c=AbrirConexion();using var q=Consulta(c,null,"SELECT COUNT(*) FROM dbo.Pedidos p LEFT JOIN dbo.Facturas f ON f.PedidoId=p.Id WHERE p.Id=@p AND (p.Estado IN(N'Abierto',N'En preparación') OR f.UsuarioId=@actor);",("@p",pedidoId),("@actor",actor.Id));
+        using var c=AbrirConexion();using var t=c.BeginTransaction(IsolationLevel.Serializable);
+        ExigirLecturaPedido(c,t,pedidoId);t.Commit();
+    }
+    private void ExigirLecturaPedido(SqlConnection c,SqlTransaction t,int pedidoId)
+    {
+        var actor=SesionEn(c,t);if(actor.Rol is "Administrador" or "Gerente")return;
+        using var q=Consulta(c,t,"SELECT COUNT(*) FROM dbo.Pedidos p LEFT JOIN dbo.Facturas f ON f.PedidoId=p.Id WHERE p.Id=@p AND (p.Estado IN(N'Abierto',N'En preparación') OR f.UsuarioId=@actor);",("@p",pedidoId),("@actor",actor.Id));
         if((int)q.ExecuteScalar()!!=1)throw new UnauthorizedAccessException("Solo puede consultar pedidos abiertos y sus propios comprobantes.");
     }
     private UsuarioAutenticado? VerificarAcceso(string usuario,string clave,bool actualizarHash)

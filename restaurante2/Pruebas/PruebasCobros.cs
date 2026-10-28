@@ -204,7 +204,7 @@ internal static class PruebasCobros
             Si(!DiarioOperaciones.TienePendiente(nuevo,s.OperacionId),"No se cerró el registro de recuperación.");
             Si(Cantidad($"SELECT COUNT(*) FROM dbo.PagosManuales WHERE PedidoId={c.PedidoId}")==1,"Se volvió a cobrar al recuperar.");
         });
-        caso("Recuperación: fallo antes de SQL conserva solicitud y confirma ausencia al descartarla",()=>
+        caso("Recuperación: fallo antes de SQL conserva solicitud y registra abandono terminal al descartarla",()=>
         {
             var c=Cuenta();var s=Solicitud(c);
             try{Task.Run(()=>DiarioOperaciones.Ejecutar<ResultadoCobro>(repo,"Cobro",s.OperacionId,s,()=>throw new IOException("Fallo simulado antes de enviar SQL."))).GetAwaiter().GetResult();}

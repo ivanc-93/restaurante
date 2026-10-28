@@ -24,12 +24,13 @@ public sealed partial class FormularioReportes : Form
             try
             {
                 var opciones=await Task.Run(()=> (Mesas:_repositorio.ListarMesas(),Clientes:_repositorio.ListarClientesHistoricos()));
+                if(IsDisposed||Disposing)return;
                 mesa.DataSource=new List<OpcionFiltro>{new(null,"Todas las mesas")}.Concat(opciones.Mesas.Select(m=>new OpcionFiltro(m.Id,$"Mesa {m.Numero}"))).ToList();
                 cliente.DataSource=new List<OpcionFiltro>{new(null,"Todos los clientes"),new(0,"Público general")}.Concat(opciones.Clientes.Select(c=>new OpcionFiltro(c.Id,c.Nombre))).ToList();
                 _listo=true;
                 await CargarAsync();
             }
-            catch(Exception ex) { MessageBox.Show(this,ex.Message,"Filtros de reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
+            catch(Exception ex) { if(!IsDisposed&&!Disposing)MessageBox.Show(this,ex.Message,"Filtros de reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
             finally {if(!IsDisposed) filtros.Enabled=true;}
         };
     }
@@ -56,7 +57,10 @@ public sealed partial class FormularioReportes : Form
                 Platos:_repositorio.ReportarPlatosMasVendidos(desde,hasta),
                 Pedidos:_repositorio.ReportarPedidos(desde,hasta,mesaId,clienteId),
                 Operaciones:_repositorio.ReportarOperaciones(desde,hasta)));
+            if(IsDisposed||Disposing)return;
             ventas.DataSource=datos.Ventas.ToList(); platos.DataSource=datos.Platos.ToList(); pedidos.DataSource=datos.Pedidos.ToList();
+            if(platos.Columns.Contains("Importe"))platos.Columns["Importe"].HeaderText="Consumo bruto (Q), antes de ajustes";
+            if(platos.Columns.Contains("Total"))platos.Columns["Total"].HeaderText="Consumo bruto (Q), antes de ajustes";
             ((DataGridView)pestanas.TabPages[3].Controls["operaciones"]!).DataSource=datos.Operaciones.ToList();
             decimal Suma(string concepto,string estado)=>datos.Operaciones.Where(x=>x.Concepto==concepto&&x.Estado==estado).Sum(x=>x.Importe);
             pestanas.TabPages[3].Controls["resumenOperaciones"]!.Text=
@@ -67,7 +71,7 @@ public sealed partial class FormularioReportes : Form
             total.Text=$"Comprobantes emitidos (no equivale a efectivo cobrado): {FormatoPresentacion.Moneda(datos.Ventas.Sum(x=>x.Total))} · {datos.Ventas.Sum(x=>x.Facturas)} facturas. Semana: lunes a domingo.";
             FormatoPresentacion.Aplicar(this);
         }
-        catch(Exception ex) { MessageBox.Show(this,ex.Message,"Reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
+        catch(Exception ex) { if(!IsDisposed&&!Disposing)MessageBox.Show(this,ex.Message,"Reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }
         finally { _cargando=false; if(!IsDisposed) { filtros.Enabled=true; UseWaitCursor=false; } }
     }
 }
