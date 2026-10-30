@@ -1,5 +1,7 @@
 # Iconos de Sabores
 
+El complemento `Formularios/IconosComplementarios.cs` contiene trazos vectoriales originales del proyecto para limpieza, desactivación, calendario, aviso, actualizar y guardar. Se rasterizan en memoria a 24/32/48 px con transparencia, sin texto incrustado ni archivos descargados. Los recursos Lucide siguientes mantienen sus licencias originales.
+
 Fuente: https://lucide.dev/icons/
 Repositorio: https://github.com/lucide-icons/lucide
 Revisión fijada: 03f11e2d6adc319ea21e9a1d5820a99cd3767257

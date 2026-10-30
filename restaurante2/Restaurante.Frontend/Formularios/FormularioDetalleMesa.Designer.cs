@@ -37,6 +37,7 @@ partial class FormularioDetalleMesa
         izquierda = new TableLayoutPanel(); derecha = new TableLayoutPanel(); acciones = new FlowLayoutPanel();
         ((System.ComponentModel.ISupportInitialize)_detalles).BeginInit();
         ((System.ComponentModel.ISupportInitialize)_cantidad).BeginInit(); SuspendLayout();
+        Font=Componentes.Fuente;AutoScaleDimensions=new SizeF(96,96);AutoScaleMode=AutoScaleMode.Dpi;
         layout.Dock = DockStyle.Fill; layout.Padding = new Padding(16); layout.ColumnCount = 2; layout.RowCount = 2;
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
@@ -82,8 +83,8 @@ partial class FormularioDetalleMesa
         derecha.Controls.Add(gestionAcciones,0,6);
         derecha.Controls.Add(_estado,0,3); derecha.Controls.Add(_total,0,4); derecha.Controls.Add(_facturar,0,5);
         layout.Controls.Add(izquierda,0,1); layout.Controls.Add(derecha,1,1); Controls.Add(layout);
-        AutoScaleDimensions=new SizeF(7F,15F); AutoScaleMode=AutoScaleMode.Font;
-        ClientSize=new Size(1120,660); MinimumSize=new Size(680,400); StartPosition=FormStartPosition.CenterParent; Text="Mesa y pedido";
+        AutoScaleDimensions=new SizeF(96,96); AutoScaleMode=AutoScaleMode.Dpi;
+        ClientSize=new Size(1220,730); MinimumSize=new Size(850,520); StartPosition=FormStartPosition.CenterParent; Text="Sabores | Mesa y pedido";
         ((System.ComponentModel.ISupportInitialize)_detalles).EndInit(); ((System.ComponentModel.ISupportInitialize)_cantidad).EndInit();
         ResumeLayout(false); FormatoPresentacion.Aplicar(this);
     }

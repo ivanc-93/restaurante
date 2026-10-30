@@ -6,52 +6,60 @@ public sealed partial class FormularioPrincipal
 {
     private async Task MostrarMesasPos()
     {
-        _titulo.Text = "Servicio / Mesas";
-        LimpiarContenido();
-        var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Mesas", "Selecciona una mesa para abrir o continuar su pedido."));
-        var herramientas = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
-        var buscar = new TextBox { Width = 170, PlaceholderText = "Buscar mesa", Margin = new Padding(0, 10, 12, 10) };
-        var filtro = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 160, Margin = new Padding(0, 10, 12, 10) };
-        filtro.Items.AddRange(["Todas", "Disponible", "Ocupada", "Reservada", "En limpieza"]); filtro.SelectedIndex = 0;
-        var actualizar = Componentes.Boton("Actualizar", false);
-        var administrar = Componentes.Boton("Administrar mesas", false);
-        administrar.Click += async (_, _) => await EjecutarSeguro(MostrarMenuMesas);
-        herramientas.Controls.AddRange([buscar, filtro, actualizar, administrar]);
-        pagina.Controls.Add(herramientas);
-        var tarjetas = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
-        pagina.Controls.Add(tarjetas);
-        var mesas = await Task.Run(_repositorio.ListarMesas);
-        var pedidos = await Task.Run(_repositorio.ListarPedidos);
+        if(InvokeRequired){await EnInterfazAsync(MostrarMesasPos);return;}
+        _titulo.Text="Servicio / Mesas";SeleccionarNavegacion("Mesas");LimpiarContenido();
+        var pagina=CrearPagina();
+        pagina.Controls.Add(Encabezado("Cada mesa, en su momento", "Elige una mesa. Su disponibilidad física no cancela los saldos pendientes."));
+        var herramientas=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=true,Margin=new Padding(0,8,0,12)};
+        var buscar=new TextBox{Name="buscarMesa",Width=230,PlaceholderText="Buscar mesa",Margin=new Padding(0,10,12,10),AccessibleName="Buscar mesa por número"};
+        var filtro=new ComboBox{Name="filtroEstadoMesa",DropDownStyle=ComboBoxStyle.DropDownList,Width=190,Margin=new Padding(0,10,12,10)};
+        filtro.Items.AddRange(["Todas","Disponible","Ocupada","En limpieza","Reservada"]);filtro.SelectedIndex=0;
+        var actualizar=Componentes.Boton("Actualizar",false);Iconos.Aplicar(actualizar,"refresh");actualizar.Margin=new Padding(0,0,12,6);
+        var administrar=Componentes.Boton("Administrar mesas",false);Iconos.Aplicar(administrar,"settings");administrar.Visible=_usuario.Rol is "Administrador" or "Gerente";
+        administrar.Click+=async(_,_)=>await EjecutarSeguro(MostrarMenuMesas);
+        herramientas.Controls.AddRange([buscar,filtro,actualizar,administrar]);pagina.Controls.Add(herramientas);
+        var leyenda=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=true,Margin=new Padding(0,0,0,12)};
+        foreach(var estado in new[]{"Disponible","En limpieza","Ocupada","Reservada"})
+        {
+            var estilo=EstadoVisualMesa.De(estado);leyenda.Controls.Add(new Label{Text="  "+estado+"  ",AutoSize=true,BackColor=estilo.Fondo,ForeColor=estilo.Tinta,Margin=new Padding(0,0,12,4),Padding=new Padding(4)});
+        }
+        pagina.Controls.Add(leyenda);
+        var tarjetas=new FlowLayoutPanel{Name="tarjetasMesas",Dock=DockStyle.Top,AutoSize=true,WrapContents=true,Margin=Padding.Empty,Padding=Padding.Empty};pagina.Controls.Add(tarjetas);
+        var mesas=await Task.Run(_repositorio.ListarMesas);var pedidos=await Task.Run(_repositorio.ListarPedidos);
+        void Ajustar()
+        {
+            var escala=DeviceDpi/96f;var disponible=Math.Max(1,tarjetas.ClientSize.Width);
+            var columnas=Math.Clamp((int)(disponible/(275*escala)),1,4);
+            var ancho=Math.Max((int)(240*escala),disponible/columnas-(int)(18*escala));
+            foreach(var tarjeta in tarjetas.Controls.OfType<TarjetaMesa>())tarjeta.Size=new Size(ancho,(int)(270*escala));
+        }
         void Dibujar()
         {
-            tarjetas.SuspendLayout();
-            while (tarjetas.Controls.Count > 0) tarjetas.Controls[0].Dispose();
-            foreach (var mesa in mesas.Where(m => (filtro.SelectedIndex == 0 || m.Estado == filtro.Text)
-                && m.Numero.ToString().Contains(buscar.Text.Trim())))
+            tarjetas.SuspendLayout();while(tarjetas.Controls.Count>0)tarjetas.Controls[0].Dispose();
+            foreach(var mesa in mesas.Where(m=>(filtro.SelectedIndex==0||m.Estado==filtro.Text)&&m.Numero.ToString().Contains(buscar.Text.Trim())))
             {
-                var pedido = pedidos.FirstOrDefault(p => p.NumeroMesa == mesa.Numero && p.Estado is "Abierto" or "En preparación");
-                var boton = Componentes.Boton($"Mesa {mesa.Numero} · {mesa.Capacidad} personas\n{mesa.Estado}\n" +
-                    (pedido is null ? "Sin pedido abierto" : $"Pedido #{pedido.Id} · {FormatoPresentacion.Moneda(pedido.Total)}") +
-                    (mesa.Estado == "Disponible" ? "\nAbrir pedido" : pedido is null ? "" : "\nVer pedido"), false);
-                boton.AutoSize = false; boton.Size = new Size((int)(240 * DeviceDpi / 96f), (int)(155 * DeviceDpi / 96f)); boton.Margin = new Padding(0, 0, 14, 14);
-                boton.TextAlign = ContentAlignment.MiddleLeft;
-                boton.BackColor = mesa.Estado == "Disponible" ? Color.FromArgb(234, 244, 235) :
-                    mesa.Estado == "Ocupada" ? Color.FromArgb(255, 244, 219) : Color.FromArgb(235, 239, 244);
-                boton.AccessibleName = $"Mesa {mesa.Numero}, {mesa.Estado}";
-                Iconos.Aplicar(boton, "armchair");
-                boton.Enabled = true;
-                boton.Click += async (_, _) => await EjecutarSeguro(async () => { await AbrirMesa(mesa); await MostrarMesasPos(); });
-                tarjetas.Controls.Add(boton);
+                var pedido=pedidos.FirstOrDefault(p=>p.NumeroMesa==mesa.Numero&&p.Estado is "Abierto" or "En preparación");
+                var tarjeta=new TarjetaMesa(mesa,pedido);
+                tarjeta.Accion.Click+=async(_,_)=>await EjecutarSeguro(async()=>
+                {
+                    var actual=(await Task.Run(_repositorio.ListarMesas)).Single(m=>m.Id==mesa.Id);
+                    var abierto=await Task.Run(()=>_repositorio.ObtenerPedidoAbierto(actual.Id));
+                    if(actual.Estado=="En limpieza"||actual.Estado=="Ocupada"&&abierto is null)
+                    {using var gestion=new FormularioGestionMesa(_repositorio,actual,_dialogos);gestion.ShowDialog(this);}
+                    else if(actual.Estado=="Reservada"&&_usuario.Rol is "Administrador" or "Gerente")
+                    {await MostrarMenuMesas();return;}
+                    else await AbrirMesa(actual);
+                    await MostrarMesasPos();
+                });
+                tarjetas.Controls.Add(tarjeta);
             }
-            if (tarjetas.Controls.Count == 0) tarjetas.Controls.Add(Componentes.Etiqueta("No hay mesas para este filtro."));
-            tarjetas.ResumeLayout(true);
+            if(tarjetas.Controls.Count==0)tarjetas.Controls.Add(Componentes.Etiqueta("No hay mesas para este filtro."));
+            Ajustar();tarjetas.ResumeLayout(true);
         }
-        buscar.TextChanged += (_, _) => Dibujar(); filtro.SelectedIndexChanged += (_, _) => Dibujar();
-        actualizar.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
-        if (InvokeRequired) Invoke(Dibujar); else Dibujar();
+        buscar.TextChanged+=(_,_)=>Dibujar();filtro.SelectedIndexChanged+=(_,_)=>Dibujar();tarjetas.SizeChanged+=(_,_)=>Ajustar();
+        actualizar.Click+=async(_,_)=>await EjecutarSeguro(MostrarMesasPos);
+        if(InvokeRequired)Invoke(Dibujar);else Dibujar();
     }
-
     private async Task AbrirMesa(Mesa seleccionada)
     {
         // Re-read before editing: availability may have changed in another session.
@@ -111,4 +119,3 @@ public sealed partial class FormularioPrincipal
         return Task.CompletedTask;
     }
 }
-

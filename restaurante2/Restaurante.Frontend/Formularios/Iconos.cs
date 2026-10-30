@@ -15,8 +15,8 @@ internal static class Iconos
         var ruta = ensamblado.GetManifestResourceNames().FirstOrDefault(n => n.EndsWith($".{nombre}.png")
             && (n.Contains($".{tamano}.") || n.Contains($"._{tamano}.")));
         using var recurso = ruta is null ? null : ensamblado.GetManifestResourceStream(ruta);
-        if (recurso is null) return null;
-        using var original = Image.FromStream(recurso);
+        using var original = recurso is null ? IconosComplementarios.Dibujar(nombre,tamano) : Image.FromStream(recurso);
+        if(original is null)return null;
         var resultado = new Bitmap(original);
         if (blanco)
         {

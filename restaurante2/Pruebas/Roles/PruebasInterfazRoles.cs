@@ -13,7 +13,7 @@ internal static class PruebasInterfazRoles
     var cb=new SqlConnectionStringBuilder(cadena);if(!cb.InitialCatalog.StartsWith("Restaurante_Pruebas_"))throw new Exception("Solo interfaz aislada.");
     using(var conexion=new FormularioConexion(new ConfiguracionConexion(Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".bin"))))
     {
-        Mostrar(conexion);Campo<TextBox>(conexion,"baseDatos").Text=cb.InitialCatalog;Campo<Button>(conexion,"probar").PerformClick();
+        Mostrar(conexion);Campo<TextBox>(conexion,"servidor").Text=cb.DataSource;Campo<NumericUpDown>(conexion,"puerto").Value=0;Campo<TextBox>(conexion,"baseDatos").Text=cb.InitialCatalog;Campo<Button>(conexion,"probar").PerformClick();
         Esperar(()=>Campo<Label>(conexion,"mensaje").Text.Contains("compatible"));Capturar(conexion,dir,"ConexionValidada");ok(true,"Interfaz prueba conexión y esquema sin guardar perfil habitual");conexion.Close();
     }
     var usuario="ui"+Guid.NewGuid().ToString("N")[..8];

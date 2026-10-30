@@ -93,7 +93,7 @@ internal static class PruebasRecuperacion
         var recuperado=Repo("admin",Nueva);ok(recuperado.UsuarioActual!.CambioObligatorio&&File.Exists(bak),"Mantenimiento restaura respaldo y exige cambio obligatorio");Deniega(()=>recuperado.ListarUsuarios(),"Credencial temporal no abre operación diaria");recuperado.CambiarMiContrasena(Nueva,Temporal);ok(Repo("admin",Temporal).NecesitaCodigoRecuperacion(),"Después de mantenimiento debe registrar nuevo código");
         ok(Convert.ToInt32(Sql("SELECT COUNT(*) FROM dbo.OperacionesRecuperacion WHERE Id=@op",("@op",opMant)))==1,"Intervención excepcional conserva identificador auditable");
         ok(Convert.ToDecimal(Sql("SELECT SUM(Total) FROM dbo.Facturas"))==ventasAntes&&Convert.ToInt32(Sql("SELECT COUNT(*) FROM dbo.Pedidos"))==consumo,"Recuperaciones conservan comprobante y ventas existentes");
-        using(var original=new FormularioRecuperacion(publico)){Mostrar(original);ok(Controles(original).OfType<Control>().Any(c=>c.Text.Contains("Descartar")),"Recuperación de operaciones pendientes permanece separada");original.Close();}
+        using(var original=new FormularioRecuperacion(publico)){Mostrar(original);ok(Campo<Button>(original,"descartar").Text.Contains("Abandonar"),"Recuperación de operaciones pendientes permanece separada");original.Close();}
     }
     private static T Campo<T>(Form f,string nombre)where T:Control=>(T)f.GetType().GetField(nombre,BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(f)!;
     private static IEnumerable<Control> Controles(Control c){foreach(Control hijo in c.Controls){yield return hijo;foreach(var nieto in Controles(hijo))yield return nieto;}}

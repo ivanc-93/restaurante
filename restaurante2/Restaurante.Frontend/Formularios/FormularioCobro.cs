@@ -17,6 +17,8 @@ public sealed partial class FormularioCobro : Form
     public FormularioCobro(IRepositorioRestaurante repo,CuentaRevision cuenta,IDialogosUsuario? dialogos=null):this()
     {
         _repo=repo;_cuenta=cuenta;_dialogos=dialogos??new DialogosUsuario();
+        tablaCuenta.DataSource=cuenta.Detalles.ToList();
+        totalCuenta.Text="Total  "+FormatoPresentacion.Moneda(cuenta.Total);
         detalle.Text=$"Mesa {cuenta.NumeroMesa} · Pedido #{cuenta.PedidoId}\r\n\r\n"+
             string.Join("\r\n",cuenta.Detalles.Select(d=>$"{d.Cantidad} × {d.Producto}\r\n{FormatoPresentacion.Moneda(d.PrecioUnitario)} = {FormatoPresentacion.Moneda(d.Importe)}\r\n"))+
             $"\r\nOriginal: {FormatoPresentacion.Moneda(cuenta.ImporteOriginal)}\r\nDescuento: {FormatoPresentacion.Moneda(cuenta.Descuento)}\r\nTOTAL: {FormatoPresentacion.Moneda(cuenta.Total)}";
@@ -48,14 +50,16 @@ public sealed partial class FormularioCobro : Form
         var diferencia=entregado.Value-_cuenta.Total;
         saldo.Text=$"Total: {FormatoPresentacion.Moneda(_cuenta.Total)} · "+(diferencia>=0?$"Cambio: {FormatoPresentacion.Moneda(diferencia)}":$"Falta: {FormatoPresentacion.Moneda(-diferencia)}");
         _ultimoAncho=0;AjustarCampos();
+        if(!_ocupado)confirmar.Enabled=_solicitud is not null||datosConfirmados.Checked&&metodo.SelectedIndex>=0
+            &&(metodo.Text=="Tarjeta"&&resultadoTarjeta.Text is "Rechazado" or "Incierto"||pagoConfirmado.Checked);
     }
     private void AjustarCampos()
     {
-        var ancho=Math.Max(120,campos.Width-campos.Padding.Horizontal-SystemInformation.VerticalScrollBarWidth-12);
+        var ancho=Math.Max(120,campos.ClientSize.Width-campos.Padding.Horizontal-SystemInformation.VerticalScrollBarWidth-12);
         if(_ajustandoCampos || ancho==_ultimoAncho)return;
         _ajustandoCampos=true;_ultimoAncho=ancho;campos.SuspendLayout();
         try {foreach(Control campo in campos.Controls)
-            if(campo is Label or CheckBox)campo.MaximumSize=new Size(ancho,0);else campo.Width=ancho;}
+            if(campo is Label or CheckBox){campo.MaximumSize=new Size(ancho,0);campo.Margin=new Padding(0,6,0,6);}else {campo.Width=ancho;campo.Margin=new Padding(0,0,0,6);}}
         finally{campos.ResumeLayout(true);_ajustandoCampos=false;}
     }
     private void ValidarEntrada()

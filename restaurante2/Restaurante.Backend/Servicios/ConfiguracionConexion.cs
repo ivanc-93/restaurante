@@ -55,6 +55,8 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
         var protegido = ProtectedData.Protect(Encoding.UTF8.GetBytes(opciones.ConnectionString),null,DataProtectionScope.CurrentUser);
         var temporal = _ruta + ".tmp";
         File.WriteAllBytes(temporal, protegido);
+        if (File.Exists(_ruta))
+            File.Copy(_ruta, _ruta + ".respaldo-" + Guid.NewGuid().ToString("N"), false);
         File.Move(temporal, _ruta, true);
         lock (_candado) _cadena = opciones.ConnectionString;
         ErrorCarga = null;
@@ -63,13 +65,21 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
     {
         if (string.IsNullOrWhiteSpace(servidor) || string.IsNullOrWhiteSpace(baseDatos))
             throw new ArgumentException("La IP del servidor y la base de datos son obligatorias.");
-        if (puerto is < 1 or > 65535)
-            throw new ArgumentOutOfRangeException(nameof(puerto), "El puerto debe estar entre 1 y 65535.");
+        if (puerto is < 0 or > 65535)
+            throw new ArgumentOutOfRangeException(nameof(puerto), "Use 0 para conexión automática o un puerto entre 1 y 65535.");
+
+        var destino = servidor.Trim();
+        var localDb = destino.StartsWith("(localdb)\\",StringComparison.OrdinalIgnoreCase);
+        if (!localDb && puerto > 0)
+        {
+            if (destino.Contains(','))
+                throw new ArgumentException("Indique el puerto en un solo lugar: en el servidor o en el campo Puerto TCP.");
+            destino = $"{destino},{puerto}";
+        }
 
         var opciones = new SqlConnectionStringBuilder
         {
-            DataSource = servidor.Trim().StartsWith("(localdb)\\",StringComparison.OrdinalIgnoreCase)
-                ? servidor.Trim() : $"{servidor.Trim()},{puerto}",
+            DataSource = destino,
             InitialCatalog = baseDatos.Trim(),
             UserID = usuario.Trim(),
             Password = contrasena,

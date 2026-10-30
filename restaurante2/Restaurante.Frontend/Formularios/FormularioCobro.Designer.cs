@@ -24,6 +24,8 @@ partial class FormularioCobro
     private TableLayoutPanel estructura = null!;
     private FlowLayoutPanel campos = null!;
     private TableLayoutPanel pie = null!;
+    private DataGridView tablaCuenta = null!;
+    private Label totalCuenta = null!;
     protected override void Dispose(bool disposing) { if(disposing)components?.Dispose(); base.Dispose(disposing); }
     private void InitializeComponent()
     {
@@ -33,12 +35,24 @@ partial class FormularioCobro
         datosConfirmados=new CheckBox();pagoConfirmado=new CheckBox();saldo=new Label();mensaje=new Label();confirmar=new Button();
         estructura=new TableLayoutPanel();campos=new FlowLayoutPanel();pie=new TableLayoutPanel();
         ((System.ComponentModel.ISupportInitialize)entregado).BeginInit();SuspendLayout();
+        Font=Componentes.Fuente;AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);
         estructura.Dock=DockStyle.Fill;estructura.ColumnCount=2;estructura.RowCount=2;estructura.Padding=new Padding(16);
-        estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,45));estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,55));
-        estructura.RowStyles.Add(new RowStyle(SizeType.Percent,100));estructura.RowStyles.Add(new RowStyle(SizeType.Absolute,110));
+        estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,48));estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,52));
+        estructura.RowStyles.Add(new RowStyle(SizeType.Percent,100));estructura.RowStyles.Add(new RowStyle(SizeType.Absolute,145));
         detalle.Dock=DockStyle.Fill;detalle.Multiline=true;detalle.ReadOnly=true;detalle.ScrollBars=ScrollBars.Vertical;
         detalle.BackColor=Color.White;detalle.AccessibleName="Detalle y total de la cuenta";detalle.TabStop=false;
         campos.Dock=DockStyle.Fill;campos.FlowDirection=FlowDirection.TopDown;campos.WrapContents=false;campos.AutoScroll=true;campos.Padding=new Padding(12);
+        campos.BackColor=Color.White;campos.Margin=new Padding(14,0,0,0);
+        tablaCuenta=new DataGridView{Name="tablaCuenta",Dock=DockStyle.Fill,AutoGenerateColumns=false,TabStop=false};Componentes.EstilizarTabla(tablaCuenta);
+        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn{Name="Producto",DataPropertyName="Producto",HeaderText="Producto",FillWeight=200});
+        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn{Name="Cantidad",DataPropertyName="Cantidad",HeaderText="Cant.",FillWeight=55});
+        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn{Name="Unitario",DataPropertyName="PrecioUnitario",HeaderText="Unitario",FillWeight=90,DefaultCellStyle=new DataGridViewCellStyle{Format="'Q '#,##0.00"}});
+        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn{Name="Importe",DataPropertyName="Importe",HeaderText="Total",FillWeight=90});
+        totalCuenta=new Label{Text="Total",Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleRight,Font=new Font("Segoe UI",24,FontStyle.Bold),ForeColor=Componentes.Verde};
+        var cuentaPanel=new TableLayoutPanel{Dock=DockStyle.Fill,BackColor=Color.White,Padding=new Padding(16),ColumnCount=1,RowCount=3};cuentaPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));cuentaPanel.RowStyles.Add(new RowStyle(SizeType.Absolute,64));cuentaPanel.RowStyles.Add(new RowStyle(SizeType.Percent,100));cuentaPanel.RowStyles.Add(new RowStyle(SizeType.Absolute,80));
+        cuentaPanel.Controls.Add(new Label{Text="Detalle del pedido",Dock=DockStyle.Fill,Font=new Font("Segoe UI",22,FontStyle.Bold)},0,0);cuentaPanel.Controls.Add(tablaCuenta,0,1);cuentaPanel.Controls.Add(totalCuenta,0,2);
+        detalle.Visible=false;components.Add(detalle);
+        campos.Controls.Add(new Label{Text="Cobro manual",Font=new Font("Segoe UI",22,FontStyle.Bold),AutoSize=true,Margin=new Padding(0,0,0,14)});
         cliente.DropDownStyle=ComboBoxStyle.DropDownList;cliente.Width=330;cliente.AccessibleName="Copiar datos de cliente del catálogo";
         publico.Text="Público general / sin identificación";publico.AutoSize=true;publico.CheckedChanged+=Datos_Cambio;
         opcionales.Text="Agregar dirección, correo u observación (opcional)";opcionales.AutoSize=true;opcionales.CheckedChanged+=Datos_Cambio;
@@ -67,16 +81,18 @@ partial class FormularioCobro
         campos.Controls.Add(new Label{Name="lblReferencia",Text="Referencia externa (sin número de tarjeta)",AutoSize=true});campos.Controls.Add(referencia);
         campos.Controls.Add(new Label{Name="lblObservacion",Text="Observación",AutoSize=true});campos.Controls.Add(observacion);
         campos.Controls.Add(datosConfirmados);campos.Controls.Add(pagoConfirmado);
+        datosConfirmados.CheckedChanged+=Datos_Cambio;pagoConfirmado.CheckedChanged+=Datos_Cambio;
         pie.Dock=DockStyle.Fill;pie.ColumnCount=1;pie.RowCount=3;pie.AutoSize=false;
         pie.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         pie.RowStyles.Add(new RowStyle(SizeType.AutoSize));pie.RowStyles.Add(new RowStyle(SizeType.AutoSize));pie.RowStyles.Add(new RowStyle(SizeType.Percent,100));
         saldo.AutoSize=true;saldo.Font=new Font("Segoe UI",13,FontStyle.Bold);
         mensaje.AutoSize=true;mensaje.AutoEllipsis=true;mensaje.MaximumSize=new Size(850,70);mensaje.Text="Comprobante interno académico — no válido como documento tributario. Sin conexión SAT ni bancaria.";
-        confirmar.Text="Confirmar operación";confirmar.AutoSize=false;confirmar.Height=44;confirmar.Dock=DockStyle.Top;confirmar.Click+=Confirmar_Click;
+        confirmar.Text="Confirmar cobro";confirmar.AutoSize=false;confirmar.Height=50;confirmar.Dock=DockStyle.Top;confirmar.Click+=Confirmar_Click;
+        Componentes.EstilizarBoton(confirmar,true);Iconos.Aplicar(confirmar,"check");
         pie.Controls.Add(saldo,0,0);pie.Controls.Add(mensaje,0,1);pie.Controls.Add(confirmar,0,2);
-        estructura.Controls.Add(detalle,0,0);estructura.Controls.Add(campos,1,0);estructura.Controls.Add(pie,0,1);estructura.SetColumnSpan(pie,2);
-        Controls.Add(estructura);AutoScaleDimensions=new SizeF(7F,15F);AutoScaleMode=AutoScaleMode.Font;
-        ClientSize=new Size(1000,700);MinimumSize=new Size(550,320);StartPosition=FormStartPosition.CenterParent;Text="Revisar y cobrar · GTQ";
+        estructura.Controls.Add(cuentaPanel,0,0);estructura.Controls.Add(campos,1,0);estructura.Controls.Add(pie,0,1);estructura.SetColumnSpan(pie,2);
+        Controls.Add(estructura);
+        ClientSize=new Size(1220,730);MinimumSize=new Size(800,520);StartPosition=FormStartPosition.CenterParent;Text="Sabores | Revisar y cobrar · GTQ";
         ((System.ComponentModel.ISupportInitialize)entregado).EndInit();ResumeLayout(false);
     }
 }

@@ -22,7 +22,8 @@ public sealed class ServicioInstalacion(IConfiguracionConexion configuracion)
         q.CommandText="SELECT TokenInstalacionHash FROM dbo.InstalacionSabores WITH(UPDLOCK,HOLDLOCK) WHERE Id=1 AND Completada=0;";
         var esperado=q.ExecuteScalar() as string;
         var recibido=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
-        if(esperado is null||!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(esperado),Encoding.ASCII.GetBytes(recibido)))throw new UnauthorizedAccessException("Token de instalación incorrecto. Solicite aprovisionamiento al responsable técnico.");
+        if(esperado is null)throw new InvalidOperationException("La instalación no está aprovisionada o ya fue completada. Use Preparar instalación con Windows o solicite ayuda al responsable.");
+        if(!CryptographicOperations.FixedTimeEquals(Encoding.ASCII.GetBytes(esperado),Encoding.ASCII.GetBytes(recibido)))throw new UnauthorizedAccessException("El token no corresponde a esta instalación o fue reemplazado. Use Preparar instalación con Windows o solicite un token vigente al responsable.");
         q.CommandText="INSERT dbo.Usuarios(Nombre,Usuario,Rol,ContrasenaHash,Sal,Algoritmo,Iteraciones)VALUES(@n,@u,N'Administrador',@h,@s,N'PBKDF2-SHA256',@i);DECLARE @id int=CONVERT(int,SCOPE_IDENTITY());INSERT dbo.AuditoriaSeguridad(UsuarioId,DestinoId,Accion,Detalle)VALUES(@id,@id,N'Primer administrador',N'Aprovisionamiento autorizado de un solo uso');UPDATE dbo.InstalacionSabores SET Completada=1,TokenInstalacionHash=NULL WHERE Id=1;";
         q.Parameters.AddWithValue("@n",nombre);q.Parameters.AddWithValue("@u",usuario);q.Parameters.AddWithValue("@h",h.Hash);q.Parameters.AddWithValue("@s",h.Sal);q.Parameters.AddWithValue("@i",Contrasenas.Iteraciones);q.ExecuteNonQuery();t.Commit();
     }

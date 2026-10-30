@@ -1,4 +1,5 @@
 using Restaurante.Backend.Servicios;
+using Restaurante.Frontend.Servicios;
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioConexion:Form
 {
@@ -13,12 +14,17 @@ public sealed partial class FormularioConexion:Form
         if(string.IsNullOrWhiteSpace(servidor.Text)||string.IsNullOrWhiteSpace(baseDatos.Text)){mensaje.Text="Escriba servidor y base de datos.";return;}
         var host=servidor.Text;var db=baseDatos.Text;var port=(int)puerto.Value;var user=autenticacion.SelectedIndex==0?"":sqlUsuario.Text;var pass=autenticacion.SelectedIndex==0?"":sqlClave.Text;var trust=certificado.Checked;var u=admin.Text;var clave=adminClave.Text;
         ocupado=true;guardar.Enabled=probar.Enabled=false;
+        var validandoEsquema=false;
+        mensaje.Text="Comprobando conexión…";
         try
         {
             var temporal=new ConfiguracionConexionTemporal(ConfiguracionConexion.CrearCadena(host,port,db,user,pass,trust));
             var repo=new RepositorioRestaurante(temporal);
-            await Task.Run(()=>{using var c=temporal.CrearConexion();c.Open();repo.ValidarEsquema();});
-            mensaje.Text="Conexión correcta y esquema 5 compatible.";
+            await Task.Run(()=>{using var c=temporal.CrearConexion();c.Open();});
+            validandoEsquema=true;
+            await Task.Run(()=>repo.ValidarEsquema());
+            validandoEsquema=false;
+            mensaje.Text="Conexión correcta. Esquema compatible con esta versión de Sabores.";
             if(!guardarDestino)return;
             if(await Task.Run(()=>new ServicioInstalacion(temporal).NecesitaAdministrador()))
             {
@@ -35,7 +41,7 @@ public sealed partial class FormularioConexion:Form
             if(MessageBox.Show(this,"Cambiar el destino cierra las sesiones. Las solicitudes pendientes permanecen vinculadas a su base y perfil anteriores; no se borran ni se trasladan. ¿Guardar este destino?","Confirmar conexión",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes)return;
             await Task.Run(()=>configuracion.ProbarYGuardar(host,port,db,user,pass,trust));ocupado=false;DialogResult=DialogResult.OK;
         }
-        catch(Exception ex){mensaje.Text=ex is Microsoft.Data.SqlClient.SqlException?"SQL no disponible o base sin permisos. Verifique servidor, base y autenticación. La configuración anterior se conserva.":ex.Message;}
+        catch(Exception ex){mensaje.Text=ErroresConexion.Describir(ex,validandoEsquema)+" La configuración anterior se conserva."+ErroresConexion.Registrar(ex);}
         finally{adminClave.Clear();sqlClave.Clear();ocupado=false;guardar.Enabled=probar.Enabled=true;if(DialogResult==DialogResult.OK)Close();}
     }
 }

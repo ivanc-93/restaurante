@@ -1,0 +1,15 @@
+# Conexión de este equipo a SQL Server principal
+
+Servidor: localhost (instancia predeterminada MSSQLSERVER). Base: RestauranteDB. Autenticación: Windows. Puerto: 0 en el asistente, que conserva el destino sin imponer TCP/1433. El servicio usa NT SERVICE/MSSQLSERVER.
+
+Antes de adjuntar se consultaron sys.databases y sys.master_files en localhost y en la única instancia LocalDB enumerada, MSSQLLocalDB. Ninguna tenía registrada la base ni sus archivos. Ambos originales se abrieron simultáneamente con FileShare.None, sin procesos utilizándolos, y se copiaron a .codex-build/ConexionSQL/20261028_110437 en la raíz Git. verificacion.jsonl registra SHA256 coincidentes de origen y respaldo para MDF y LDF.
+
+Los originales C:/Users/VeK/RestauranteDB.mdf y C:/Users/VeK/RestauranteDB_log.ldf se conservaron. La carpeta DATA protegida no permitió copiar con la cuenta actual; una ubicación bajo AppData no resultó visible al servicio SQL. Finalmente se adjuntaron copias verificadas en C:/Users/Public/Documents/SaboresSQL. La carpeta tiene herencia deshabilitada y acceso restringido a la cuenta Windows del usuario, SYSTEM, Administradores y el servicio MSSQLSERVER. No se usó FOR ATTACH_REBUILD_LOG ni se eliminó el registro.
+
+CREATE DATABASE FOR ATTACH completado. DBCC CHECKDB WITH NO_INFOMSGS, ALL_ERRORMSGS terminó sin informar errores. La base conserva esquema 7 y cero usuarios. No se ejecutaron migraciones ni reinicializaciones. Se creó un respaldo SQL COPY_ONLY con CHECKSUM en C:/Users/Public/Documents/SaboresSQL/RestauranteDB_adjunta_20261028.bak; RESTORE VERIFYONLY WITH CHECKSUM confirmó que es válido. VERIFYONLY no equivale a una restauración real; no fue necesaria una migración.
+
+El token local existente coincide con el hash de la instalación pendiente; no se generó otro ni se modificó el hash. Falta que el usuario complete el primer administrador con su propia contraseña y confirme guardar la conexión mediante el asistente. No se guarda la configuración por fuera de ese flujo ni se inventan credenciales.
+
+ConfiguracionConexion acepta puerto 0 para descubrimiento/conexión automática y respeta instancias con nombre y puertos ya incluidos en el servidor. Un puerto positivo sigue siendo explícito; indicar dos puertos se rechaza. El asistente abre localhost/RestauranteDB con Windows y puerto automático. Las fuentes compartidas siguen permitiendo elegir otro destino.
+
+Verificación final: dotnet build Restaurante.sln -c Release, sin advertencias ni errores. dotnet run --project Pruebas/Conexion/VerificadorConexion.csproj -c Release produjo 27 comprobaciones correctas, incluyendo conexión y esquema reales por Microsoft.Data.SqlClient desde el formulario actual, fallos de conexión, conservación de configuración y puertos automáticos/explícitos. Arquitectura incompatible y permisos se simularon según README. La salida Debug estaba bloqueada por la sesión abierta de Visual Studio; no se cerró ni se terminó ese proceso. IniciarSabores usa Release para abrir una compilación independiente; para F5 hay que detener primero la depuración y recompilar Debug.

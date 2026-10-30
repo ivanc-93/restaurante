@@ -7,10 +7,10 @@ public sealed partial class FormularioConexion
     {
         var p=DisenoFormulario.Preparar(this,"Preparar conexión del equipo");
         p.Controls.Add(new Label{Text="Conecte una base preparada. Este asistente no crea ni migra bases y no permite vender.",AutoSize=true,MaximumSize=new Size(500,0)});
-        servidor=DisenoFormulario.Campo(p,"Servidor SQL");servidor.Text=@"(localdb)\MSSQLLocalDB";
+        servidor=DisenoFormulario.Campo(p,"Servidor SQL");servidor.Text="localhost";
         baseDatos=DisenoFormulario.Campo(p,"Base de datos");baseDatos.Text="RestauranteDB";
         autenticacion=DisenoFormulario.Opciones(p,"Autenticación de SQL","Windows","SQL Server");
-        puerto=new NumericUpDown{Minimum=1,Maximum=65535,Value=1433,Width=180};p.Controls.Add(new Label{Text="Puerto TCP solo para servidores no LocalDB",AutoSize=true});p.Controls.Add(puerto);
+        puerto=new NumericUpDown{Minimum=0,Maximum=65535,Value=0,Width=180};p.Controls.Add(new Label{Text="Puerto TCP opcional · 0 usa la conexión automática del servidor",AutoSize=true});p.Controls.Add(puerto);
         sqlUsuario=DisenoFormulario.Campo(p,"Usuario SQL solo para autenticación SQL");sqlClave=DisenoFormulario.Campo(p,"Contraseña SQL",true);
         certificado=new CheckBox{Text="Confiar en certificado SQL del entorno local",Checked=true,AutoSize=true};p.Controls.Add(certificado);
         admin=DisenoFormulario.Campo(p,"Administrador de Sabores de esta base");adminClave=DisenoFormulario.Campo(p,"Contraseña de Sabores para guardar el destino",true);

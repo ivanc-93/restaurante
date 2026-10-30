@@ -36,9 +36,7 @@ public sealed partial class FormularioPrincipal : Form
         Shown += async (_, _) => {
             await EjecutarSeguro(MostrarInicio);
             if (IsDisposed) return;
-            var inicio = menu.Controls.OfType<Button>().First();
-            inicio.BackColor = Componentes.Verde; inicio.ForeColor = Color.White;
-            Iconos.Aplicar(inicio, "layout-dashboard");
+            SeleccionarNavegacion("Inicio");
         };
         FormClosing += (_, e) => { if (UseWaitCursor) e.Cancel = true; };
     }
@@ -57,15 +55,13 @@ public sealed partial class FormularioPrincipal : Form
     }
     private void AgregarNavegacion(FlowLayoutPanel menu, string grupo, string texto, Func<Task> accion)
     {
-        if (menu.Controls.Count == 0 || !Equals(menu.Controls[^1].Tag, grupo))
-        {
-            var etiqueta = Componentes.Etiqueta(grupo, 8, true);
-            etiqueta.ForeColor = Componentes.Secundario;
-            etiqueta.Margin = new Padding(8, 14, 0, 3);
-            etiqueta.Tag = grupo;
-            menu.Controls.Add(etiqueta);
-        }
         var boton = Componentes.Boton(texto, false);
+        boton.Name="nav_"+texto;
+        boton.AutoSize=false;
+        boton.BackColor=Componentes.Verde;boton.ForeColor=Color.White;
+        boton.FlatAppearance.BorderSize=0;
+        boton.FlatAppearance.MouseOverBackColor=Color.FromArgb(68,103,76);
+        boton.FlatAppearance.MouseDownBackColor=Componentes.VerdeOscuro;
         boton.Width = Math.Max(190, menu.ClientSize.Width - 24);
         boton.Tag = grupo;
         boton.Height = 48;
@@ -75,14 +71,19 @@ public sealed partial class FormularioPrincipal : Form
         Iconos.Aplicar(boton, icono);
         boton.Click += async (_, _) => {
             await EjecutarSeguro(accion);
-            foreach (var item in menu.Controls.OfType<Button>()) {
-                item.BackColor = item == boton ? Componentes.Verde : Color.White;
-                item.ForeColor = item == boton ? Color.White : Componentes.Tinta;
-                Iconos.Aplicar(item, item.Text switch { "Inicio" => "layout-dashboard", "Mesas" => "armchair", "Pedidos" => "clipboard-list", "Catálogos" => "utensils-crossed", "Reportes" => "chart-column", _ => "settings" });
-            }
+            SeleccionarNavegacion(texto);
         };
         boton.Enabled = _configuracion.EstaConfigurada || accion == MostrarConfiguracion || accion == MostrarInicio;
         menu.Controls.Add(boton);
+    }
+
+    private void SeleccionarNavegacion(string texto)
+    {
+        foreach(var item in menu.Controls.OfType<Button>())
+        {
+            item.BackColor=item.Text==texto?Color.FromArgb(75,105,79):Componentes.Verde;
+            item.ForeColor=Color.White;
+        }
     }
 
     private async Task EjecutarSeguro(Func<Task> accion)
@@ -99,57 +100,63 @@ public sealed partial class FormularioPrincipal : Form
         }
     }
 
+    private Task EnInterfazAsync(Func<Task> accion)
+    {
+        if(!InvokeRequired)
+        {
+            if(SynchronizationContext.Current is null)SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+            return accion();
+        }
+        var fin=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        BeginInvoke((Action)(async()=>{try{await accion();fin.SetResult();}catch(Exception ex){fin.SetException(ex);}}));
+        return fin.Task;
+    }
+
     private async Task MostrarInicio()
     {
-        _titulo.Text = "Panel de control  /  Resumen";
+        if(InvokeRequired){await EnInterfazAsync(MostrarInicio);return;}
+        _titulo.Text = "Panel de control / Inicio";
+        SeleccionarNavegacion("Inicio");
         LimpiarContenido();
         var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Hola, " + _usuario.Nombre, "Esto es lo que sucede hoy en tu restaurante."));
+        pagina.Controls.Add(Encabezado("Tu restaurante, de un vistazo", "Hola, " + _usuario.Nombre + ". Selecciona una mesa o continúa una atención."));
         if (!_configuracion.EstaConfigurada)
         {
-            pagina.Controls.Add(Aviso("Configura una conexión a SQL Server para comenzar.",
-                "Abrir conexión SQL", MostrarConexion));
+            pagina.Controls.Add(Aviso("Configura la conexión del equipo para comenzar.", "Abrir conexión SQL", MostrarConexion));
             return;
         }
         var resumen = await Task.Run(_repositorio.ObtenerResumen);
         var restaurante = await Task.Run(_repositorio.ObtenerRestaurante);
-        Text = restaurante.Nombre + " | " + restaurante.Ubicacion;
-        var tarjetas = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
-        if(_usuario.Rol is "Administrador" or "Gerente") tarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Color.FromArgb(216, 131, 80)));
-        tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "En atención", Color.FromArgb(89, 129, 149)));
-        tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para clientes", Componentes.Verde));
-        tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú", Color.FromArgb(122, 111, 161)));
+        Text = "Sabores | " + restaurante.Nombre;
+        var tarjetas = new FlowLayoutPanel { Dock=DockStyle.Top, AutoSize=true, WrapContents=true, Margin=new Padding(0,8,0,16) };
+        if(_usuario.Rol is "Administrador" or "Gerente")tarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Componentes.Terracota));
+        tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "Atenciones en curso", Componentes.Verde));
+        tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para atender", Componentes.Verde));
+        tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú actual", Componentes.Terracota));
         pagina.Controls.Add(tarjetas);
-        var bienvenida = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(20) };
-        bienvenida.Controls.Add(new Label { Text="Registra pedidos, consulta ventas y administra tus mesas.", AutoSize=true, Font=Componentes.Fuente });
-        var nuevo = Componentes.Boton("Ver mesas");
-        nuevo.AutoSize = true;
-        nuevo.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
-        bienvenida.Controls.Add(nuevo); pagina.Controls.Add(bienvenida);
-        var recuperar=Componentes.Boton("Recuperar operaciones pendientes",false);
+        var acciones = new FlowLayoutPanel { Dock=DockStyle.Top, AutoSize=true, WrapContents=true, Margin=new Padding(0,0,0,14) };
+        var ver = Componentes.Boton("Ver mesas");Iconos.Aplicar(ver,"armchair");
+        ver.Click+=async(_,_)=>await EjecutarSeguro(MostrarMesasPos);
+        var recuperar=Componentes.Boton("Recuperar operaciones pendientes",false);Iconos.Aplicar(recuperar,"refresh");
         recuperar.Click+=async(_,_)=>await EjecutarSeguro(async()=>{using var formulario=new FormularioRecuperacion(_repositorio);formulario.ShowDialog(this);await MostrarInicio();});
-        pagina.Controls.Add(recuperar);
-        var incidencias=Componentes.Boton("Incidencias de consumo",false);
+        var incidencias=Componentes.Boton("Incidencias de consumo",false);Iconos.Aplicar(incidencias,"alert");
         incidencias.Click+=async(_,_)=>await EjecutarSeguro(async()=>{using var f=new FormularioIncidencias(_repositorio);f.ShowDialog(this);await MostrarInicio();});
-        pagina.Controls.Add(incidencias);
+        foreach(var b in new[]{ver,recuperar,incidencias})b.Margin=new Padding(0,0,12,10);
+        acciones.Controls.AddRange([ver,recuperar,incidencias]);pagina.Controls.Add(acciones);
         var pendientes=DiarioOperaciones.Listar(_repositorio);
-        if(pendientes.Count>0)pagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupere antes de repetir acciones.",11,true));
-        var abiertos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").Take(5).ToList();
-        pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos", 14, true));
-        if (abiertos.Count == 0) pagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Selecciona una mesa para comenzar."));
-        foreach (var pedido in abiertos)
+        if(pendientes.Count>0)pagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupera antes de repetir acciones.",12,true));
+        pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes",18,true));
+        var abiertos=(await Task.Run(_repositorio.ListarPedidos)).Where(p=>p.Estado is "Abierto" or "En preparación").Take(5).ToList();
+        if(abiertos.Count==0)pagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Selecciona Ver mesas para comenzar."));
+        foreach(var pedido in abiertos)
         {
-            var continuar = Componentes.Boton($"Mesa {pedido.NumeroMesa} · Pedido #{pedido.Id} · {FormatoPresentacion.Moneda(pedido.Total)}", false);
-            continuar.AutoSize = true;
-            continuar.Click += async (_, _) => await EjecutarSeguro(async () => {
-                var mesas = await Task.Run(_repositorio.ListarMesas);
-                await AbrirMesa(mesas.Single(m => m.Numero == pedido.NumeroMesa)); await MostrarInicio();
-            });
+            var continuar=Componentes.Boton($"Mesa {pedido.NumeroMesa}    ·    Pedido #{pedido.Id}    ·    {pedido.Estado}    ·    {FormatoPresentacion.Moneda(pedido.Total)}",false);
+            continuar.Dock=DockStyle.Top;continuar.Margin=new Padding(0,0,0,8);Iconos.Aplicar(continuar,"clipboard-list");
+            continuar.Click+=async(_,_)=>await EjecutarSeguro(async()=>{var mesas=await Task.Run(_repositorio.ListarMesas);await AbrirMesa(mesas.Single(m=>m.Numero==pedido.NumeroMesa));await MostrarInicio();});
             pagina.Controls.Add(continuar);
         }
         FormatoPresentacion.Aplicar(this);
     }
-
     private TableLayoutPanel CrearPagina()
     {
         var pagina = new TableLayoutPanel { Dock=DockStyle.Top, AutoSize=true, AutoSizeMode=AutoSizeMode.GrowAndShrink, ColumnCount=1, GrowStyle=TableLayoutPanelGrowStyle.AddRows };
@@ -169,7 +176,7 @@ public sealed partial class FormularioPrincipal : Form
     {
         var panel = new TableLayoutPanel { BackColor = Color.White, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
             ColumnCount = 1, RowCount = 3, Padding = new Padding(16), Margin = new Padding(0, 0, 12, 12), MinimumSize = new Size(205, 128) };
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 9, FontStyle.Bold) });
+        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 11, FontStyle.Bold) });
         panel.Controls.Add(new Label { Text = valor, AutoSize = true, ForeColor = acento, Font = new Font("Segoe UI", 23, FontStyle.Bold), Margin = new Padding(0, 6, 0, 4) });
         panel.Controls.Add(new Label { Text = detalle, AutoSize = true, ForeColor = Componentes.Secundario });
         return panel;
