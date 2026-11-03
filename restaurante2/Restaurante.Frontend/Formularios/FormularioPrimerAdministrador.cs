@@ -1,0 +1,144 @@
+using Restaurante.Frontend.Servicios;
+
+namespace Restaurante.Frontend.Formularios;
+public sealed partial class FormularioPrimerAdministrador : Form
+{
+    private readonly ServicioInstalacion servicio = null!;
+    private readonly ServicioPreparacionInicial preparador = null!;
+    private PreparacionPrimerAdministrador? preparada;
+    private readonly IDialogosUsuario dialogos = new DialogosUsuario();
+    private bool ocupado;
+    private bool puedePreparar;
+    private bool admiteInstalacion = true;
+    public FormularioPrimerAdministrador() => InitializeComponent();
+    public FormularioPrimerAdministrador(IConfiguracionConexion cfg, IDialogosUsuario? dialogos = null) : this()
+    {
+        this.dialogos = dialogos ?? new DialogosUsuario();
+        servicio = new(cfg);
+        preparador = new(cfg);
+        FormClosing += (_, e) => e.Cancel = ocupado;
+        FormClosed += (_, _) => preparada?.Dispose();
+        Shown += async (_, _) => await ComprobarEstado();
+    }
+
+    private async Task ComprobarEstado()
+    {
+        Ocupado(true);
+        try
+        {
+            var estado = await Task.Run(() => preparador.ConsultarEstado());
+            admiteInstalacion = estado.Pendiente;
+            puedePreparar = estado.Pendiente && estado.AutorizadoWindows;
+            if (!estado.Pendiente)
+            {
+                lblEstadoInicial.Text = "Esta base ya tiene usuarios o completó su instalación. Usa el acceso existente. No se reinicializará.";
+                btnGuardar.Enabled = false;
+                return;
+            }
+
+            lblEstadoInicial.Text = estado.AutorizadoWindows ? "Tu cuenta Windows tiene autorización administrativa SQL. Pulsa Preparar instalación con Windows; se verificará un respaldo y podrás elegir tu cuenta de Sabores sin introducir un token." : "Necesitas al responsable con autenticación Windows y permiso sysadmin de SQL Server para preparar esta instalación. También puedes usar un token vigente entregado por él. Tu usuario de Sabores se crea después.";
+            btnPrepararWindows.Enabled = estado.AutorizadoWindows;
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex);
+        }
+        finally
+        {
+            Ocupado(false);
+        }
+    }
+
+    private async void PrepararWindows_Click(object? sender, EventArgs e)
+    {
+        if (ocupado)
+            return;
+        Ocupado(true);
+        try
+        {
+            var estado = await Task.Run(() => preparador.ConsultarEstado());
+            if (!estado.Pendiente)
+                throw new InvalidOperationException("La base ya tiene usuarios o completó su instalación. Usa el acceso existente.");
+            if (!estado.AutorizadoWindows)
+                throw new UnauthorizedAccessException("Se requiere autenticación Windows con permiso sysadmin de SQL Server.");
+            var reemplazar = false;
+            if (estado.TieneToken)
+            {
+                if (dialogos.Mostrar(this, "Existe una preparación anterior. Continuar invalidará su token. Primero se hará y verificará un respaldo de la base. No se borrarán datos ni usuarios. ¿Confirmas reemplazar el token anterior?", "Confirmar preparación inicial", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
+                reemplazar = true;
+            }
+
+            var nueva = await Task.Run(() => preparador.Preparar(reemplazar));
+            preparada?.Dispose();
+            preparada = nueva;
+            ctToken.Clear();
+            ctToken.Visible = lblEtiquetaToken.Visible = false;
+            lblEstadoInicial.Text = "Instalación preparada con Windows y respaldo verificado. Elige tu nombre, usuario y contraseña de Sabores. La autorización se conserva solo durante esta ventana.";
+            lblMensaje.Text = "Ya puedes completar la instalación. Si cierras esta ventana antes, necesitarás preparar de nuevo.";
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex);
+        }
+        finally
+        {
+            Ocupado(false);
+        }
+    }
+
+    private void Ocupado(bool valor)
+    {
+        if (valor)
+            ocupado = true;
+        btnGuardar.Enabled = !valor && admiteInstalacion;
+        btnPrepararWindows.Enabled = !valor && puedePreparar && preparada is null;
+        if (!valor)
+            ocupado = false;
+    }
+
+    private void MostrarError(Exception ex)
+    {
+        lblMensaje.Text = (ex is UnauthorizedAccessException or InvalidOperationException or ArgumentException ? ex.Message : ErroresConexion.Describir(ex)) + ErroresConexion.Registrar(ex);
+    }
+
+    private async void Guardar_Click(object? sender, EventArgs e)
+    {
+        if (ocupado)
+            return;
+        if ((preparada is null && !ValidacionCredenciales.Campo(ctToken, lblMensaje, "el token o usa Preparar instalación con Windows")) || !ValidacionCredenciales.Campo(ctNombre, lblMensaje, "el nombre") || !ValidacionCredenciales.Campo(ctUsuario, lblMensaje, "el usuario") || !ValidacionCredenciales.Nueva(ctContrasena, lblMensaje, ctRepetir))
+            return;
+        var t = ctToken.Text;
+        var n = ctNombre.Text;
+        var u = ctUsuario.Text;
+        var c = ctContrasena.Text;
+        ocupado = true;
+        btnGuardar.Enabled = false;
+        btnPrepararWindows.Enabled = false;
+        try
+        {
+            await Task.Run(() =>
+            {
+                if (preparada is not null)
+                    preparada.CrearAdministrador(n, u, c);
+                else
+                    servicio.CrearPrimerAdministrador(t, n, u, c);
+            });
+            ocupado = false;
+            DialogResult = DialogResult.OK;
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex);
+        }
+        finally
+        {
+            ctToken.Clear();
+            ctContrasena.Clear();
+            ctRepetir.Clear();
+            Ocupado(false);
+            if (DialogResult == DialogResult.OK)
+                Close();
+        }
+    }
+}

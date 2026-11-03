@@ -1,0 +1,112 @@
+Changed database context to 'master'.
+Changed database context to 'Restaurante_Pruebas_20261026_224524_9ca3b94a'.
+
+(1 rows affected)
+
+(8 rows affected)
+
+(7 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(0 rows affected)
+
+(0 rows affected)
+Changed database context to 'master'.
+Changed database context to 'Restaurante_Pruebas_20261026_224524_9ca3b94a_Anterior'.
+
+(1 rows affected)
+
+(8 rows affected)
+
+(7 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+
+(0 rows affected)
+
+(1 rows affected)
+
+(1 rows affected)
+OK: Cálculo decimal y objetos derivados
+OK: Validación de clientes y productos
+OK: Intervalos inclusivos y semanas lunes-domingo
+OK: Configuración dañada sin tocar perfil real
+OK: Construcción y render de FormularioAcceso
+OK: Construcción y render de FormularioPrincipal
+OK: Construcción y render de FormularioMesa
+OK: Construcción y render de FormularioDetalleMesa
+OK: Construcción y render de FormularioCatalogos
+OK: Construcción y render de FormularioReportes
+OK: Construcción y render de FormularioCobro
+OK: Construcción y render de FormularioGestionMesa
+OK: Construcción y render de FormularioComprobante
+OK: Construcción y render de FormularioRecuperacion
+OK: Mesa editable y acciones dentro del área visible
+OK: Login válido, inválido e inactivo
+OK: Instalación SQL conserva caracteres Unicode
+OK: Configuración persistente del restaurante
+OK: Mantenimiento de clientes y productos
+OK: Mesa: duplicados y validaciones
+OK: Pedido, agregado, totales y facturación única
+OK: Cortesía de total cero libera la mesa
+OK: Rollback si un producto no existe
+OK: Aperturas concurrentes para la misma mesa
+OK: Facturación concurrente genera una sola factura
+OK: Reportes reconciliados y sin pedidos abiertos ni cancelados
+OK: Agrupación semanal entre años y mensual separada
+OK: Cambio de estado concurrente no libera una mesa con pedido
+OK: Desconexión SQL produce un error controlable
+OK: Pantallas operativas y cierre de sesión
+OK: Catálogos y reportes cargan datos en la interfaz
+OK: Desactivación conserva detalles e historial
+OK: Pedido abierto anterior a los últimos 100 sigue visible
+OK: Historial: plato facturado conserva tipo, nombre e importe tras edición y baja
+OK: Historial: bebida vendida no se convierte retroactivamente en plato
+OK: Historial: distintas versiones se capturan al agregar y se agrupan una vez
+OK: Historial: migración repetida no sobrescribe capturas ni cambia importes
+OK: Historial: actualización de versión 2 conserva factura e inicializa solo lo conocido
+OK: Modo aislado rechaza bases reales y no guarda configuración
+OK: Interfaz: login, pedido de dos productos, factura, logout y segundo usuario
+OK: Persistencia: nuevo proceso recupera la factura después de cerrar el anterior
+OK: Cobro: efectivo con cambio y comprobante académico
+OK: Cobro: efectivo insuficiente y datos no confirmados no cierran cuenta
+OK: Cobro: versión concurrente exige nueva revisión
+OK: Cobro: receptor histórico no cambia con el catálogo
+OK: Cobro: tarjeta requiere comprobación y referencia manual
+OK: Cobro: tarjeta rechazada conserva cuenta y permite otro intento
+OK: Cobro: tarjeta incierta bloquea repetición, productos y cancelación
+OK: Cobro: conciliación rechazada habilita nuevo pago
+OK: Gestión: cancelación conserva líneas y deja mesa en limpieza
+OK: Gestión: incidencia conserva deuda y no crea pago ficticio
+OK: Gestión: mesa inconsistente solo se corrige con motivo y sin pedido
+OK: Permisos: empleado no cancela, no corrige ni crea mesas
+OK: Idempotencia: abrir y agregar no se duplican al perder respuesta
+OK: Concurrencia: dos cierres solo producen un pago y comprobante
+OK: Concurrencia: cancelación y agregado no dejan inconsistencias
+OK: Reportes: cobros, cancelaciones, incidencias y legados separados
+OK: API antigua no permite facturar sin pago
+OK: Recuperación cifrada: pérdida de respuesta después del commit no duplica cobro
+OK: Recuperación: fallo antes de SQL conserva solicitud y confirma ausencia al descartarla
+OK: Transacción: fallo al emitir comprobante revierte pago, operación y estado
+OK: Concurrencia: versión detecta cambios aunque el importe no cambie
+OK: Permisos: cortesía cero requiere administrador y autorización explícita
+OK: Historial: editar cliente y renumerar mesa no altera referencias anteriores
+OK: Migración: documentos anteriores siguen legados sin pagos inventados
+RESULTADO: 65 correctas; 0 fallidas.

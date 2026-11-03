@@ -1,0 +1,76 @@
+OK Esquema 5 compatible
+OK Esquema 5 no ofrece recuperación inexistente
+OK 006 completa e idempotente habilita recuperación
+OK 006 incompleta no se anuncia como disponible
+OK 006 incompleta rechaza validación de conexión
+OK 007 aditiva e idempotente habilita correcciones
+OK Administrador revisa cuenta abierta
+OK Gerente revisa cuenta abierta
+OK Mesero revisa cuenta abierta
+OK Mesero no revisa cerrado facturado por otro operador
+OK Misma restricción en detalles
+OK Misma restricción en comprobante
+OK Gerente conserva lectura de cerrados
+OK Editar metadatos no libera mesa en limpieza
+OK Catálogo no evita confirmación de limpieza
+OK Editor conserva número 10001 y estado real
+OK Corrección de mesero sin autorización rechazada
+OK Corrección autorizada reduce unidades vigentes
+OK Replay de corrección no vuelve a retirar
+OK Captura original e historial conservados
+OK Cuenta muestra unidades vigentes
+OK Cantidad excesiva no se aplica
+OK Preparación idempotente declarada
+OK No se oculta consumo después de preparación
+OK Declaración no permite cancelar preparación ya registrada
+OK Mesero no resuelve incidencias
+OK Cobro posterior emite comprobante académico
+OK Replay de resolución no duplica cobro
+OK Cobro de incidencia no libera mesa reutilizada
+OK Incidencia tiene desenlace auditable
+OK Incidencia resuelta no admite otro desenlace
+OK Pérdida no inventa efectivo ni tarjeta
+OK Condonación no inventa efectivo ni tarjeta
+OK Cobro posterior rechaza efectivo insuficiente
+OK Cobro posterior no inventa confirmación de tarjeta incierta
+OK Incidencia admite tarjeta manual confirmada con referencia
+OK Saldo cero no registra efectivo o tarjeta ficticios
+OK Saldo cero se resuelve conservando historial sin pago ficticio
+OK Mesero crea receptor pero no edita clientes existentes
+OK Gerente edita clientes
+OK Ajuste excesivo se valida antes de autorización
+OK Descuento completo requiere cortesía
+OK Cortesía válida conserva política
+OK Correcciones concurrentes con versión idéntica aplican una sola vez
+OK Abandono terminal impide envío posterior
+OK Carrera SQL aplicar/abandonar tiene un solo resultado terminal
+OK Respuesta perdida se recupera sin doble incorporación
+OK Diario dañado se identifica y conserva sin bloquear listado
+OK Diario cifrado con solicitud interna inválida también se conserva como ilegible
+OK Un registro válido sigue visible junto al dañado
+OK Descarte deja tombstone SQL antes de retirar diario
+OK Recuperación por otro administrador válida
+OK Replay original de recuperación confirma resultado
+OK Replay con destino distinto no informa éxito
+OK Replay con autorizador distinto no informa éxito
+OK Replay con mecanismo distinto rechazado
+OK Replay con contraseña distinta no informa éxito
+OK Replay incompatible no cambia la contraseña original
+OK Generación sin sesión devuelve mensaje sin excepción de acceso
+OK Gerente recibe mensaje de permiso sin excepción
+OK Generación vacía explica que requiere contraseña vigente
+OK Administrador genera código protegido y recibe siguiente paso
+OK Confirmación inválida devuelve un mensaje sin interrumpir el flujo
+OK Código válido se confirma sin cambiar la contraseña
+OK Contraseña incorrecta produce mensaje y no devuelve un código
+OK Contraseña incorrecta no revoca el código vigente
+OK Bloqueo temporal se explica sin lanzar excepción de autorización
+OK Administrador temporal recibe instrucción de cambiar contraseña antes de generar
+OK Desactivación durante sesión devuelve instrucción de volver a ingresar
+OK Los rechazos esperados de generación no lanzan UnauthorizedAccessException
+OK Desactivación invalida lectura en sesión existente
+OK No hay comprobantes duplicados
+OK Totales coinciden con unidades vigentes y descuentos
+OK Cerrar durante lectura de usuarios espera una finalización segura
+OK Lectura finalizada permite cerrar sin tocar controles destruidos
+TOTAL 75 comprobaciones de auditoría

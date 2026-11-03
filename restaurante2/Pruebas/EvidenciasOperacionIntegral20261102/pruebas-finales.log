@@ -1,0 +1,65 @@
+OK 008 conserva flujo anterior sin migrar automáticamente
+OK Respaldo con restauración real, CHECKDB y migración repetida en clon
+OK 009 repetida no altera pedidos anteriores
+OK Esquema 009 validado
+OK Comprobante antiguo conserva consulta
+OK Lectura sin sesión rechazada
+OK Abono efectivo distingue aplicado, entregado y cambio
+OK Reintento mismo GUID recupera resultado sin cobrar otra vez
+OK Un abono persistido tras replay
+OK Pago parcial no cierra mesa ni pedido
+OK Recibo individual disponible
+OK Mismo GUID con otro importe rechazado
+OK Sobrepago rechazado
+OK Ajuste anterior bloqueado tras abono
+OK Agregar consumo bloqueado tras abono
+OK Cobro completo anterior no duplica abonos
+OK Tarjeta rechazada no reduce saldo
+OK Tarjeta incierta bloquea nuevos abonos
+OK Mesero no concilia sin autorización
+OK Gerente autoriza conciliación sin cambiar sesión del mesero
+OK Conciliación idempotente
+OK Replay incierto refleja conciliación posterior
+OK Pago final liquida y pasa mesa a limpieza
+OK Un comprobante final del pedido
+OK Resumen final no atribuye todo al último pagador
+OK Dos terminales no sobrecobran la misma cuenta
+OK División idempotente
+OK Reparto proporcional conserva centavos y total
+OK No se duplica distribución confirmada
+OK División congela consumo
+OK Pagar una subcuenta no libera la mesa
+OK Última subcuenta liquida pedido completo
+OK Separación por productos asigna todas las unidades sin duplicar consumo
+OK Asignación duplicada de unidades rechazada
+OK Promoción inicial inactiva; no inventa umbral activo
+OK Mesero no configura promociones
+OK Promoción mayor de 50 rechazada
+OK Cliente sin compras completadas no es elegible
+OK Promoción requiere elegibilidad comprobada
+OK Un abono parcial no cuenta visita
+OK Dos abonos cuentan una sola visita completada
+OK Beneficio exige gerencia
+OK Promoción autorizada se calcula sobre consumo original
+OK Porcentaje y promoción conservados explícitamente
+OK Cortesía de 100 % conserva cierre autorizado sin simular efectivo
+OK Diario recupera respuesta perdida sin duplicar abono
+OK Fallo SQL revierte abono y operación juntos
+OK Rollback no deja importes ni identificador aplicado
+OK Versión anterior no aplica un segundo abono
+OK No se aplica pago a subcuenta de otro pedido
+OK 009 incompleta no deriva al cobro antiguo
+OK 009 incompleta bloquea escritura anterior
+OK Reporte operativo incluye abonos manuales
+CAPTURA inicio-reservas; DPI 168
+OK Inicio presenta reservas activas con acceso a consulta
+CAPTURA cobranza-abonos; DPI 168
+OK Cobranza muestra acción real de abono
+CAPTURA separar-cuentas; DPI 168
+CAPTURA opciones-cierre; DPI 168
+CAPTURA recibo-abono; DPI 168
+CAPTURA promocion; DPI 168
+OK Comanda mantiene tabla y botón de cobro sin expansión desproporcionada
+CAPTURA mesa-pedido; DPI 168
+OK Integridad SQL final aprobada
+TOTAL 57 comprobaciones de operación integral

@@ -10,4 +10,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Restaurante.Backend\Restaurante.Backend.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Recursos/Iconos/**/*.png" />
+  </ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="Verificador" /><InternalsVisibleTo Include="VerificadorRoles" /></ItemGroup>
 </Project>

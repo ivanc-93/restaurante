@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/.vs/
+.codex-build/
+*.user
+*.suo
+conexion.bin*
+**/*.bak
+**/*.mdf
+**/*.ndf
+**/*.ldf

@@ -1,575 +1,640 @@
+using Restaurante.Frontend.Servicios;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
 
 namespace Restaurante.Frontend.Formularios;
-
-public sealed class FormularioPrincipal : Form
+public sealed partial class FormularioPrincipal : Form
 {
-    private readonly IRepositorioRestaurante _repositorio;
-    private readonly IConfiguracionConexion _configuracion;
-    private readonly UsuarioAutenticado _usuario;
-    private readonly Panel _contenido = new() { Dock = DockStyle.Fill, AutoScroll = true, Padding = new Padding(30) };
-    private readonly Label _titulo = new() { AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), ForeColor = Componentes.Tinta };
+    private readonly IDialogosUsuario _dialogos = new DialogosUsuario();
+    private readonly IRepositorioRestaurante _repositorio = null!;
+    private readonly IConfiguracionConexion _configuracion = null!;
+    private readonly UsuarioAutenticado _usuario = null!;
+    public bool SesionCerrada { get; private set; }
 
-    public FormularioPrincipal(IRepositorioRestaurante repositorio, IConfiguracionConexion configuracion,
-        UsuarioAutenticado usuario)
+    public FormularioPrincipal() => InitializeComponent();
+    public FormularioPrincipal(IRepositorioRestaurante repositorio, IConfiguracionConexion configuracion, UsuarioAutenticado usuario, IDialogosUsuario? dialogos = null) : this()
     {
         _repositorio = repositorio;
         _configuracion = configuracion;
         _usuario = usuario;
-        Text = "Sabores | Gestión de restaurante";
-        StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(1080, 720);
-        Size = new Size(1280, 820);
-        BackColor = Componentes.Fondo;
-        CrearInterfaz();
-        Shown += (_, _) => EjecutarSeguro(MostrarInicio);
-    }
-
-    private void CrearInterfaz()
-    {
-        var lateral = new Panel { Dock = DockStyle.Left, Width = 225, BackColor = Color.White, Padding = new Padding(16, 22, 16, 12) };
-        Controls.Add(lateral);
-        lateral.Controls.Add(new Label { Text = "S  sabores", AutoSize = true, Font = new Font("Georgia", 21, FontStyle.Bold), ForeColor = Componentes.Verde, Location = new Point(16, 20) });
-        lateral.Controls.Add(new Label { Text = "GESTIÓN RESTAURANTE", AutoSize = true, Font = new Font("Segoe UI", 8, FontStyle.Bold), ForeColor = Componentes.Secundario, Location = new Point(50, 50) });
-        var menu = new FlowLayoutPanel { Location = new Point(12, 100), Width = 198, Height = 480, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.White };
-        lateral.Controls.Add(menu);
-        AgregarNavegacion(menu, "RESUMEN", "◫   Resumen", MostrarInicio);
-        AgregarNavegacion(menu, "SERVICIO", "▤   Pedidos y facturas", MostrarPedidos);
-        AgregarNavegacion(menu, "SERVICIO", "♨   Menú y mesas", MostrarMenuMesas);
-        AgregarNavegacion(menu, "ANÁLISIS", "▥   Reportes", MostrarReportes);
-        if (_usuario.Rol == "Administrador")
-            AgregarNavegacion(menu, "ADMINISTRACIÓN", "⚙   Conexión SQL", MostrarConexion);
-
-        var pie = new Panel { Dock = DockStyle.Bottom, Height = 112, BackColor = Color.White };
-        lateral.Controls.Add(pie);
-        pie.Controls.Add(new Label { Text = _usuario.Nombre, AutoSize = true, Font = new Font("Segoe UI", 10, FontStyle.Bold), Location = new Point(8, 14) });
-        pie.Controls.Add(new Label { Text = _usuario.Rol, AutoSize = true, ForeColor = Componentes.Secundario, Location = new Point(8, 37) });
-        var salir = Componentes.Boton("Cerrar sesión", false);
-        salir.Location = new Point(5, 64);
-        salir.Width = 182;
-        salir.Click += (_, _) => Close();
-        pie.Controls.Add(salir);
-
-        var area = new Panel { Dock = DockStyle.Fill };
-        Controls.Add(area);
-        area.BringToFront();
-        var barra = new Panel { Dock = DockStyle.Top, Height = 54, BackColor = Color.White, Padding = new Padding(28, 17, 28, 0) };
-        barra.Controls.Add(_titulo);
-        barra.Controls.Add(new Label
+        _dialogos = dialogos ?? new DialogosUsuario();
+        lblUsuarioLabel.Text = $"{usuario.Nombre} ({usuario.Rol})";
+        AgregarNavegacion(flpNavegacion, "RESUMEN", "Inicio", MostrarInicio);
+        AgregarNavegacion(flpNavegacion, "SERVICIO", "Mesas", MostrarMesasPos);
+        AgregarNavegacion(flpNavegacion, "SERVICIO", "Pedidos", MostrarPedidosPos);
+        AgregarNavegacion(flpNavegacion, "DATOS", "Catálogos", MostrarCatalogos);
+        if (usuario.Rol is "Administrador" or "Gerente")
+            AgregarNavegacion(flpNavegacion, "ANÁLISIS", "Reportes", MostrarReportes);
+        if (usuario.Rol == "Administrador")
+            AgregarNavegacion(flpNavegacion, "ADMINISTRACIÓN", "Usuarios", () =>
+            {
+                using var f = new FormularioUsuarios(_repositorio);
+                f.ShowDialog(this);
+                return Task.CompletedTask;
+            });
+        AgregarNavegacion(flpNavegacion, "CUENTA", "Cambiar contraseña", () =>
         {
-            Text = DateTime.Today.ToString("dddd, dd MMMM yyyy", new System.Globalization.CultureInfo("es-MX")),
-            AutoSize = true, ForeColor = Componentes.Secundario, Dock = DockStyle.Right
+            using var f = new FormularioCambiarClave(_repositorio);
+            if (f.ShowDialog(this) == DialogResult.OK)
+            {
+                SesionCerrada = true;
+                Close();
+            }
+
+            return Task.CompletedTask;
         });
-        area.Controls.Add(_contenido);
-        area.Controls.Add(barra);
+        if (usuario.Rol is "Administrador" or "Gerente")
+            AgregarNavegacion(flpNavegacion, "ADMINISTRACIÓN", "Configuración", MostrarConfiguracion);
+        flpNavegacion.Enabled = false;
+        pnlContenido.Enabled = false;
+        btnCerrarSesion.Enabled = false;
+        Shown += async (_, _) =>
+        {
+            await EjecutarSeguro(MostrarInicio);
+            if (IsDisposed)
+                return;
+            SeleccionarNavegacion("Inicio");
+        };
+        FormClosing += (_, e) =>
+        {
+            if (UseWaitCursor)
+                e.Cancel = true;
+        };
     }
 
-    private void AgregarNavegacion(FlowLayoutPanel menu, string grupo, string texto, Action accion)
+    private void Salir_Click(object? sender, EventArgs e)
     {
-        if (menu.Controls.Count == 0 || !Equals(menu.Controls[^1].Tag, grupo))
+        SesionCerrada = true;
+        Close();
+    }
+
+    private Task MostrarCatalogos()
+    {
+        using var formulario = new FormularioCatalogos(_repositorio, false);
+        formulario.ShowDialog(this);
+        return Task.CompletedTask;
+    }
+
+    private void AgregarNavegacion(FlowLayoutPanel menu, string grupo, string texto, Func<Task> accion)
+    {
+        var btnBoton = Componentes.Boton(texto, false);
+        btnBoton.Name = "btnBoton";
+        btnBoton.Name = "nav_" + texto;
+        btnBoton.AutoSize = false;
+        btnBoton.BackColor = Componentes.Verde;
+        btnBoton.ForeColor = Color.White;
+        btnBoton.FlatAppearance.BorderSize = 0;
+        btnBoton.FlatAppearance.MouseOverBackColor = Color.FromArgb(68, 103, 76);
+        btnBoton.FlatAppearance.MouseDownBackColor = Componentes.VerdeOscuro;
+        btnBoton.Width = Math.Max(190, menu.ClientSize.Width - 24);
+        btnBoton.Tag = grupo;
+        btnBoton.Height = 48;
+        btnBoton.TextAlign = ContentAlignment.MiddleLeft;
+        btnBoton.Margin = new Padding(0, 2, 0, 2);
+        var icono = texto switch
         {
-            var etiqueta = Componentes.Etiqueta(grupo, 8, true);
-            etiqueta.ForeColor = Componentes.Secundario;
-            etiqueta.Margin = new Padding(8, 14, 0, 3);
-            etiqueta.Tag = grupo;
-            menu.Controls.Add(etiqueta);
+            "Inicio" => "layout-dashboard",
+            "Mesas" => "armchair",
+            "Pedidos" => "clipboard-list",
+            "Catálogos" => "utensils-crossed",
+            "Reportes" => "chart-column",
+            _ => "settings"
+        };
+        Iconos.Aplicar(btnBoton, icono);
+        btnBoton.Click += async (_, _) =>
+        {
+            await EjecutarSeguro(accion);
+            SeleccionarNavegacion(texto);
+        };
+        btnBoton.Enabled = _configuracion.EstaConfigurada || accion == MostrarConfiguracion || accion == MostrarInicio;
+        menu.Controls.Add(btnBoton);
+    }
+
+    private void SeleccionarNavegacion(string texto)
+    {
+        foreach (var item in flpNavegacion.Controls.OfType<Button>())
+        {
+            item.BackColor = item.Text == texto ? Color.FromArgb(75, 105, 79) : Componentes.Verde;
+            item.ForeColor = Color.White;
         }
-        var boton = Componentes.Boton(texto, false);
-        boton.Width = 190;
-        boton.Height = 40;
-        boton.TextAlign = ContentAlignment.MiddleLeft;
-        boton.Margin = new Padding(0, 2, 0, 2);
-        boton.Click += (_, _) => EjecutarSeguro(accion);
-        menu.Controls.Add(boton);
     }
 
-    private void EjecutarSeguro(Action accion)
+    private async Task EjecutarSeguro(Func<Task> accion)
     {
-        try { accion(); }
-        catch (Exception ex) { MostrarError(ex); }
-    }
-
-    private void MostrarInicio()
-    {
-        _titulo.Text = "Panel de control  /  Resumen";
-        _contenido.Controls.Clear();
-        _contenido.Controls.Add(Encabezado("Buenos días, " + _usuario.Nombre, "Esto es lo que sucede hoy en tu restaurante."));
-        if (!_configuracion.EstaConfigurada)
+        flpNavegacion.Enabled = false;
+        pnlContenido.Enabled = false;
+        btnCerrarSesion.Enabled = false;
+        UseWaitCursor = true;
+        try
         {
-            _contenido.Controls.Add(Aviso("Configura una conexión a SQL Server para comenzar.",
-                "Abrir conexión SQL", MostrarConexion));
+            await accion();
+        }
+        catch (Exception ex)
+        {
+            MostrarError(ex);
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                FormatoPresentacion.Aplicar(this);
+                flpNavegacion.Enabled = true;
+                pnlContenido.Enabled = true;
+                btnCerrarSesion.Enabled = true;
+                UseWaitCursor = false;
+            }
+        }
+    }
+
+    private Task EnInterfazAsync(Func<Task> accion)
+    {
+        if (!InvokeRequired)
+        {
+            if (SynchronizationContext.Current is null)
+                SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+            return accion();
+        }
+
+        var fin = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        BeginInvoke((Action)(async () =>
+        {
+            try
+            {
+                await accion();
+                fin.SetResult();
+            }
+            catch (Exception ex)
+            {
+                fin.SetException(ex);
+            }
+        }));
+        return fin.Task;
+    }
+
+    private async Task MostrarInicio()
+    {
+        if (InvokeRequired)
+        {
+            await EnInterfazAsync(MostrarInicio);
             return;
         }
-        var resumen = _repositorio.ObtenerResumen();
-        var tarjetas = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 136, WrapContents = true };
-        tarjetas.Controls.Add(TarjetaEstadistica("VENTAS DE HOY", resumen.VentasDelDia.ToString("C"), "Facturación del día", Color.FromArgb(216, 131, 80)));
-        tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "En atención", Color.FromArgb(89, 129, 149)));
-        tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para clientes", Componentes.Verde));
-        tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú", Color.FromArgb(122, 111, 161)));
-        _contenido.Controls.Add(tarjetas);
-        var bienvenida = new Panel { Dock = DockStyle.Top, Height = 180, BackColor = Color.FromArgb(238, 241, 232), Padding = new Padding(24), Margin = new Padding(0, 12, 0, 0) };
-        bienvenida.Controls.Add(new Label { Text = "OPERACIÓN DIARIA\r\n\r\nUna gran experiencia empieza aquí.\r\n\r\nRegistra pedidos, consulta tus ventas y mantén las mesas en movimiento.", AutoSize = true, Font = new Font("Segoe UI", 12), ForeColor = Componentes.Tinta });
-        var nuevo = Componentes.Boton("＋  Nuevo pedido");
-        nuevo.Location = new Point(24, 127);
-        nuevo.Width = 175;
-        nuevo.Click += (_, _) => EjecutarSeguro(MostrarPedidos);
-        bienvenida.Controls.Add(nuevo);
-        _contenido.Controls.Add(bienvenida);
+
+        lblTitulo.Text = "Panel de control / Inicio";
+        SeleccionarNavegacion("Inicio");
+        LimpiarContenido();
+        var pagina = CrearPagina();
+        pagina.Controls.Add(Encabezado("Listos para atender", $"Hola, {_usuario.Nombre}. Consulta reservas, mesas y pedidos pendientes."));
+        if (!_configuracion.EstaConfigurada)
+        {
+            pagina.Controls.Add(Aviso("Configura la conexión para comenzar.", "Abrir conexión SQL", MostrarConexion));
+            return;
+        }
+
+        var mesas = await Task.Run(_repositorio.ListarMesas);
+        var restaurante = await Task.Run(_repositorio.ObtenerRestaurante);
+        Text = "Sabores | " + restaurante.Nombre;
+        pagina.Controls.Add(Componentes.Etiqueta($"MESAS   {mesas.Count(m => m.Estado == "Disponible")} disponibles   ·   {mesas.Count(m => m.Estado == "Ocupada")} ocupadas   ·   {mesas.Count(m => m.Estado == "Reservada")} reservadas   ·   {mesas.Count(m => m.Estado == "En limpieza")} en limpieza", 12, true));
+        var acciones = new FlowLayoutPanel
+        {
+            Name = "flpAccionesInicio",
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            WrapContents = true
+        };
+        void Accion(string nombre, string texto, Func<Task> ejecutar)
+        {
+            var b = Componentes.Boton(texto, false);
+            b.Name = nombre;
+            b.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            b.Margin = new Padding(0, 6, 8, 6);
+            b.Click += async (_, _) => await EjecutarSeguro(ejecutar);
+            acciones.Controls.Add(b);
+        }
+
+        Accion("btnVer", "Ver mesas", MostrarMesasPos);
+        var pendientes = DiarioOperaciones.Listar(_repositorio);
+        Accion("btnRecuperar", $"Operaciones pendientes ({pendientes.Count})", async () =>
+        {
+            using var f = new FormularioRecuperacion(_repositorio);
+            f.ShowDialog(this);
+            await MostrarInicio();
+        });
+        Accion("btnIncidencias", "Incidencias de consumo", async () =>
+        {
+            using var f = new FormularioIncidencias(_repositorio);
+            f.ShowDialog(this);
+            await MostrarInicio();
+        });
+        pagina.Controls.Add(acciones);
+        if (pendientes.Count > 0)
+            pagina.Controls.Add(Componentes.Etiqueta("Recupera las operaciones pendientes antes de repetir una acción.", 12, true));
+        pagina.Controls.Add(Componentes.Etiqueta("Reservas activas", 16, true));
+        if (await Task.Run(_repositorio.ReservasDisponibles))
+        {
+            var reservas = await Task.Run(_repositorio.ListarReservasActivas);
+            if (reservas.Count == 0)
+                pagina.Controls.Add(Componentes.Etiqueta("Sin reservas activas por el momento."));
+            foreach (var reserva in reservas.Take(5))
+            {
+                var b = Componentes.Boton($"Mesa {reserva.NumeroMesa} · {reserva.Nombre} · {reserva.Fecha:dd/MM HH:mm}", false);
+                b.Name = "btnVerReserva_" + reserva.Id;
+                b.Dock = DockStyle.Top;
+                b.AutoSize = false;
+                b.AutoEllipsis = true;
+                b.Height = (int)(50 * DeviceDpi / 96f);
+                b.Font = new Font("Segoe UI", 11);
+                b.TextAlign = ContentAlignment.MiddleLeft;
+                b.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    var mesa = (await Task.Run(_repositorio.ListarMesas)).Single(m => m.Id == reserva.MesaId);
+                    var actual = await Task.Run(() => _repositorio.ConsultarReservaMesa(mesa.Id));
+                    using var f = new FormularioReservaDetalle(_repositorio, mesa, actual);
+                    f.ShowDialog(this);
+                    await MostrarInicio();
+                });
+                pagina.Controls.Add(b);
+            }
+
+            if (reservas.Count > 5)
+            {
+                var todas = Componentes.Boton($"Ver todas las reservas ({reservas.Count})", false);
+                todas.Name = "btnTodasReservas";
+                todas.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    await MostrarMesasPos();
+                    var filtro = Controls.Find("cbFiltroEstadoMesa", true).OfType<ComboBox>().FirstOrDefault();
+                    if (filtro is not null)
+                        filtro.SelectedItem = "Reservada";
+                });
+                pagina.Controls.Add(todas);
+            }
+        }
+
+        pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes", 16, true));
+        var pedidos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").ToList();
+        if (pedidos.Count == 0)
+            pagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Abre una mesa para comenzar."));
+        foreach (var p in pedidos.Take(5))
+        {
+            var b = Componentes.Boton($"Mesa {p.NumeroMesa} · Pedido #{p.Id} · {p.Estado}", false);
+            b.Name = "btnContinuar";
+            b.Font = new Font("Segoe UI", 11);
+            b.Dock = DockStyle.Top;
+            b.Click += async (_, _) => await EjecutarSeguro(async () =>
+            {
+                var actual = (await Task.Run(_repositorio.ListarMesas)).Single(m => m.Numero == p.NumeroMesa);
+                await AbrirMesa(actual);
+                await MostrarInicio();
+            });
+            pagina.Controls.Add(b);
+        }
+
+        if (_usuario.Rol is "Gerente" or "Administrador")
+        {
+            var resumen = await Task.Run(_repositorio.ObtenerResumen);
+            pagina.Controls.Add(Componentes.Etiqueta($"Comprobantes de hoy: {FormatoPresentacion.Moneda(resumen.VentasDelDia)} (importe emitido; no equivale a caja)", 11));
+            if (await Task.Run(_repositorio.CobranzaParcialDisponible))
+            {
+                var b = Componentes.Boton("Configurar promoción de clientes frecuentes", false);
+                b.Name = "btnPromociones";
+                b.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    using var f = new FormularioPromocion(_repositorio);
+                    f.ShowDialog(this);
+                    await MostrarInicio();
+                });
+                pagina.Controls.Add(b);
+            }
+        }
+
+        FormatoPresentacion.Aplicar(this);
+    }
+
+    private TableLayoutPanel CrearPagina()
+    {
+        var tlpPagina = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1,
+            GrowStyle = TableLayoutPanelGrowStyle.AddRows,
+            Name = "tlpPagina"
+        };
+        tlpPagina.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        pnlContenido.Controls.Add(tlpPagina);
+        return tlpPagina;
     }
 
     private static Control Encabezado(string titulo, string descripcion)
     {
-        var panel = new Panel { Dock = DockStyle.Top, Height = 94, Margin = new Padding(0, 0, 0, 10) };
-        panel.Controls.Add(new Label { Text = "TU RESTAURANTE, EN CONTROL", AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 8, FontStyle.Bold), Location = new Point(0, 0) });
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, Font = new Font("Georgia", 23, FontStyle.Bold), ForeColor = Componentes.Tinta, Location = new Point(0, 20) });
-        panel.Controls.Add(new Label { Text = descripcion, AutoSize = true, ForeColor = Componentes.Secundario, Location = new Point(0, 60) });
-        return panel;
+        var tlpPanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 1,
+            Padding = new Padding(0, 0, 0, 15),
+            Name = "tlpPanel"
+        };
+        tlpPanel.Controls.Add(new Label { Text = titulo, AutoSize = true, Font = new Font("Segoe UI", 23, FontStyle.Bold), ForeColor = Componentes.Tinta });
+        tlpPanel.Controls.Add(new Label { Text = descripcion, AutoSize = true, ForeColor = Componentes.Secundario, Margin = new Padding(0, 10, 0, 5) });
+        tlpPanel.SizeChanged += (_, _) =>
+        {
+            var ancho = Math.Max(150, tlpPanel.ClientSize.Width - 20);
+            foreach (var l in tlpPanel.Controls.OfType<Label>())
+                l.MaximumSize = new Size(ancho, 0);
+        };
+        return tlpPanel;
     }
 
     private static Control TarjetaEstadistica(string titulo, string valor, string detalle, Color acento)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Size = new Size(220, 116);
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 8, FontStyle.Bold), Location = new Point(15, 12) });
-        panel.Controls.Add(new Label { Text = valor, AutoSize = true, ForeColor = acento, Font = new Font("Georgia", 23, FontStyle.Bold), Location = new Point(15, 36) });
-        panel.Controls.Add(new Label { Text = detalle, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 8), Location = new Point(15, 78) });
-        return panel;
-    }
-
-    private void MostrarPedidos()
-    {
-        _titulo.Text = "Servicio  /  Pedidos y facturas";
-        _contenido.Controls.Clear();
-        _contenido.Controls.Add(Encabezado("Pedidos y facturas", "Registra pedidos, emite facturas y consulta los últimos movimientos."));
-        var columnas = new TableLayoutPanel { Dock = DockStyle.Top, Height = 360, ColumnCount = 2, RowCount = 1 };
-        columnas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 43));
-        columnas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 57));
-        var formulario = ComponentePedido(out var mesa, out var cliente, out var producto, out var cantidad, out var registrar);
-        columnas.Controls.Add(formulario, 0, 0);
-        columnas.Controls.Add(ComponenteMenu(out var menuTabla), 1, 0);
-        _contenido.Controls.Add(columnas);
-        var tabla = NuevaTabla();
-        var facturarSeleccionado = BotonMesa("Facturar pedido seleccionado", 220);
-        _contenido.Controls.Add(PanelConTitulo("Pedidos recientes", tabla, facturarSeleccionado));
-
-        void Recargar()
+        var tlpPanel = new TableLayoutPanel
         {
-            mesa.DisplayMember = "";
-            mesa.DataSource = _repositorio.ListarMesas().Where(x => x.Estado == "Disponible").ToList();
-            cliente.DataSource = _repositorio.ListarClientes().ToList();
-            var productos = _repositorio.ListarMenu().ToList();
-            producto.DataSource = productos;
-            menuTabla.DataSource = productos;
-            tabla.DataSource = _repositorio.ListarPedidos().ToList();
-        }
-
-        registrar.Click += (_, _) =>
-        {
-            try
-            {
-                if (mesa.SelectedItem is not Mesa mesaElegida || producto.SelectedItem is not ElementoMenu productoElegido)
-                    throw new InvalidOperationException("Selecciona una mesa disponible y un producto.");
-                var clienteElegido = cliente.SelectedItem as Cliente;
-                var pedido = _repositorio.CrearPedido(new SolicitudPedido
-                {
-                    MesaId = mesaElegida.Id,
-                    ClienteId = clienteElegido?.Id,
-                    Detalles = [new DetallePedidoSolicitud(productoElegido.Id, (int)cantidad.Value)]
-                });
-                MessageBox.Show(this, $"Pedido #{pedido.Id} abierto.\r\nTotal actual: {pedido.Total:C}\r\nLa factura se emitirá cuando los comensales decidan retirarse.",
-                    "Pedido registrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                Recargar();
-            }
-            catch (Exception ex) { MostrarError(ex); }
+            BackColor = Color.White,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1,
+            RowCount = 3,
+            Padding = new Padding(16),
+            Margin = new Padding(0, 0, 12, 12),
+            MinimumSize = new Size(205, 128),
+            Name = "tlpPanel"
         };
+        tlpPanel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 11, FontStyle.Bold) });
+        tlpPanel.Controls.Add(new Label { Text = valor, AutoSize = true, ForeColor = acento, Font = new Font("Segoe UI", 23, FontStyle.Bold), Margin = new Padding(0, 6, 0, 4) });
+        tlpPanel.Controls.Add(new Label { Text = detalle, AutoSize = true, ForeColor = Componentes.Secundario });
+        return tlpPanel;
+    }
 
-        facturarSeleccionado.Click += (_, _) => EjecutarSeguro(() =>
+    private async Task MostrarMenuMesas()
+    {
+        lblTitulo.Text = "Servicio  /  Menú y mesas";
+        LimpiarContenido();
+        var tlpPagina = CrearPagina();
+        tlpPagina.Controls.Add(Encabezado("Menú y mesas", "Consulta los productos activos y el estado de las mesas."));
+        var tabPestanas = new TabControl
         {
-            if (tabla.CurrentRow?.DataBoundItem is not PedidoResumen pedido)
-                throw new InvalidOperationException("Selecciona un pedido para facturar.");
-            if (pedido.Estado is not ("Abierto" or "En preparación"))
-                throw new InvalidOperationException("El pedido seleccionado ya está facturado o cerrado.");
-            if (MessageBox.Show(this,
-                $"¿Los comensales se retiran y deseas facturar el pedido #{pedido.Id} por {pedido.Total:C}?",
-                "Confirmar factura", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                return;
-            var numeroFactura = _repositorio.FacturarPedido(pedido.Id);
-            MessageBox.Show(this,
-                $"Factura {numeroFactura} emitida. La mesa {pedido.NumeroMesa} quedó disponible.",
-                "Pedido facturado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            Recargar();
-        });
-        Recargar();
-    }
-
-    private static Control ComponentePedido(out ComboBox mesa, out ComboBox cliente,
-        out ComboBox producto, out NumericUpDown cantidad, out Button registrar)
-    {
-        var panel = ComponenteSeccion("Nuevo pedido", "Selecciona la mesa y los productos.");
-        mesa = Combo();
-        cliente = Combo();
-        producto = Combo();
-        cantidad = new NumericUpDown { Minimum = 1, Maximum = 50, Value = 1, Dock = DockStyle.Top, Height = 34 };
-        registrar = Componentes.Boton("Abrir pedido (sin facturar)");
-        var layout = new TableLayoutPanel { Dock = DockStyle.Top, ColumnCount = 1, AutoSize = true };
-        layout.Controls.Add(Componentes.Etiqueta("Mesa disponible"));
-        layout.Controls.Add(mesa);
-        layout.Controls.Add(Componentes.Etiqueta("Cliente (opcional)"));
-        layout.Controls.Add(cliente);
-        layout.Controls.Add(Componentes.Etiqueta("Producto"));
-        layout.Controls.Add(producto);
-        layout.Controls.Add(Componentes.Etiqueta("Cantidad"));
-        layout.Controls.Add(cantidad);
-        layout.Controls.Add(registrar);
-        panel.Controls.Add(layout);
-        return panel;
-    }
-
-    private static Control ComponenteMenu(out DataGridView tabla)
-    {
-        tabla = NuevaTabla();
-        return PanelConTitulo("Menú disponible", tabla);
-    }
-
-    private void MostrarMenuMesas()
-    {
-        _titulo.Text = "Servicio  /  Menú y mesas";
-        _contenido.Controls.Clear();
-        _contenido.Controls.Add(Encabezado("Menú y mesas", "Consulta los productos activos y el estado de las mesas."));
-        var pestanas = new TabControl { Dock = DockStyle.Top, Height = 510, Font = Componentes.Fuente };
-        var tabMenu = new TabPage("  Menú  ") { BackColor = Color.White, Padding = new Padding(12) };
-        var tabMesas = new TabPage("  Mesas  ") { BackColor = Color.White, Padding = new Padding(12) };
-        var menu = NuevaTabla();
-        var mesas = NuevaTabla();
-        var herramientasMesas = new FlowLayoutPanel
+            Dock = DockStyle.Top,
+            Height = 510,
+            Font = Componentes.Fuente,
+            Name = "tabPestanas"
+        };
+        var tpTabMenu = new TabPage("  Menú  ")
+        {
+            BackColor = Color.White,
+            Padding = new Padding(12),
+            Name = "tpTabMenu"
+        };
+        var tpTabMesas = new TabPage("  Mesas  ")
+        {
+            BackColor = Color.White,
+            Padding = new Padding(12),
+            Name = "tpTabMesas"
+        };
+        var dgvMenu = NuevaTabla();
+        var dgvMesas = NuevaTabla();
+        var flpHerramientasMesas = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             Height = 52,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = false,
-            Padding = new Padding(0, 2, 0, 4)
+            Padding = new Padding(0, 2, 0, 4),
+            Name = "flpHerramientasMesas"
         };
-        var crear = BotonMesa("＋ Nueva mesa", 125);
-        var editar = BotonMesa("Editar", 90);
-        var visualizar = BotonMesa("Visualizar", 100);
-        var eliminar = BotonMesa("Eliminar", 90, false);
-        herramientasMesas.Controls.AddRange([crear, editar, visualizar, eliminar]);
-        tabMesas.Controls.Add(mesas);
-        tabMesas.Controls.Add(herramientasMesas);
-        tabMenu.Controls.Add(menu);
-        pestanas.TabPages.Add(tabMenu);
-        pestanas.TabPages.Add(tabMesas);
-        _contenido.Controls.Add(pestanas);
-        menu.DataSource = _repositorio.ListarMenu().ToList();
-
-        List<Mesa> CargarMesas()
+        var btnCrear = BotonMesa("＋ Nueva mesa", 125);
+        var btnEditar = BotonMesa("Editar", 90);
+        var btnVisualizar = BotonMesa("Visualizar", 100);
+        var btnEliminar = BotonMesa("Eliminar", 90, false);
+        btnCrear.Enabled = btnEditar.Enabled = btnEliminar.Enabled = _repositorio.UsuarioActual?.Rol is "Administrador" or "Gerente";
+        flpHerramientasMesas.Controls.AddRange([btnCrear, btnEditar, btnVisualizar, btnEliminar]);
+        tpTabMesas.Controls.Add(dgvMesas);
+        tpTabMesas.Controls.Add(flpHerramientasMesas);
+        tpTabMenu.Controls.Add(dgvMenu);
+        tabPestanas.TabPages.Add(tpTabMenu);
+        tabPestanas.TabPages.Add(tpTabMesas);
+        tlpPagina.Controls.Add(tabPestanas);
+        dgvMenu.DataSource = (await Task.Run(_repositorio.ListarMenu)).ToList();
+        async Task<List<Mesa>> CargarMesas()
         {
-            var lista = _repositorio.ListarMesas().ToList();
-            mesas.DataSource = null;
-            mesas.DataSource = lista;
+            var lista = (await Task.Run(_repositorio.ListarMesas)).ToList();
+            dgvMesas.DataSource = null;
+            dgvMesas.DataSource = lista;
             return lista;
         }
 
-        Mesa? MesaSeleccionada() => mesas.CurrentRow?.DataBoundItem as Mesa;
-
-        crear.Click += (_, _) => EjecutarSeguro(() =>
+        Mesa? MesaSeleccionada() => dgvMesas.CurrentRow?.DataBoundItem as Mesa;
+        btnCrear.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
-            var siguiente = CargarMesas().Select(m => m.Numero).DefaultIfEmpty(0).Max() + 1;
+            var siguiente = (await CargarMesas()).Select(m => m.Numero).DefaultIfEmpty(0).Max() + 1;
             using var formulario = new FormularioMesa(siguienteNumero: siguiente);
-            if (formulario.ShowDialog(this) != DialogResult.OK) return;
-            _repositorio.CrearMesa(formulario.NumeroMesa, formulario.Capacidad);
-            CargarMesas();
+            if (formulario.ShowDialog(this) != DialogResult.OK)
+                return;
+            var numero = formulario.NumeroMesa;
+            var capacidad = formulario.Capacidad;
+            await Task.Run(() => _repositorio.CrearMesa(numero, capacidad));
+            await CargarMesas();
         });
-
-        editar.Click += (_, _) => EjecutarSeguro(() =>
+        btnEditar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
             {
-                MessageBox.Show(this, "Selecciona una mesa para editar.", "Mesas",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _dialogos.Mostrar(this, "Selecciona una mesa para editar.", "Mesas", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
+
             using var formulario = new FormularioMesa(seleccionada);
-            if (formulario.ShowDialog(this) != DialogResult.OK) return;
-            _repositorio.ActualizarMesa(seleccionada.Id, formulario.NumeroMesa,
-                formulario.Capacidad, formulario.EstadoMesa);
-            CargarMesas();
+            if (formulario.ShowDialog(this) != DialogResult.OK)
+                return;
+            var numero = formulario.NumeroMesa;
+            var capacidad = formulario.Capacidad;
+            var estado = formulario.EstadoMesa;
+            await Task.Run(() => _repositorio.ActualizarMesa(seleccionada.Id, numero, capacidad, estado));
+            await CargarMesas();
         });
-
-        visualizar.Click += (_, _) =>
+        btnVisualizar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
             {
-                MessageBox.Show(this, "Selecciona una mesa para visualizar.", "Mesas",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _dialogos.Mostrar(this, "Selecciona una mesa para visualizar.", "Mesas", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            using var formulario = new FormularioDetalleMesa(_repositorio, seleccionada);
+
+            using var formulario = new FormularioDetalleMesa(_repositorio, seleccionada, _dialogos);
             formulario.ShowDialog(this);
-            CargarMesas();
-        };
-
-        eliminar.Click += (_, _) => EjecutarSeguro(() =>
+            await CargarMesas();
+        });
+        btnEliminar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
             {
-                MessageBox.Show(this, "Selecciona una mesa para eliminar.", "Mesas",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _dialogos.Mostrar(this, "Selecciona una mesa para eliminar.", "Mesas", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            var confirmacion = MessageBox.Show(this,
-                $"¿Deseas eliminar la mesa {seleccionada.Numero}?",
-                "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (confirmacion != DialogResult.Yes) return;
-            _repositorio.EliminarMesa(seleccionada.Id);
-            CargarMesas();
-        });
 
-        CargarMesas();
+            var confirmacion = _dialogos.Mostrar(this, $"¿Deseas eliminar la mesa {seleccionada.Numero}?", "Confirmar eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (confirmacion != DialogResult.Yes)
+                return;
+            await Task.Run(() => _repositorio.EliminarMesa(seleccionada.Id));
+            await CargarMesas();
+        });
+        await CargarMesas();
     }
 
     private static Button BotonMesa(string texto, int ancho, bool primario = true)
     {
-        var boton = Componentes.Boton(texto, primario);
-        boton.Width = ancho;
-        boton.Height = 36;
-        boton.Margin = new Padding(0, 2, 8, 2);
-        return boton;
+        var btnBoton = Componentes.Boton(texto, primario);
+        btnBoton.Name = "btnBoton";
+        btnBoton.Width = ancho;
+        btnBoton.AutoSize = true;
+        btnBoton.Height = 36;
+        btnBoton.Margin = new Padding(0, 2, 8, 2);
+        return btnBoton;
     }
 
-    private void MostrarReportes()
+    private Task MostrarReportes()
     {
-        _titulo.Text = "Análisis  /  Reportes";
-        _contenido.Controls.Clear();
-        _contenido.Controls.Add(Encabezado("Reportes", "Ventas diarias y productos más vendidos."));
-        var filtros = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 54, FlowDirection = FlowDirection.LeftToRight };
-        var inicio = new DateTimePicker { Format = DateTimePickerFormat.Short, Value = DateTime.Today.AddDays(-30), Width = 135 };
-        var fin = new DateTimePicker { Format = DateTimePickerFormat.Short, Width = 135 };
-        var actualizar = Componentes.Boton("Consultar ventas");
-        actualizar.Width = 150;
-        filtros.Controls.Add(Componentes.Etiqueta("Desde"));
-        filtros.Controls.Add(inicio);
-        filtros.Controls.Add(Componentes.Etiqueta("Hasta"));
-        filtros.Controls.Add(fin);
-        filtros.Controls.Add(actualizar);
-        _contenido.Controls.Add(filtros);
-        var tablas = new TableLayoutPanel { Dock = DockStyle.Top, Height = 480, ColumnCount = 2 };
-        tablas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        tablas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        var ventas = NuevaTabla();
-        var productos = NuevaTabla();
-        tablas.Controls.Add(PanelConTitulo("Ventas por día", ventas), 0, 0);
-        tablas.Controls.Add(PanelConTitulo("Platos más vendidos", productos), 1, 0);
-        _contenido.Controls.Add(tablas);
-        void CargarVentas() => ventas.DataSource = _repositorio.ReportarVentas(inicio.Value, fin.Value).ToList();
-        actualizar.Click += (_, _) => EjecutarSeguro(CargarVentas);
-        productos.DataSource = _repositorio.ReportarPlatosMasVendidos().ToList();
-        CargarVentas();
+        using var formulario = new FormularioReportes(_repositorio);
+        formulario.ShowDialog(this);
+        return Task.CompletedTask;
     }
 
-    private void MostrarConexion()
+    private void LimpiarContenido()
+    {
+        while (pnlContenido.Controls.Count > 0)
+            pnlContenido.Controls[0].Dispose();
+    }
+
+    private Task MostrarConexion()
     {
         if (_usuario.Rol != "Administrador")
+            throw new UnauthorizedAccessException("Solo administrador.");
+        using var f = new FormularioConexion(_configuracion);
+        if (f.ShowDialog(this) == DialogResult.OK)
         {
-            MessageBox.Show(this, "Solo el administrador puede cambiar la conexión.", "Acceso denegado",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
+            _repositorio.CerrarSesion();
+            SesionCerrada = true;
+            Close();
         }
-        _titulo.Text = "Administración  /  Conexión SQL";
-        _contenido.Controls.Clear();
-        var encabezado = Encabezado("Conexión a SQL Server",
-            "Configura el servidor, la base de datos y las credenciales.");
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Top;
-        panel.Height = 500;
-        panel.Padding = new Padding(20);
-        panel.Margin = new Padding(0, 0, 0, 16);
-        var servidor = Componentes.Campo();
-        servidor.PlaceholderText = "192.168.1.100 o localhost";
-        var puerto = new NumericUpDown
-        {
-            Minimum = 1,
-            Maximum = 65535,
-            Value = 1433,
-            Dock = DockStyle.Top,
-            Height = 34,
-            Font = Componentes.Fuente,
-            Margin = new Padding(0, 4, 0, 8)
-        };
-        var baseDatos = Componentes.Campo();
-        baseDatos.Text = "RestauranteDB";
-        var usuario = Componentes.Campo();
-        usuario.Text = "restaurante_app";
-        usuario.PlaceholderText = "restaurante_app";
-        var contrasena = Componentes.Campo(true);
-        contrasena.PlaceholderText = "Contraseña del usuario SQL";
-        var certificado = new CheckBox
-        {
-            Text = "Confiar en el certificado SQL",
-            Checked = true,
-            AutoSize = true,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(4, 18, 0, 0)
-        };
-        var estado = new Label
-        {
-            Text = _configuracion.EstaConfigurada ? "●  Conexión configurada" : "●  Falta configurar la base de datos",
-            AutoSize = true,
-            ForeColor = _configuracion.EstaConfigurada ? Componentes.Verde : Color.DarkGoldenrod,
-            Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 8, 0, 0)
-        };
-        var campos = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 6 };
-        campos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
-        campos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 76));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 66));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        campos.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
-        campos.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        campos.Controls.Add(Campo("IP o nombre del servidor SQL", servidor), 0, 0);
-        campos.Controls.Add(Campo("Puerto SQL Server", puerto), 1, 0);
-        campos.Controls.Add(Campo("Nombre de la base de datos", baseDatos), 0, 1);
-        campos.Controls.Add(Campo("Usuario SQL", usuario), 1, 1);
-        campos.Controls.Add(Campo("Contraseña SQL", contrasena), 0, 2);
-        campos.Controls.Add(certificado, 1, 2);
-        campos.Controls.Add(estado, 0, 3);
-        campos.SetColumnSpan(estado, 2);
-        var guardar = Componentes.Boton("Probar y guardar conexión");
-        guardar.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-        guardar.Width = 230;
-        guardar.Click += (_, _) =>
-        {
-            guardar.Enabled = false;
-            estado.Text = "Conectando y verificando credenciales…";
-            try
-            {
-                _configuracion.ProbarYGuardar(servidor.Text, (int)puerto.Value, baseDatos.Text,
-                    usuario.Text, contrasena.Text, certificado.Checked);
-                estado.Text = "●  Conexión probada y guardada de forma protegida.";
-                estado.ForeColor = Componentes.Verde;
-                MessageBox.Show(this, "La conexión SQL Server es válida y se guardó protegida.",
-                    "Conexión correcta", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                estado.Text = "No se pudo conectar.";
-                estado.ForeColor = Color.Firebrick;
-                MostrarError(ex);
-            }
-            finally { guardar.Enabled = true; }
-        };
-        campos.Controls.Add(guardar, 0, 4);
-        var ayuda = new Label
-        {
-            Text = string.Empty,
-            Dock = DockStyle.Fill, ForeColor = Componentes.Secundario,
-            BackColor = Componentes.Fondo, Padding = new Padding(10), Margin = new Padding(0, 4, 0, 0)
-        };
-        ayuda.Text = "Ejemplo: IP 192.168.1.100; puerto 1433; base de datos RestauranteDB; usuario restaurante_app; contrasena TuClaveSegura. Cadena: Server=192.168.1.100,1433;Database=RestauranteDB;User Id=restaurante_app;Password=TuClaveSegura;Encrypt=True;TrustServerCertificate=True.";
-        campos.Controls.Add(ayuda, 0, 5);
-        campos.SetColumnSpan(ayuda, 2);
-        panel.Controls.Add(campos);
-        _contenido.Controls.Add(panel);
-        _contenido.Controls.Add(encabezado);
+
+        return Task.CompletedTask;
     }
 
     private static Control Campo(string etiqueta, Control campo)
     {
-        var grupo = new TableLayoutPanel
+        var tlpGrupo = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 2,
-            Margin = new Padding(0, 0, 12, 0)
+            Margin = new Padding(0, 0, 12, 0),
+            Name = "tlpGrupo"
         };
-        grupo.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
-        grupo.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        var titulo = Componentes.Etiqueta(etiqueta, 9, true);
-        titulo.Margin = new Padding(0, 2, 0, 0);
+        tlpGrupo.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
+        tlpGrupo.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        var lblTitulo = Componentes.Etiqueta(etiqueta, 9, true);
+        lblTitulo.Name = "lblTitulo";
+        lblTitulo.Margin = new Padding(0, 2, 0, 0);
         campo.Dock = DockStyle.Fill;
-        grupo.Controls.Add(titulo, 0, 0);
-        grupo.Controls.Add(campo, 0, 1);
-        return grupo;
+        tlpGrupo.Controls.Add(lblTitulo, 0, 0);
+        tlpGrupo.Controls.Add(campo, 0, 1);
+        return tlpGrupo;
     }
 
     private static ComboBox Combo() => new()
     {
-        DropDownStyle = ComboBoxStyle.DropDownList, DisplayMember = "Nombre",
-        Font = Componentes.Fuente, Dock = DockStyle.Top, Height = 34, Margin = new Padding(0, 3, 0, 9)
+        DropDownStyle = ComboBoxStyle.DropDownList,
+        DisplayMember = "Nombre",
+        Font = Componentes.Fuente,
+        Dock = DockStyle.Top,
+        Height = 34,
+        Margin = new Padding(0, 3, 0, 9)
     };
-
     private static DataGridView NuevaTabla()
     {
-        var tabla = new DataGridView { Dock = DockStyle.Fill, AutoGenerateColumns = true };
-        Componentes.EstilizarTabla(tabla);
-        return tabla;
+        var dgvRegistros = new DataGridView
+        {
+            Dock = DockStyle.Fill,
+            AutoGenerateColumns = true,
+            Name = "dgvRegistros"
+        };
+        Componentes.EstilizarTabla(dgvRegistros);
+        return dgvRegistros;
     }
 
     private static Control ComponenteSeccion(string titulo, string subtitulo)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Fill;
-        panel.Controls.Add(new Label { Text = titulo + "\r\n" + subtitulo, Dock = DockStyle.Top, Height = 48, ForeColor = Componentes.Tinta, Font = Componentes.Fuente });
-        return panel;
+        var pnlPanel = Componentes.Tarjeta();
+        pnlPanel.Name = "pnlPanel";
+        pnlPanel.Dock = DockStyle.Fill;
+        pnlPanel.Controls.Add(new Label { Text = titulo + "\r\n" + subtitulo, Dock = DockStyle.Top, Height = 48, ForeColor = Componentes.Tinta, Font = Componentes.Fuente });
+        return pnlPanel;
     }
 
     private static Control PanelConTitulo(string titulo, DataGridView tabla, Button? accion = null)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Fill;
-        panel.Controls.Add(tabla);
+        var pnlPanel = Componentes.Tarjeta();
+        pnlPanel.Name = "pnlPanel";
+        pnlPanel.Dock = DockStyle.Fill;
+        pnlPanel.Controls.Add(tabla);
         if (accion is null)
         {
-            panel.Controls.Add(new Label
-            {
-                Text = titulo,
-                Dock = DockStyle.Top,
-                Height = 35,
-                Font = new Font("Georgia", 13, FontStyle.Bold),
-                ForeColor = Componentes.Tinta
-            });
+            pnlPanel.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Top, Height = 35, Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Componentes.Tinta });
         }
         else
         {
-            var encabezado = new Panel { Dock = DockStyle.Top, Height = 48 };
-            encabezado.Controls.Add(new Label
+            var pnlEncabezado = new Panel
             {
-                Text = titulo,
-                Dock = DockStyle.Left,
-                AutoSize = true,
-                Font = new Font("Georgia", 13, FontStyle.Bold),
-                ForeColor = Componentes.Tinta,
-                TextAlign = ContentAlignment.MiddleLeft
-            });
+                Dock = DockStyle.Top,
+                Height = 48,
+                Name = "pnlEncabezado"
+            };
+            pnlEncabezado.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Left, AutoSize = true, Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Componentes.Tinta, TextAlign = ContentAlignment.MiddleLeft });
             accion.Dock = DockStyle.Right;
             accion.Height = 36;
-            encabezado.Controls.Add(accion);
-            panel.Controls.Add(encabezado);
+            pnlEncabezado.Controls.Add(accion);
+            pnlPanel.Controls.Add(pnlEncabezado);
         }
-        return panel;
+
+        return pnlPanel;
     }
 
-    private static Control Aviso(string texto, string botonTexto, Action accion)
+    private Control Aviso(string texto, string botonTexto, Func<Task> accion)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Top;
-        panel.Height = 155;
-        panel.Controls.Add(new Label { Text = texto, AutoSize = true, Font = new Font("Segoe UI", 12), Location = new Point(20, 20) });
-        var boton = Componentes.Boton(botonTexto);
-        boton.Location = new Point(20, 75);
-        boton.Width = 210;
-        boton.Click += (_, _) => accion();
-        panel.Controls.Add(boton);
-        return panel;
+        var pnlPanel = Componentes.Tarjeta();
+        pnlPanel.Name = "pnlPanel";
+        pnlPanel.Dock = DockStyle.Top;
+        pnlPanel.Height = 155;
+        pnlPanel.Controls.Add(new Label { Text = texto, AutoSize = true, Font = new Font("Segoe UI", 12), Location = new Point(20, 20) });
+        var btnBoton = Componentes.Boton(botonTexto);
+        btnBoton.Name = "btnBoton";
+        btnBoton.Location = new Point(20, 75);
+        btnBoton.Width = 210;
+        var icono = texto switch
+        {
+            "Inicio" => "layout-dashboard",
+            "Mesas" => "armchair",
+            "Pedidos" => "clipboard-list",
+            "Catálogos" => "utensils-crossed",
+            "Reportes" => "chart-column",
+            _ => "settings"
+        };
+        Iconos.Aplicar(btnBoton, icono);
+        btnBoton.Click += async (_, _) =>
+        {
+            await EjecutarSeguro(accion);
+            foreach (var item in flpNavegacion.Controls.OfType<Button>())
+            {
+                item.BackColor = item == btnBoton ? Componentes.Verde : Color.White;
+                item.ForeColor = item == btnBoton ? Color.White : Componentes.Tinta;
+            }
+        };
+        pnlPanel.Controls.Add(btnBoton);
+        return pnlPanel;
     }
 
-    private void MostrarError(Exception excepcion) =>
-        MessageBox.Show(this, excepcion.Message, "No se pudo completar la operación",
-            MessageBoxButtons.OK, MessageBoxIcon.Error);
+    private void MostrarError(Exception excepcion) => _dialogos.Mostrar(this, excepcion.Message, "No se pudo completar la operación", MessageBoxButtons.OK, MessageBoxIcon.Error);
 }

@@ -1,0 +1,18 @@
+[
+  {
+    "Base": "RestauranteDB",
+    "ArchivoRespaldo": "RestauranteDB_20261026_190122_9ec39f.bak",
+    "Directorio": ".codex-build/RespaldosSQL",
+    "BaseRestaurada": "Restaurante_Pruebas_Restauracion_20261026_190122_9ec39f",
+    "Verificacion": "Restauración real; ocho tablas con conteos/checksum iguales antes de migrar; migración 004 repetida en copia",
+    "Fecha": "2026-10-26T19:01:25.9866773-06:00"
+  },
+  {
+    "Base": "RestauranteDB",
+    "ArchivoRespaldo": "RestauranteDB_20261026_193352_cec63e.bak",
+    "Directorio": ".codex-build/RespaldosSQL",
+    "BaseRestaurada": "Restaurante_Pruebas_Restauracion_20261026_193352_cec63e",
+    "Verificacion": "Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena 002/003/004 probada; 004 repetida en copia",
+    "Fecha": "2026-10-26T19:33:56.9558494-06:00"
+  }
+]

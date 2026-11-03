@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- Avoid long OneDrive paths when loading native SQL dependencies. -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath Condition="'$(ArtifactsPath)' == '' and '$(OS)' == 'Windows_NT'">$(LOCALAPPDATA)\SaboresBuild\$([MSBuild]::StableStringHash('$(MSBuildThisFileDirectory)'))</ArtifactsPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>

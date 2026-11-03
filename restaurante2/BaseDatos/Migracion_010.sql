@@ -1,0 +1,36 @@
+﻿SET XACT_ABORT ON;
+SET NOCOUNT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+IF DB_NAME() IN(N'master',N'model',N'msdb',N'tempdb') THROW 51800,N'Seleccione Sabores.',1;
+IF NOT EXISTS(SELECT 1 FROM dbo.VersionEsquema WHERE Version=9) THROW 51801,N'Requiere esquema 009.',1;
+BEGIN TRANSACTION;
+DECLARE @lock int;
+EXEC @lock=sys.sp_getapplock @Resource=N'SaboresInstalacion',@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=15000;
+IF @lock<0 THROW 51802,N'Instalación ocupada.',1;
+IF NOT EXISTS(SELECT 1 FROM dbo.VersionEsquema WHERE Version=10)
+BEGIN
+ ALTER TABLE dbo.CuentasPedido ALTER COLUMN PedidoId int NULL;
+ DECLARE @ck sysname=(SELECT TOP 1 cc.name FROM sys.check_constraints cc JOIN sys.columns col ON col.object_id=cc.parent_object_id AND col.column_id=cc.parent_column_id WHERE cc.parent_object_id=OBJECT_ID(N'dbo.CuentasPedido') AND col.name=N'Original');
+ IF @ck IS NULL THROW 51803,N'No se reconoce la restricción de original; revisar estructura.',1;
+ DECLARE @ddl nvarchar(max)=N'ALTER TABLE dbo.CuentasPedido DROP CONSTRAINT '+QUOTENAME(@ck);EXEC sys.sp_executesql @ddl;
+ ALTER TABLE dbo.CuentasPedido ADD CONSTRAINT CK_Cuenta_OriginalNoNeg CHECK(Original>=0);
+ ALTER TABLE dbo.CuentasPedido ADD MesaId int NULL REFERENCES dbo.Mesas(Id),Operativa bit NOT NULL DEFAULT 0,Activa bit NOT NULL DEFAULT 1,Liquidada bit NOT NULL DEFAULT 0,NombreConfirmado bit NOT NULL DEFAULT 1,Version rowversion;
+ EXEC(N'UPDATE x SET MesaId=p.MesaId,Liquidada=CASE WHEN COALESCE((SELECT SUM(Importe) FROM dbo.AbonosPedido a WHERE a.CuentaId=x.Id AND Estado=N''Confirmado''),0)>=x.Total THEN 1 ELSE 0 END FROM dbo.CuentasPedido x JOIN dbo.Pedidos p ON p.Id=x.PedidoId;');
+ EXEC(N'ALTER TABLE dbo.CuentasPedido ADD CONSTRAINT CK_Cuenta_Enlace CHECK((Operativa=0 AND PedidoId IS NOT NULL) OR (Operativa=1 AND MesaId IS NOT NULL));');
+ EXEC(N'CREATE INDEX IX_Cuenta_MesaOperativa ON dbo.CuentasPedido(MesaId,PedidoId) WHERE Operativa=1 AND Activa=1;');
+ CREATE TABLE dbo.MovimientosCuenta(Id bigint IDENTITY PRIMARY KEY,OperacionId uniqueidentifier NOT NULL REFERENCES dbo.OperacionesRestaurante(Id),CuentaOrigenId int NULL REFERENCES dbo.CuentasPedido(Id),CuentaDestinoId int NULL REFERENCES dbo.CuentasPedido(Id),DetalleId int NULL REFERENCES dbo.DetallesPedido(Id),Cantidad int NULL,Accion nvarchar(30) NOT NULL,Detalle nvarchar(500) NOT NULL,Fecha datetime2 NOT NULL DEFAULT SYSUTCDATETIME());
+ CREATE TABLE dbo.AjustesCuenta(Id bigint IDENTITY PRIMARY KEY,CuentaId int NOT NULL REFERENCES dbo.CuentasPedido(Id),OperacionId uniqueidentifier NOT NULL REFERENCES dbo.OperacionesRestaurante(Id),Original decimal(12,2) NOT NULL,Descuento decimal(12,2) NOT NULL,Tipo nvarchar(20) NOT NULL,Porcentaje decimal(5,2) NOT NULL,Motivo nvarchar(400) NOT NULL,UsuarioId int NOT NULL REFERENCES dbo.Usuarios(Id),AutorizadorId int NOT NULL REFERENCES dbo.Usuarios(Id),Vigente bit NOT NULL DEFAULT 1,Fecha datetime2 NOT NULL DEFAULT SYSUTCDATETIME(),CONSTRAINT UQ_AjusteCuenta_Op UNIQUE(CuentaId,OperacionId),CHECK(Original>=0 AND Descuento>=0 AND Descuento<=Original),CHECK((Tipo=N'Restablecer' AND Porcentaje=0) OR (Tipo=N'Cortesía' AND Porcentaje=100) OR (Tipo IN(N'Descuento',N'Frecuente') AND Porcentaje BETWEEN 5 AND 50)));
+ DROP INDEX UX_Abono_Incierto ON dbo.AbonosPedido;
+ CREATE UNIQUE INDEX UX_Abono_Incierto ON dbo.AbonosPedido(PedidoId,CuentaId) WHERE Estado=N'Incierto';
+ ALTER TABLE dbo.AbonosPedido ADD AlcanceSnapshot nvarchar(max) NULL,SaldoAntes decimal(12,2) NULL,SaldoDespues decimal(12,2) NULL;
+ INSERT dbo.VersionEsquema(Version)VALUES(10);
+END;
+IF COL_LENGTH(N'dbo.CuentasPedido',N'NombreConfirmado') IS NULL OR COL_LENGTH(N'dbo.CuentasPedido',N'Version') IS NULL OR COL_LENGTH(N'dbo.AbonosPedido',N'AlcanceSnapshot') IS NULL OR OBJECT_ID(N'dbo.AjustesCuenta') IS NULL OR OBJECT_ID(N'dbo.MovimientosCuenta') IS NULL THROW 51804,N'Esquema 010 incompleto.',1;
+IF EXISTS(SELECT 1 FROM (VALUES(N'CuentasPedido',N'MesaId'),(N'CuentasPedido',N'Operativa'),(N'CuentasPedido',N'Activa'),(N'CuentasPedido',N'Liquidada'),(N'CuentasPedido',N'NombreConfirmado'),(N'CuentasPedido',N'Version'),(N'AbonosPedido',N'AlcanceSnapshot'),(N'AbonosPedido',N'SaldoAntes'),(N'AbonosPedido',N'SaldoDespues'),(N'AjustesCuenta',N'CuentaId'),(N'AjustesCuenta',N'OperacionId'),(N'AjustesCuenta',N'Original'),(N'AjustesCuenta',N'Descuento'),(N'AjustesCuenta',N'Tipo'),(N'AjustesCuenta',N'Porcentaje'),(N'AjustesCuenta',N'Motivo'),(N'AjustesCuenta',N'UsuarioId'),(N'AjustesCuenta',N'AutorizadorId'),(N'AjustesCuenta',N'Vigente'),(N'AjustesCuenta',N'Fecha'),(N'MovimientosCuenta',N'OperacionId'),(N'MovimientosCuenta',N'CuentaOrigenId'),(N'MovimientosCuenta',N'CuentaDestinoId'),(N'MovimientosCuenta',N'DetalleId'),(N'MovimientosCuenta',N'Cantidad'),(N'MovimientosCuenta',N'Accion'),(N'MovimientosCuenta',N'Detalle')) x(Tabla,Columna) WHERE COL_LENGTH(N'dbo.'+Tabla,Columna) IS NULL) OR (SELECT COUNT(*) FROM sys.index_columns WHERE object_id=OBJECT_ID(N'dbo.AbonosPedido') AND index_id=(SELECT index_id FROM sys.indexes WHERE object_id=OBJECT_ID(N'dbo.AbonosPedido') AND name=N'UX_Abono_Incierto') AND key_ordinal>0)<>2 THROW 51805,N'Estructura o índice 010 incompleto; no se continuará.',1;
+COMMIT;

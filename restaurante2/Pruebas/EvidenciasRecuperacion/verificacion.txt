@@ -1,0 +1,62 @@
+OK Esquema 5 compatible
+OK Esquema anterior informa migración sin reiniciar usuarios
+OK Respaldo con checksum restaurado y CHECKDB antes de migrar
+OK Migración 006 idempotente y esquema compatible
+OK Esquema 6 mantiene pedido y cobro manual GTQ
+OK Primer Administrador requiere guardar código
+OK Código sin confirmación de custodia no recupera
+OK Confirmación habilita código guardado
+OK SQL conserva verificador y no código en claro
+OK Código de otra identidad de instalación rechazado
+OK Único Administrador recupera sin sesión previa
+OK Recuperación no inicia ni eleva sesión
+OK Recuperación invalida sesión administrativa anterior
+OK Clave anterior rechazada y nueva aceptada
+OK Repetición original recupera resultado sin otro cambio
+OK Consulta necesita comprobante secreto y no solo identificador
+OK Código consumido no permite otra recuperación
+OK Después de recuperación exige reemplazo
+OK Rotación revoca código anterior
+OK Mesero no genera código administrativo
+OK Contraseña administrativa incorrecta rechazada
+OK Administrador inactivo no autoriza
+OK Cambio obligatorio requiere completar acceso
+OK Gerente no restablece cuentas
+OK Recuperación asistida exige otro Administrador
+OK No reactiva cuenta inactiva
+OK Política de contraseña nueva conserva mínimo
+OK Rechaza contraseña nueva de más de 128 caracteres
+OK Otro Administrador recupera mesero
+OK Otro Administrador recupera gerente
+OK Otro Administrador recupera admin
+OK Sesión de mesero recuperado queda invalidada
+OK Recuperación revoca aprobaciones pendientes del solicitante
+OK Conserva consumo roles y estado activo
+OK Pausa de recuperación independiente del acceso normal
+OK Dos recuperaciones concurrentes consumen código una sola vez
+OK Cancelar recuperación no cambia credenciales ni consume código
+OK Interfaz valida campos vacíos antes de SQL
+OK Interfaz exige confirmación coincidente
+OK Rechazo limpia secretos y conserva usuario
+OK Recuperación mantiene visible recuperar a 1280
+OK Recuperación mantiene visible consultar a 1280
+OK Recuperación mantiene visible cancelar a 1280
+OK Recuperación mantiene visible mensaje a 1280
+OK Recuperación mantiene visible recuperar a 1366
+OK Recuperación mantiene visible consultar a 1366
+OK Recuperación mantiene visible cancelar a 1366
+OK Recuperación mantiene visible mensaje a 1366
+OK Interfaz permite reintento correcto y evita repetir resultado
+OK Sin código muestra asistencia sin puerta pública de mantenimiento
+OK Código oculto y confirmación de custodia obligatoria
+OK Interfaz confirma custodia del código
+OK Acceso contiene enlace de recuperación
+OK Error SQL obliga comprobar resultado antes de repetir
+OK Comprobante DPAPI conserva consulta tras cerrar ventana
+OK Mantenimiento restaura respaldo y exige cambio obligatorio
+OK Credencial temporal no abre operación diaria
+OK Después de mantenimiento debe registrar nuevo código
+OK Intervención excepcional conserva identificador auditable
+OK Recuperaciones conservan comprobante y ventas existentes
+OK Recuperación de operaciones pendientes permanece separada
+TOTAL 61 comprobaciones de recuperación
