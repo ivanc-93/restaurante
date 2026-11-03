@@ -1,6 +1,11 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioComprobante : Form
 {
+    public FormularioComprobante(string contenido) : this()
+    {
+        ctContenido.Text = contenido;
+    }
+
     public FormularioComprobante()
     {
         InitializeComponent();

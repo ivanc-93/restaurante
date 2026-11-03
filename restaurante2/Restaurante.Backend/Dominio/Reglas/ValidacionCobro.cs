@@ -23,6 +23,8 @@ public static class ValidacionCobro
             throw new ArgumentException("Seleccione efectivo, tarjeta o cortesía autorizada.");
         if (s.Metodo == "Cortesía" && (!s.CortesiaAutorizada || s.Entregado != 0))
             throw new ArgumentException("Confirme cortesía de total cero.");
+        ReferenciaPago.Validar(s.Referencia);
+        ReferenciaPago.Validar(s.Observacion);
         if (s.Metodo == "Tarjeta")
         {
             if (s.ResultadoTarjeta is not ("Confirmado" or "Rechazado" or "Incierto"))

@@ -10,6 +10,7 @@ partial class FormularioGestionMesa
     private CheckBox chkDeclarado = null!;
     private CheckBox chkVerificado = null!;
     private Button btnAplicar = null!;
+    private Label lblConsecuencia = null!;
     private FlowLayoutPanel flpCampos = null!;
     protected override void Dispose(bool disposing)
     {
@@ -61,6 +62,8 @@ partial class FormularioGestionMesa
         flpCampos.Padding = new Padding(20);
         lblResumen.AutoSize = true;
         lblResumen.MaximumSize = new Size(480, 0);
+        lblConsecuencia = Componentes.Etiqueta("Elige qué ocurrió. El consumo y el historial se conservan.");
+        lblConsecuencia.Name = "lblConsecuencia";
         cbAccion.Width = 430;
         cbAccion.DropDownStyle = ComboBoxStyle.DropDownList;
         cbAccion.SelectedIndexChanged += Accion_Cambio;
@@ -81,8 +84,10 @@ partial class FormularioGestionMesa
         btnAplicar.Enabled = false;
         btnAplicar.Click += Aplicar_Click;
         flpCampos.Controls.Add(lblResumen);
+        flpCampos.Controls.Add(Componentes.Etiqueta("¿Qué necesitas resolver?", 14, true));
         flpCampos.Controls.Add(cbAccion);
-        flpCampos.Controls.Add(new Label { Text = "Resultado externo (solo conciliación)", AutoSize = true });
+        flpCampos.Controls.Add(lblConsecuencia);
+        flpCampos.Controls.Add(new Label { Name = "lblResultadoExterno", Text = "Resultado del pago externo", AutoSize = true, Visible = false });
         flpCampos.Controls.Add(cbResultado);
         flpCampos.Controls.Add(new Label { Text = "Motivo / evidencia (obligatorio)", AutoSize = true });
         flpCampos.Controls.Add(ctMotivo);
@@ -95,7 +100,22 @@ partial class FormularioGestionMesa
         ClientSize = new Size(540, 530);
         MinimumSize = new Size(480, 420);
         StartPosition = FormStartPosition.CenterParent;
-        Text = "Gestionar cierre de mesa";
+        Text = "Sabores | Resolver atención de mesa";
+        var btnVolver = Componentes.Boton("Volver sin cambiar la mesa", false);
+        btnVolver.Name = "btnVolver";
+        btnVolver.Click += (_, _) => Close();
+        flpCampos.Controls.Add(btnVolver);
+        SizeChanged += (_, _) =>
+        {
+            var ancho = Math.Max(200, ClientSize.Width - 60);
+            foreach (Control c in flpCampos.Controls)
+            {
+                if (c is Label or CheckBox)
+                    c.MaximumSize = new Size(ancho, 0);
+                else
+                    c.Width = ancho;
+            }
+        };
         ResumeLayout(false);
     }
 }

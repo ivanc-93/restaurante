@@ -54,7 +54,24 @@ public sealed partial class FormularioGestionMesa : Form
                 }
 
                 lblResumen.Text = $"Mesa {datos.m.Numero} · {datos.m.Estado}\n" + (_cuenta is null ? "Sin pedido activo." : $"Pedido #{_cuenta.PedidoId} · {FormatoPresentacion.Moneda(_cuenta.Total)}") + "\nSi hubo preparación o consumo, registre una incidencia; no borre el importe.";
-                var admin = true; // meseros pueden solicitar autorización puntual; el servicio decide.
+                var congelada = _cuenta is not null && repo.CobranzaParcialDisponible() && repo.ConsultarCobranza(_cuenta.PedidoId).Congelada;
+                if (_cuenta is not null && repo.CobranzaParcialDisponible())
+                {
+                    var btnCobrar = Componentes.Boton("Cobrar saldo / revisar abonos");
+                    btnCobrar.Name = "btnCobrarSaldo";
+                    btnCobrar.Click += (_, _) =>
+                    {
+                        using var f = new FormularioCobranza(repo, _cuenta.PedidoId);
+                        f.ShowDialog(this);
+                        DialogResult = DialogResult.OK;
+                        Close();
+                    };
+                    flpCampos.Controls.Add(btnCobrar);
+                    if (congelada)
+                        lblResumen.Text += "\nCuenta dividida o con abonos: resuelve desde Cobrar saldo. No se permite borrar consumo ni cancelar pagos.";
+                }
+
+                var admin = !congelada; // meseros pueden solicitar autorización puntual; el servicio decide.
                 if (_incierta.HasValue)
                 {
                     var s = repo.ConsultarSolicitudCobro(_incierta.Value);
@@ -63,16 +80,38 @@ public sealed partial class FormularioGestionMesa : Form
                         cbAccion.Items.Add("Conciliar tarjeta");
                 }
                 else if (_cuenta is not null && admin)
-                    cbAccion.Items.AddRange(new object[] { "Cancelar", "Incidencia" });
+                {
+                    if (_cuenta.Estado == "Abierto")
+                        cbAccion.Items.Add("Cancelar");
+                    cbAccion.Items.Add("Incidencia");
+                }
                 else if (_cuenta is null && datos.m.Estado == "Ocupada" && admin)
                     cbAccion.Items.Add("Corregir estado");
                 else if (_cuenta is null && datos.m.Estado == "En limpieza")
                     cbAccion.Items.Add("Confirmar limpieza");
                 if (cbAccion.Items.Count == 0)
-                    lblResumen.Text += "\nNo hay acciones disponibles para tu rol. Solicita a un administrador resolver la cuenta.";
+                    lblResumen.Text += congelada ? "\nContinúa desde Cobrar saldo / revisar abonos." : "\nNo hay gestiones de cierre disponibles para este estado.";
                 else
                     cbAccion.SelectedIndex = 0;
                 btnAplicar.Enabled = cbAccion.Items.Count > 0;
+                if (cbAccion.Items.Count == 0)
+                {
+                    foreach (Control campo in flpCampos.Controls)
+                        campo.Visible = campo == lblResumen || campo.Name is "btnCobrarSaldo" or "btnVolver" || !congelada && campo.Name == "btnAjuste";
+                }
+
+                var cobrar = flpCampos.Controls.Find("btnCobrarSaldo", false).FirstOrDefault();
+                if (cobrar is not null)
+                    flpCampos.Controls.SetChildIndex(cobrar, 1);
+                foreach (var boton in flpCampos.Controls.OfType<Button>())
+                {
+                    var alto = (int)(44 * DeviceDpi / 96f);
+                    boton.AutoSize = false;
+                    boton.Height = alto;
+                    boton.MinimumSize = new Size(0, alto);
+                    boton.MaximumSize = new Size(0, alto);
+                    boton.Width = Math.Max(250, flpCampos.ClientSize.Width - 70);
+                }
             }
             catch (Exception ex)
             {
@@ -93,7 +132,26 @@ public sealed partial class FormularioGestionMesa : Form
     private void Accion_Cambio(object? sender, EventArgs e)
     {
         chkDeclarado.Visible = cbAccion.Text == "Cancelar";
-        cbResultado.Enabled = chkVerificado.Visible = cbAccion.Text == "Conciliar tarjeta";
+        cbResultado.Enabled = cbResultado.Visible = chkVerificado.Visible = cbAccion.Text == "Conciliar tarjeta";
+        foreach (var l in flpCampos.Controls.Find("lblResultadoExterno", true))
+            l.Visible = cbResultado.Visible;
+        btnAplicar.Text = cbAccion.Text switch
+        {
+            "Cancelar" => "Cancelar pedido sin consumo",
+            "Incidencia" => "Registrar incidencia",
+            "Confirmar limpieza" => "Declarar mesa disponible",
+            "Corregir estado" => "Pasar mesa a limpieza",
+            "Conciliar tarjeta" => "Registrar conciliación",
+            _ => "Selecciona una acción"
+        };
+        lblConsecuencia.Text = cbAccion.Text switch
+        {
+            "Cancelar" => "Solo si no hubo preparación ni consumo. Conserva el pedido cancelado y pasa la mesa a limpieza. Requiere gerencia.",
+            "Incidencia" => "Conserva el consumo y registra el importe pendiente de resolución. La disponibilidad física no elimina la deuda. Requiere gerencia.",
+            "Confirmar limpieza" => "Confirma que la mesa fue limpiada y puede recibir otra atención.",
+            "Conciliar tarjeta" => "Declara el resultado comprobado. No vuelve a cobrar la tarjeta. Requiere gerencia.",
+            _ => "No se borra consumo ni historial."
+        };
         if (cbAccion.Text == "Confirmar limpieza" && string.IsNullOrWhiteSpace(ctMotivo.Text))
             ctMotivo.Text = "Limpieza terminada y mesa revisada";
     }

@@ -141,9 +141,10 @@ partial class FormularioDetalleMesa
         ctBuscar.PlaceholderText = "Buscar producto";
         ctBuscar.Width = 180;
         cbCategoria.DropDownStyle = ComboBoxStyle.DropDownList;
-        cbCategoria.Width = 150;
+        cbCategoria.Width = 220;
+        cbCategoria.DropDownWidth = 320;
         cbTipo.DropDownStyle = ComboBoxStyle.DropDownList;
-        cbTipo.Width = 110;
+        cbTipo.Width = 120;
         cbTipo.Items.AddRange(new object[] { "Todos", "Plato", "Bebida" });
         cbTipo.SelectedIndex = 0;
         flpFiltros.Controls.AddRange(new Control[] { ctBuscar, cbCategoria, cbTipo });
@@ -165,7 +166,7 @@ partial class FormularioDetalleMesa
         nudCantidad.Value = 1;
         nudCantidad.Width = 70;
         nudCantidad.AccessibleName = "Cantidad a agregar";
-        btnAgregarProducto.Text = "Agregar producto";
+        btnAgregarProducto.Text = "Agregar al pedido";
         btnAgregarProducto.AutoSize = true;
         btnAgregarProducto.Enabled = false;
         btnAgregarProducto.Click += Agregar_Click;
@@ -174,15 +175,19 @@ partial class FormularioDetalleMesa
         tlpIzquierda.Controls.Add(flpFiltros, 0, 0);
         tlpIzquierda.Controls.Add(flpCatalogo, 0, 1);
         tlpIzquierda.Controls.Add(flpAcciones, 0, 2);
-        tlpDerecha.Dock = DockStyle.Fill;
+        tlpDerecha.Dock = DockStyle.Top;
+        tlpDerecha.AutoSize = true;
+        tlpDerecha.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         tlpDerecha.ColumnCount = 1;
         tlpDerecha.RowCount = 7;
         tlpDerecha.BackColor = Color.White;
         tlpDerecha.Padding = new Padding(12);
+        tlpDerecha.AutoScroll = false;
+        dgvDetalles.MinimumSize = new Size(0, 160);
         tlpDerecha.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.Absolute, 190));
         tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -201,12 +206,20 @@ partial class FormularioDetalleMesa
         dgvDetalles.ReadOnly = true;
         dgvDetalles.AllowUserToAddRows = false;
         lblEstado.Text = "Preparando catálogo…";
+        lblEstado.Font = new Font("Segoe UI", 10);
         lblEstado.AutoSize = true;
+        lblEstado.Dock = DockStyle.Top;
         lblEstado.MaximumSize = new Size(360, 0);
+        tlpDerecha.SizeChanged += (_, _) =>
+        {
+            var ancho = Math.Max(160, tlpDerecha.ClientSize.Width - 40);
+            lblEstado.MaximumSize = lblTotal.MaximumSize = new Size(ancho, 0);
+        };
         lblEstado.ForeColor = Componentes.Secundario;
         lblTotal.Text = "Sin pedido";
         lblTotal.AutoSize = true;
-        lblTotal.Font = new Font("Segoe UI", 18, FontStyle.Bold);
+        lblTotal.Dock = DockStyle.Top;
+        lblTotal.Font = new Font("Segoe UI", 11, FontStyle.Bold);
         lblTotal.Margin = new Padding(0, 12, 0, 12);
         btnRevisarCobro.Text = "Revisar y cobrar";
         btnRevisarCobro.Dock = DockStyle.Fill;
@@ -219,7 +232,7 @@ partial class FormularioDetalleMesa
         tlpDerecha.Controls.Add(lblClienteLabel, 0, 0);
         tlpDerecha.Controls.Add(cbClientes, 0, 1);
         tlpDerecha.Controls.Add(dgvDetalles, 0, 2);
-        btnGestionar.Text = "Gestionar cierre de mesa";
+        btnGestionar.Text = "Opciones de cierre y ajustes";
         btnGestionar.AutoSize = true;
         btnGestionar.Dock = DockStyle.Fill;
         btnGestionar.Enabled = false;
@@ -245,13 +258,64 @@ partial class FormularioDetalleMesa
             Name = "btnPreparar"
         };
         btnPreparar.Click += Preparar_Click;
-        flpGestionAcciones.Controls.AddRange(new Control[] { btnGestionar, btnCorregir, btnPreparar });
+        flpGestionAcciones.Controls.Add(btnGestionar);
+        var menu = new ContextMenuStrip();
+        menu.Items.Add("Corregir unidades", null, Corregir_Click);
+        menu.Items.Add("Declarar preparación", null, Preparar_Click);
+        var opciones = Componentes.Boton("Comanda ▾", false);
+        opciones.Name = "btnOpcionesComanda";
+        opciones.Font = new Font("Segoe UI", 10);
+        opciones.Click += (_, _) => menu.Show(opciones, new Point(0, opciones.Height));
+        flpGestionAcciones.Controls.Add(opciones);
+        Disposed += (_, _) => menu.Dispose();
+        btnGestionar.Text = "Resolver / ajustar";
+        btnGestionar.Font = new Font("Segoe UI", 10);
         tlpDerecha.Controls.Add(flpGestionAcciones, 0, 6);
         tlpDerecha.Controls.Add(lblEstado, 0, 3);
         tlpDerecha.Controls.Add(lblTotal, 0, 4);
         tlpDerecha.Controls.Add(btnRevisarCobro, 0, 5);
         tlpLayout.Controls.Add(tlpIzquierda, 0, 1);
-        tlpLayout.Controls.Add(tlpDerecha, 1, 1);
+        var pnlComanda = new Panel
+        {
+            Name = "pnlComanda",
+            Dock = DockStyle.Fill,
+            AutoScroll = true
+        };
+        pnlComanda.Controls.Add(tlpDerecha);
+        var tlpComanda = new TableLayoutPanel
+        {
+            Name = "tlpComanda",
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2,
+            BackColor = Color.White
+        };
+        tlpComanda.ColumnStyles.Add(new(SizeType.Percent, 100));
+        tlpComanda.RowStyles.Add(new(SizeType.Percent, 100));
+        tlpComanda.RowStyles.Add(new(SizeType.AutoSize));
+        var tlpResumenCobro = new TableLayoutPanel
+        {
+            Name = "tlpResumenCobro",
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1,
+            RowCount = 2,
+            Padding = new Padding(12)
+        };
+        tlpResumenCobro.RowStyles.Add(new(SizeType.AutoSize));
+        tlpResumenCobro.RowStyles.Add(new(SizeType.Absolute, 48));
+        btnRevisarCobro.AutoSize = false;
+        btnRevisarCobro.MaximumSize = new Size(0, 48);
+        tlpResumenCobro.ColumnStyles.Add(new(SizeType.Percent, 100));
+        tlpDerecha.Controls.Remove(lblTotal);
+        tlpDerecha.Controls.Remove(btnRevisarCobro);
+        tlpResumenCobro.Controls.Add(lblTotal, 0, 0);
+        tlpResumenCobro.Controls.Add(btnRevisarCobro, 0, 1);
+        tlpComanda.Controls.Add(pnlComanda, 0, 0);
+        tlpComanda.Controls.Add(tlpResumenCobro, 0, 1);
+        tlpLayout.Controls.Add(tlpComanda, 1, 1);
+        tlpLayout.SizeChanged += (_, _) => lblResumen.MaximumSize = new Size(Math.Max(250, tlpLayout.ClientSize.Width - 50), 0);
         Controls.Add(tlpLayout);
         AutoScaleDimensions = new SizeF(96, 96);
         AutoScaleMode = AutoScaleMode.Dpi;

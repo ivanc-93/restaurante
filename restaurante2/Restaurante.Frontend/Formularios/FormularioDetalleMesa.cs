@@ -56,7 +56,8 @@ public sealed partial class FormularioDetalleMesa : Form
                 var revision = pedido is null ? null : _repositorio.RevisarCuenta(pedido.Id);
                 var incierta = pedido is null ? null : _repositorio.ObtenerPagoIncierto(pedido.Id);
                 var detalles = pedido is null ? new List<DetallePedidoResumen>() : _repositorio.ListarDetallesPedido(pedido.Id).ToList();
-                return (actual, pedido, productos, clientes, detalles, revision, incierta);
+                var cobranza = pedido is not null && _repositorio.CobranzaParcialDisponible() ? _repositorio.ConsultarCobranza(pedido.Id) : null;
+                return (actual, pedido, productos, clientes, detalles, revision, incierta, cobranza);
             });
             var clienteId = (cbClientes.SelectedItem as Cliente)?.Id ?? 0;
             var productoId = (cbProductos.SelectedItem as ElementoMenu)?.Id;
@@ -80,9 +81,15 @@ public sealed partial class FormularioDetalleMesa : Form
             dgvDetalles.DataSource = datos.detalles;
             lblResumen.Text = $"Mesa {_mesa.Numero} · " + (_pedido is null ? datos.actual.Estado : $"Pedido #{_pedido.Id} · {_pedido.Estado} · {_pedido.Cliente}");
             lblTotal.Text = _pedido is null ? "Sin pedido registrado" : $"Total: {FormatoPresentacion.Moneda(_pedido.Total)}";
-            lblEstado.Text = _pedido is null ? "El primer producto abre y guarda el pedido." : "Productos guardados. Cada incorporación se registra al agregar.";
+            if (datos.cobranza is not null)
+                lblTotal.Text = $"Consumo {FormatoPresentacion.Moneda(datos.cobranza.Pedido.ImporteOriginal)}\nAjustes {FormatoPresentacion.Moneda(datos.cobranza.Pedido.Descuento)} · pagado {FormatoPresentacion.Moneda(datos.cobranza.Pagado)}\nSaldo {FormatoPresentacion.Moneda(datos.cobranza.Saldo)}";
+            lblEstado.Text = _pedido is null ? "El primer producto abre y guarda el pedido." : "Comanda guardada. Agregar registra el consumo.";
             _recuperacionPendiente = DiarioOperaciones.Listar(_repositorio).Count > 0;
             btnAgregarProducto.Enabled = _menu.Count > 0 && (_pedido is not null || (datos.actual.Estado == "Disponible" || datos.actual.Estado == "Reservada" && _reserva is not null)) && datos.incierta is null;
+            if (datos.cobranza?.Congelada == true)
+                btnAgregarProducto.Enabled = false;
+            foreach (var b in tlpDerecha.Controls.Find("btnCorregir", true).Concat(tlpDerecha.Controls.Find("btnPreparar", true)))
+                b.Enabled = _pedido is not null && datos.cobranza?.Congelada != true;
             flpCatalogo.Enabled = btnAgregarProducto.Enabled;
             if (_recuperacionPendiente)
                 btnAgregarProducto.Enabled = flpCatalogo.Enabled = false;
@@ -97,6 +104,23 @@ public sealed partial class FormularioDetalleMesa : Form
             if (productoId is not null)
                 cbProductos.SelectedItem = cbProductos.Items.Cast<ElementoMenu>().FirstOrDefault(p => p.Id == productoId) ?? cbProductos.SelectedItem;
             FormatoPresentacion.Aplicar(this);
+            dgvDetalles.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+            dgvDetalles.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            if (dgvDetalles.Columns.Contains("Cantidad"))
+            {
+                dgvDetalles.Columns["Cantidad"].HeaderText = "Cant.";
+                dgvDetalles.Columns["Cantidad"].FillWeight = 45;
+            }
+
+            if (dgvDetalles.Columns.Contains("Importe"))
+            {
+                dgvDetalles.Columns["Importe"].HeaderText = "Total";
+                dgvDetalles.Columns["Importe"].FillWeight = 100;
+                dgvDetalles.Columns["Importe"].DefaultCellStyle.WrapMode = DataGridViewTriState.False;
+            }
+
+            if (dgvDetalles.Columns.Contains("Producto"))
+                dgvDetalles.Columns["Producto"].FillWeight = 150;
         }
         catch (Exception ex)
         {
@@ -129,17 +153,18 @@ public sealed partial class FormularioDetalleMesa : Form
             flpCatalogo.Controls[0].Dispose();
         foreach (var producto in lista)
         {
-            var btnTarjeta = Componentes.Boton($"{producto.Nombre}\n{producto.Categoria} · {producto.Tipo}\n{FormatoPresentacion.Moneda(producto.Precio)}\nSeleccionar", false);
-            btnTarjeta.Name = "btnTarjeta";
-            btnTarjeta.Size = new Size((int)(180 * DeviceDpi / 96f), (int)(135 * DeviceDpi / 96f));
-            btnTarjeta.AutoSize = false;
-            btnTarjeta.Margin = new Padding(8);
-            btnTarjeta.TextAlign = ContentAlignment.MiddleLeft;
-            Iconos.Aplicar(btnTarjeta, "utensils-crossed");
-            btnTarjeta.Click += (_, _) =>
+            var btnTarjeta = new Restaurante.Frontend.Controles.TarjetaProducto(producto);
+            var escala = DeviceDpi / 96f;
+            var columnas = Math.Max(1, flpCatalogo.ClientSize.Width / (int)(210 * escala));
+            btnTarjeta.Size = new Size(Math.Max((int)(180 * escala), flpCatalogo.ClientSize.Width / columnas - (int)(18 * escala)), (int)(145 * escala));
+            btnTarjeta.Margin = new Padding(6);
+            btnTarjeta.Marcar(producto.Id == (cbProductos.SelectedItem as ElementoMenu)?.Id);
+            btnTarjeta.Seleccionar += (_, _) =>
             {
                 cbProductos.SelectedItem = producto;
-                lblEstado.Text = $"Seleccionado: {producto.Nombre}. Elige cantidad y pulsa Agregar.";
+                foreach (var tarjeta in flpCatalogo.Controls.OfType<Restaurante.Frontend.Controles.TarjetaProducto>())
+                    tarjeta.Marcar(tarjeta == btnTarjeta);
+                lblEstado.Text = $"{producto.Nombre} · {FormatoPresentacion.Moneda(producto.Precio)}. Indica cantidad y agrega al pedido.";
                 nudCantidad.Focus();
             };
             flpCatalogo.Controls.Add(btnTarjeta);
@@ -210,6 +235,20 @@ public sealed partial class FormularioDetalleMesa : Form
         try
         {
             var revision = await Task.Run(() => _repositorio.RevisarCuenta(_pedido.Id));
+            if (await Task.Run(_repositorio.CobranzaParcialDisponible))
+            {
+                using var nueva = new FormularioCobranza(_repositorio, revision.PedidoId);
+                nueva.ShowDialog(this);
+                if (nueva.Finalizado)
+                {
+                    _ocupado = false;
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+
+                return;
+            }
+
             using var cobro = new FormularioCobro(_repositorio, revision, _dialogos);
             cobro.ShowDialog(this);
             if (cobro.Resultado?.Estado == "Confirmado")

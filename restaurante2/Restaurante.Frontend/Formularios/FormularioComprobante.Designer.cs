@@ -22,11 +22,59 @@ partial class FormularioComprobante
         ctContenido.Dock = DockStyle.Fill;
         ctContenido.Multiline = true;
         ctContenido.ReadOnly = true;
-        ctContenido.ScrollBars = ScrollBars.Both;
+        ctContenido.TabStop = false;
+        ctContenido.ScrollBars = ScrollBars.Vertical;
+        ctContenido.WordWrap = true;
+        ctContenido.BorderStyle = BorderStyle.None;
         ctContenido.BackColor = Color.White;
-        ctContenido.Font = new Font("Segoe UI", 11);
+        ctContenido.Font = new Font("Consolas", 11);
         ctContenido.AccessibleName = "Comprobante interno académico";
-        Controls.Add(ctContenido);
+        var raiz = new TableLayoutPanel
+        {
+            Name = "tlpDocumento",
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            Padding = new Padding(20),
+            BackColor = Componentes.Fondo
+        };
+        raiz.ColumnStyles.Add(new(SizeType.Percent, 100));
+        raiz.RowStyles.Add(new(SizeType.AutoSize));
+        raiz.RowStyles.Add(new(SizeType.Percent, 100));
+        raiz.RowStyles.Add(new(SizeType.AutoSize));
+        var titulo = Componentes.Etiqueta("SABORES · Comprobante académico · GTQ", 16, true);
+        titulo.ForeColor = Componentes.Verde;
+        titulo.Dock = DockStyle.Top;
+        titulo.Margin = new Padding(0, 0, 0, 15);
+        raiz.Controls.Add(titulo, 0, 0);
+        var papel = new Panel
+        {
+            Name = "pnlDocumento",
+            Dock = DockStyle.Fill,
+            BackColor = Color.White,
+            Padding = new Padding(16)
+        };
+        papel.Controls.Add(ctContenido);
+        raiz.Controls.Add(papel, 0, 1);
+        var pie = new FlowLayoutPanel
+        {
+            Name = "flpDocumento",
+            Dock = DockStyle.Top,
+            AutoSize = true
+        };
+        var copiar = Componentes.Boton("Copiar contenido", false);
+        copiar.Name = "btnCopiarComprobante";
+        copiar.Click += (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(ctContenido.Text))
+                Clipboard.SetText(ctContenido.Text);
+        };
+        var volver = Componentes.Boton("Volver", false);
+        volver.Name = "btnVolver";
+        volver.Click += (_, _) => Close();
+        pie.Controls.AddRange([copiar, volver]);
+        raiz.Controls.Add(pie, 0, 2);
+        Controls.Add(raiz);
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(720, 650);

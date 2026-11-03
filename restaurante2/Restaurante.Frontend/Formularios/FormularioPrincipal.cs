@@ -181,93 +181,129 @@ public sealed partial class FormularioPrincipal : Form
         lblTitulo.Text = "Panel de control / Inicio";
         SeleccionarNavegacion("Inicio");
         LimpiarContenido();
-        var tlpPagina = CrearPagina();
-        tlpPagina.Controls.Add(Encabezado("Tu restaurante, de un vistazo", "Hola, " + _usuario.Nombre + ". Selecciona una mesa o continúa una atención."));
+        var pagina = CrearPagina();
+        pagina.Controls.Add(Encabezado("Listos para atender", $"Hola, {_usuario.Nombre}. Consulta reservas, mesas y pedidos pendientes."));
         if (!_configuracion.EstaConfigurada)
         {
-            tlpPagina.Controls.Add(Aviso("Configura la conexión del equipo para comenzar.", "Abrir conexión SQL", MostrarConexion));
+            pagina.Controls.Add(Aviso("Configura la conexión para comenzar.", "Abrir conexión SQL", MostrarConexion));
             return;
         }
 
-        var resumen = await Task.Run(_repositorio.ObtenerResumen);
+        var mesas = await Task.Run(_repositorio.ListarMesas);
         var restaurante = await Task.Run(_repositorio.ObtenerRestaurante);
         Text = "Sabores | " + restaurante.Nombre;
-        var flpTarjetas = new FlowLayoutPanel
+        pagina.Controls.Add(Componentes.Etiqueta($"MESAS   {mesas.Count(m => m.Estado == "Disponible")} disponibles   ·   {mesas.Count(m => m.Estado == "Ocupada")} ocupadas   ·   {mesas.Count(m => m.Estado == "Reservada")} reservadas   ·   {mesas.Count(m => m.Estado == "En limpieza")} en limpieza", 12, true));
+        var acciones = new FlowLayoutPanel
         {
+            Name = "flpAccionesInicio",
             Dock = DockStyle.Top,
             AutoSize = true,
-            WrapContents = true,
-            Margin = new Padding(0, 8, 0, 16),
-            Name = "flpTarjetas"
+            WrapContents = true
         };
-        if (_usuario.Rol is "Administrador" or "Gerente")
-            flpTarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Componentes.Terracota));
-        flpTarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "Atenciones en curso", Componentes.Verde));
-        flpTarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para atender", Componentes.Verde));
-        flpTarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú actual", Componentes.Terracota));
-        tlpPagina.Controls.Add(flpTarjetas);
-        var flpAcciones = new FlowLayoutPanel
+        void Accion(string nombre, string texto, Func<Task> ejecutar)
         {
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            WrapContents = true,
-            Margin = new Padding(0, 0, 0, 14),
-            Name = "flpAcciones"
-        };
-        var btnVer = Componentes.Boton("Ver mesas");
-        btnVer.Name = "btnVer";
-        Iconos.Aplicar(btnVer, "armchair");
-        btnVer.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
-        var btnRecuperar = Componentes.Boton("Recuperar operaciones pendientes", false);
-        btnRecuperar.Name = "btnRecuperar";
-        Iconos.Aplicar(btnRecuperar, "refresh");
-        btnRecuperar.Click += async (_, _) => await EjecutarSeguro(async () =>
+            var b = Componentes.Boton(texto, false);
+            b.Name = nombre;
+            b.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            b.Margin = new Padding(0, 6, 8, 6);
+            b.Click += async (_, _) => await EjecutarSeguro(ejecutar);
+            acciones.Controls.Add(b);
+        }
+
+        Accion("btnVer", "Ver mesas", MostrarMesasPos);
+        var pendientes = DiarioOperaciones.Listar(_repositorio);
+        Accion("btnRecuperar", $"Operaciones pendientes ({pendientes.Count})", async () =>
         {
-            using var formulario = new FormularioRecuperacion(_repositorio);
-            formulario.ShowDialog(this);
+            using var f = new FormularioRecuperacion(_repositorio);
+            f.ShowDialog(this);
             await MostrarInicio();
         });
-        var btnIncidencias = Componentes.Boton("Incidencias de consumo", false);
-        btnIncidencias.Name = "btnIncidencias";
-        Iconos.Aplicar(btnIncidencias, "alert");
-        btnIncidencias.Click += async (_, _) => await EjecutarSeguro(async () =>
+        Accion("btnIncidencias", "Incidencias de consumo", async () =>
         {
             using var f = new FormularioIncidencias(_repositorio);
             f.ShowDialog(this);
             await MostrarInicio();
         });
-        foreach (var b in new[]
+        pagina.Controls.Add(acciones);
+        if (pendientes.Count > 0)
+            pagina.Controls.Add(Componentes.Etiqueta("Recupera las operaciones pendientes antes de repetir una acción.", 12, true));
+        pagina.Controls.Add(Componentes.Etiqueta("Reservas activas", 16, true));
+        if (await Task.Run(_repositorio.ReservasDisponibles))
         {
-            btnVer,
-            btnRecuperar,
-            btnIncidencias
+            var reservas = await Task.Run(_repositorio.ListarReservasActivas);
+            if (reservas.Count == 0)
+                pagina.Controls.Add(Componentes.Etiqueta("Sin reservas activas por el momento."));
+            foreach (var reserva in reservas.Take(5))
+            {
+                var b = Componentes.Boton($"Mesa {reserva.NumeroMesa} · {reserva.Nombre} · {reserva.Fecha:dd/MM HH:mm}", false);
+                b.Name = "btnVerReserva_" + reserva.Id;
+                b.Dock = DockStyle.Top;
+                b.AutoSize = false;
+                b.AutoEllipsis = true;
+                b.Height = (int)(50 * DeviceDpi / 96f);
+                b.Font = new Font("Segoe UI", 11);
+                b.TextAlign = ContentAlignment.MiddleLeft;
+                b.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    var mesa = (await Task.Run(_repositorio.ListarMesas)).Single(m => m.Id == reserva.MesaId);
+                    var actual = await Task.Run(() => _repositorio.ConsultarReservaMesa(mesa.Id));
+                    using var f = new FormularioReservaDetalle(_repositorio, mesa, actual);
+                    f.ShowDialog(this);
+                    await MostrarInicio();
+                });
+                pagina.Controls.Add(b);
+            }
+
+            if (reservas.Count > 5)
+            {
+                var todas = Componentes.Boton($"Ver todas las reservas ({reservas.Count})", false);
+                todas.Name = "btnTodasReservas";
+                todas.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    await MostrarMesasPos();
+                    var filtro = Controls.Find("cbFiltroEstadoMesa", true).OfType<ComboBox>().FirstOrDefault();
+                    if (filtro is not null)
+                        filtro.SelectedItem = "Reservada";
+                });
+                pagina.Controls.Add(todas);
+            }
         }
 
-        )
-            b.Margin = new Padding(0, 0, 12, 10);
-        flpAcciones.Controls.AddRange([btnVer, btnRecuperar, btnIncidencias]);
-        tlpPagina.Controls.Add(flpAcciones);
-        var pendientes = DiarioOperaciones.Listar(_repositorio);
-        if (pendientes.Count > 0)
-            tlpPagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupera antes de repetir acciones.", 12, true));
-        tlpPagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes", 18, true));
-        var abiertos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").Take(5).ToList();
-        if (abiertos.Count == 0)
-            tlpPagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Selecciona Ver mesas para comenzar."));
-        foreach (var pedido in abiertos)
+        pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes", 16, true));
+        var pedidos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").ToList();
+        if (pedidos.Count == 0)
+            pagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Abre una mesa para comenzar."));
+        foreach (var p in pedidos.Take(5))
         {
-            var btnContinuar = Componentes.Boton($"Mesa {pedido.NumeroMesa}    ·    Pedido #{pedido.Id}    ·    {pedido.Estado}    ·    {FormatoPresentacion.Moneda(pedido.Total)}", false);
-            btnContinuar.Name = "btnContinuar";
-            btnContinuar.Dock = DockStyle.Top;
-            btnContinuar.Margin = new Padding(0, 0, 0, 8);
-            Iconos.Aplicar(btnContinuar, "clipboard-list");
-            btnContinuar.Click += async (_, _) => await EjecutarSeguro(async () =>
+            var b = Componentes.Boton($"Mesa {p.NumeroMesa} · Pedido #{p.Id} · {p.Estado}", false);
+            b.Name = "btnContinuar";
+            b.Font = new Font("Segoe UI", 11);
+            b.Dock = DockStyle.Top;
+            b.Click += async (_, _) => await EjecutarSeguro(async () =>
             {
-                var mesas = await Task.Run(_repositorio.ListarMesas);
-                await AbrirMesa(mesas.Single(m => m.Numero == pedido.NumeroMesa));
+                var actual = (await Task.Run(_repositorio.ListarMesas)).Single(m => m.Numero == p.NumeroMesa);
+                await AbrirMesa(actual);
                 await MostrarInicio();
             });
-            tlpPagina.Controls.Add(btnContinuar);
+            pagina.Controls.Add(b);
+        }
+
+        if (_usuario.Rol is "Gerente" or "Administrador")
+        {
+            var resumen = await Task.Run(_repositorio.ObtenerResumen);
+            pagina.Controls.Add(Componentes.Etiqueta($"Comprobantes de hoy: {FormatoPresentacion.Moneda(resumen.VentasDelDia)} (importe emitido; no equivale a caja)", 11));
+            if (await Task.Run(_repositorio.CobranzaParcialDisponible))
+            {
+                var b = Componentes.Boton("Configurar promoción de clientes frecuentes", false);
+                b.Name = "btnPromociones";
+                b.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    using var f = new FormularioPromocion(_repositorio);
+                    f.ShowDialog(this);
+                    await MostrarInicio();
+                });
+                pagina.Controls.Add(b);
+            }
         }
 
         FormatoPresentacion.Aplicar(this);
@@ -301,6 +337,12 @@ public sealed partial class FormularioPrincipal : Form
         };
         tlpPanel.Controls.Add(new Label { Text = titulo, AutoSize = true, Font = new Font("Segoe UI", 23, FontStyle.Bold), ForeColor = Componentes.Tinta });
         tlpPanel.Controls.Add(new Label { Text = descripcion, AutoSize = true, ForeColor = Componentes.Secundario, Margin = new Padding(0, 10, 0, 5) });
+        tlpPanel.SizeChanged += (_, _) =>
+        {
+            var ancho = Math.Max(150, tlpPanel.ClientSize.Width - 20);
+            foreach (var l in tlpPanel.Controls.OfType<Label>())
+                l.MaximumSize = new Size(ancho, 0);
+        };
         return tlpPanel;
     }
 

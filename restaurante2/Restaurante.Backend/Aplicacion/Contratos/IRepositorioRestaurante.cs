@@ -1,7 +1,7 @@
 using Restaurante.Backend.Dominio;
 
 namespace Restaurante.Backend.Aplicacion.Contratos;
-public interface IRepositorioRestaurante : IConsultasReportes, IGestionUsuarios, IReservasMesa
+public interface IRepositorioRestaurante : IConsultasReportes, IGestionUsuarios, IReservasMesa, ICobranzaParcial
 {
     bool CorreccionesDisponibles() => false;
     IReadOnlyList<LineaPedidoCorregible> ListarLineasCorregibles(int pedidoId) => throw new NotSupportedException();

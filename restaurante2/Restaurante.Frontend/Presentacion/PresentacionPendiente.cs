@@ -21,6 +21,8 @@ internal static class PresentacionPendiente
 
     public static (string Tipo, object Datos)? Autorizacion(OperacionPendienteLocal p) => p.Tipo switch
     {
+        "Beneficio" => ("Beneficio", JsonSerializer.Deserialize<SolicitudBeneficio>(p.Datos)!),
+        "ConciliarAbono" => ("ConciliarAbono", JsonSerializer.Deserialize<SolicitudConciliacionAbono>(p.Datos)!),
         "CancelarReserva" => ("CancelarReserva", JsonSerializer.Deserialize<SolicitudCancelacionReserva>(p.Datos)!),
         "Ajuste" => ("Ajuste", JsonSerializer.Deserialize<SolicitudAjuste>(p.Datos)!),
         "Gestionar" => ("GestionMesa", JsonSerializer.Deserialize<SolicitudGestionMesa>(p.Datos)!),

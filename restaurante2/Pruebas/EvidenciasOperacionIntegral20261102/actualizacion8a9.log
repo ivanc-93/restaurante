@@ -1,0 +1,18 @@
+
+(0 rows affected)
+Id          Numero      Diagnostico
+----------- ----------- ----------------------------------------------------------------------
+
+(0 rows affected)
+Id          Numero      Diagnostico
+----------- ----------- ----------------------------------------------------------------------
+{
+  "Servidor": "(localdb)\\MSSQLLocalDB",
+  "Base": "Restaurante_Pruebas_Operacion_Actualizacion_20261102",
+  "Respaldo": "C:\\Users\\DaniveK\\.codex\\visualizations\\2026\\10\\25\\01a174b9-7292-7271-95db-4bea2c57c13d\\OperacionIntegral20261102\\ensayo8a9\\Restaurante_Pruebas_Operacion_Actualizacion_20261102_20261102_224225_9cc6b7.bak",
+  "Restaurada": "Restaurante_Pruebas_Restauracion_20261102_224225_9cc6b7",
+  "Fecha": "2026-11-02T22:42:30.2963339-06:00",
+  "TablasVerificadas": 23,
+  "Verificacion": "Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena de migraciones solicitada probada; última migración repetida en copia; CHECKDB antes y después del ensayo",
+  "Version": 9
+}

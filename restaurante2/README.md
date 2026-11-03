@@ -126,3 +126,7 @@ Consulta [la guía de exposición y los inventarios](Documentacion/EstructuraCod
 ## Reservas de mesas (esquema 008, activación autorizada)
 
 Se incorporó reserva por titular, atención con el primer producto y cancelación con motivo/autorización. La aplicación conserva compatibilidad con esquemas anteriores y no migra automáticamente. Consulte [manual de reservas](Documentacion/ManualUsuario/Reservas_20261102.md), [recorrido para exponer](Documentacion/EstructuraCodigo/Reservas_20261102.md), [resultados de pruebas](Pruebas/Reservas/README.md) y [activación/recuperación](BaseDatos/Reservas008.md). No aplicar a la base habitual sin la autorización específica requerida.
+
+## Operación integral 009
+
+Se incorporan Inicio con reservas, catálogo/comanda ordenados, cierres guiados, beneficios porcentuales autorizados, configuración de cliente frecuente y cuentas separadas con abonos manuales. Consulte [manual](Documentacion/ManualUsuario/OperacionIntegral009.md), [recorrido y matriz de permisos](Documentacion/EstructuraCodigo/OperacionIntegral009.md), [pruebas y límites](Pruebas/OperacionIntegral/README.md) y [respaldo/migración](BaseDatos/Operacion009.md). La regla frecuente comienza inactiva; los ajustes se realizan antes de dividir o cobrar. No hay SAT/FEL ni servicios bancarios.

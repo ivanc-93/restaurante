@@ -203,6 +203,8 @@ public sealed partial class RepositorioRestaurante
 
     private static void SinPagoPendiente(SqlConnection c, SqlTransaction t, int pedidoId)
     {
+        if (HayCobranzaNueva(c, t, pedidoId))
+            throw new InvalidOperationException("La cuenta ya está dividida o tiene abonos. No se puede modificar el consumo, aplicar ajustes ni usar el cierre anterior.");
         using var q = Consulta(c, t, "SELECT COUNT(*) FROM dbo.PagosManuales WHERE PedidoId=@p AND Estado IN(N'Confirmado',N'Incierto');", ("@p", pedidoId));
         if ((int)q.ExecuteScalar()! > 0)
             throw new InvalidOperationException("Hay un pago confirmado o incierto. Consulte o concilie antes de continuar.");

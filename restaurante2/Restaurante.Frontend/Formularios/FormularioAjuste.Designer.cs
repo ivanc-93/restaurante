@@ -2,6 +2,7 @@ namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioAjuste
 {
     private Label lblResumen = null!;
+    private Label lblImporte = null!;
     private Label lblMensaje = null!;
     private ComboBox cbTipo = null!;
     private NumericUpDown nudDescuento = null!;
@@ -18,7 +19,13 @@ public sealed partial class FormularioAjuste
         };
         flpP.Controls.Add(lblResumen);
         cbTipo = DisenoFormulario.Opciones(flpP, "Tipo de ajuste", "Descuento", "Cortesía");
-        flpP.Controls.Add(new Label { Text = "Descuento en Q sobre el importe original", AutoSize = true });
+        lblImporte = new Label
+        {
+            Name = "lblImporte",
+            Text = "Descuento en Q sobre el importe original",
+            AutoSize = true
+        };
+        flpP.Controls.Add(lblImporte);
         nudDescuento = new NumericUpDown
         {
             DecimalPlaces = 2,

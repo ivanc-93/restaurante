@@ -30,7 +30,11 @@ public sealed partial class FormularioCobro : Form
         ctReceptor.Text = cuenta.Cliente;
         chkPublico.Checked = cuenta.ClienteId is null;
         if (cuenta.Total == 0)
+        {
             cbMetodo.Items.Add("Cortesía");
+            cbMetodo.SelectedItem = "Cortesía";
+        }
+
         cbCliente.SelectedIndexChanged += (_, _) =>
         {
             if (cbCliente.SelectedItem is Cliente c && c.Id > 0)

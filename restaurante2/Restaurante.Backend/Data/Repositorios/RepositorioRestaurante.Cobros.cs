@@ -177,6 +177,8 @@ public sealed partial class RepositorioRestaurante
     public string ConsultarComprobante(int pedidoId)
     {
         ExigirLecturaPedido(pedidoId);
+        if (CobranzaParcialDisponible() && ConsultarCobranza(pedidoId).Abonos.Count > 0)
+            return ComprobanteAbonos(pedidoId);
         using var c = AbrirConexion();
         using var q = Consulta(c, null, """
             SELECT f.NumeroFactura,f.Fecha,f.Legada,f.RestauranteHistorico,f.UbicacionHistorica,f.MesaHistorica,
@@ -229,6 +231,15 @@ public sealed partial class RepositorioRestaurante
         var resultado = new List<MovimientoOperacion>();
         while (r.Read())
             resultado.Add(new(r.GetDateTime(0), r.GetInt32(1), r.GetString(2), r.GetString(3), r.GetDecimal(4), r.GetString(5), r.GetString(6)));
-        return resultado;
+        r.Close();
+        if (TieneCobranzaParcial(c, null))
+        {
+            using var pagos = Consulta(c, null, "SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,N'Abono '+a.Metodo,a.Estado,a.Importe,u.Nombre,COALESCE(a.Referencia,N'') FROM dbo.AbonosPedido a JOIN dbo.Usuarios u ON u.Id=a.UsuarioId WHERE a.Fecha>=@d AND a.Fecha<@h;", ("@d", RelojGuatemala.InicioUtc(desde)), ("@h", RelojGuatemala.InicioUtc(hasta).AddDays(1)));
+            using var lector = pagos.ExecuteReader();
+            while (lector.Read())
+                resultado.Add(new(lector.GetDateTime(0), lector.GetInt32(1), lector.GetString(2), lector.GetString(3), lector.GetDecimal(4), lector.GetString(5), lector.GetString(6)));
+        }
+
+        return resultado.OrderBy(x => x.Fecha).ToList();
     }
 }

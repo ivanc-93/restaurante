@@ -3,7 +3,8 @@ param(
     [ValidatePattern('^[A-Za-z][A-Za-z0-9_]{0,79}$')][string]$BaseDatos='RestauranteDB',
     [Parameter(Mandatory=$true)][string]$RutaRespaldos,
     [switch]$ConFuncionesAuditadas,
-    [switch]$ConReservas
+    [switch]$ConReservas,
+    [switch]$ConCobranzaParcial
 )
 $ErrorActionPreference='Stop'
 # Windows authentication. For SQL authentication use the SQL scripts from SSMS with that connection.
@@ -51,8 +52,9 @@ $original=(Sql $BaseDatos $huella | Out-String).Trim()
 $restaurado=(Sql $copia $huella | Out-String).Trim()
 if($original -ne $restaurado){throw "La restauración no coincide con el estado actual. No se migró $BaseDatos. Compruebe actividad concurrente y el respaldo."}
 $migraciones=@('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')
-if($ConFuncionesAuditadas -or $ConReservas){$migraciones+=@('Migracion_006.sql','Migracion_007.sql')}
-if($ConReservas){$migraciones+=@('Migracion_008.sql')}
+if($ConFuncionesAuditadas -or $ConReservas -or $ConCobranzaParcial){$migraciones+=@('Migracion_006.sql','Migracion_007.sql')}
+if($ConReservas -or $ConCobranzaParcial){$migraciones+=@('Migracion_008.sql')}
+if($ConCobranzaParcial){$migraciones+=@('Migracion_009.sql')}
 foreach($archivo in $migraciones) {Script $copia (Join-Path $PSScriptRoot $archivo)}
 Script $copia (Join-Path $PSScriptRoot $migraciones[-1])
 Sql $copia "DBCC CHECKDB ([$copia]) WITH NO_INFOMSGS;"|Out-Host

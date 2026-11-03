@@ -54,6 +54,8 @@ public sealed partial class RepositorioRestaurante
             {
                 "GestionMesa" => JsonSerializer.Deserialize<SolicitudGestionMesa>(json),
                 "ConciliarTarjeta" => JsonSerializer.Deserialize<SolicitudConciliacion>(json),
+                "Beneficio" => JsonSerializer.Deserialize<SolicitudBeneficio>(json),
+                "ConciliarAbono" => JsonSerializer.Deserialize<SolicitudConciliacionAbono>(json),
                 "Ajuste" => JsonSerializer.Deserialize<SolicitudAjuste>(json),
                 "CancelarReserva" => JsonSerializer.Deserialize<SolicitudCancelacionReserva>(json),
                 "CorreccionLinea" => JsonSerializer.Deserialize<SolicitudCorreccionLinea>(json),
@@ -67,6 +69,8 @@ public sealed partial class RepositorioRestaurante
 
         var solicitudId = solicitud switch
         {
+            SolicitudBeneficio s => s.OperacionId,
+            SolicitudConciliacionAbono s => s.OperacionId,
             SolicitudCorreccionLinea s => s.OperacionId,
             SolicitudCancelacionReserva s => s.OperacionId,
             SolicitudGestionMesa s => s.OperacionId,
@@ -124,6 +128,24 @@ public sealed partial class RepositorioRestaurante
             version = a.Version;
             total = a.TotalEsperado;
             motivo = a.Motivo;
+        }
+        else if (solicitud is SolicitudBeneficio beneficio)
+        {
+            pedido = beneficio.PedidoId;
+            version = beneficio.Version;
+            total = beneficio.TotalEsperado;
+            motivo = beneficio.Motivo;
+        }
+        else if (solicitud is SolicitudConciliacionAbono abono)
+        {
+            pedido = abono.PedidoId;
+            version = abono.Version;
+            total = abono.TotalEsperado;
+            motivo = abono.Motivo;
+            using var lectura = AbrirConexion();
+            using var q = Consulta(lectura, null, "SELECT COUNT(*) FROM dbo.AbonosPedido WHERE OperacionId=@op AND PedidoId=@p AND Estado=N'Incierto';", ("@op", abono.AbonoId), ("@p", abono.PedidoId));
+            if ((int)q.ExecuteScalar()! != 1)
+                return R(EstadoAutorizacion.SolicitudModificada, "El abono ya no está pendiente. Actualiza la cuenta.");
         }
         else if (solicitud is SolicitudConciliacion conciliacion)
         {

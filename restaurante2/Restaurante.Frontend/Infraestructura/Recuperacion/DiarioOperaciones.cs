@@ -42,6 +42,11 @@ internal static class DiarioOperaciones
     {
         var id = p.Tipo switch
         {
+            "Beneficio" => JsonSerializer.Deserialize<SolicitudBeneficio>(p.Datos)?.OperacionId,
+            "Abono" => JsonSerializer.Deserialize<SolicitudAbono>(p.Datos)?.OperacionId,
+            "Division" => JsonSerializer.Deserialize<SolicitudDivision>(p.Datos)?.OperacionId,
+            "ConciliarAbono" => JsonSerializer.Deserialize<SolicitudConciliacionAbono>(p.Datos)?.OperacionId,
+            "ReglaFrecuente" => JsonSerializer.Deserialize<SolicitudReglaFrecuente>(p.Datos)?.OperacionId,
             "Reservar" => JsonSerializer.Deserialize<SolicitudReserva>(p.Datos)?.OperacionId,
             "CancelarReserva" => JsonSerializer.Deserialize<SolicitudCancelacionReserva>(p.Datos)?.OperacionId,
             "AtenderReserva" => JsonSerializer.Deserialize<SolicitudAtencionReserva>(p.Datos)?.OperacionId,
@@ -110,6 +115,23 @@ internal static class DiarioOperaciones
     {
         switch (p.Tipo)
         {
+            case "Beneficio":
+                var beneficio = JsonSerializer.Deserialize<SolicitudBeneficio>(p.Datos)!;
+                return MonedaGuatemala.Formatear(await Ejecutar(repo, p.Tipo, p.Id, beneficio, () => repo.AplicarBeneficio(beneficio)));
+            case "Abono":
+                var abono = JsonSerializer.Deserialize<SolicitudAbono>(p.Datos)!;
+                var ra = await Ejecutar(repo, p.Tipo, p.Id, abono, () => repo.RegistrarAbono(abono));
+                return $"Abono {ra.Estado}; saldo registrado {MonedaGuatemala.Formatear(ra.Saldo)}. Actualiza la cuenta para el saldo vigente.";
+            case "Division":
+                var division = JsonSerializer.Deserialize<SolicitudDivision>(p.Datos)!;
+                return await Ejecutar(repo, p.Tipo, p.Id, division, () => repo.DividirCuenta(division));
+            case "ConciliarAbono":
+                var conciliacionAbono = JsonSerializer.Deserialize<SolicitudConciliacionAbono>(p.Datos)!;
+                var rc = await Ejecutar(repo, p.Tipo, p.Id, conciliacionAbono, () => repo.ConciliarAbono(conciliacionAbono));
+                return $"Conciliación: {rc.Estado}. Actualiza la cuenta.";
+            case "ReglaFrecuente":
+                var regla = JsonSerializer.Deserialize<SolicitudReglaFrecuente>(p.Datos)!;
+                return await Ejecutar(repo, p.Tipo, p.Id, regla, () => repo.GuardarReglaFrecuente(regla));
             case "Reservar":
                 var reserva = JsonSerializer.Deserialize<SolicitudReserva>(p.Datos)!;
                 var creada = await Ejecutar(repo, p.Tipo, p.Id, reserva, () => repo.ReservarMesa(reserva));
