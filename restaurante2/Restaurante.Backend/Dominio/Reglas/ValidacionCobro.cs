@@ -21,6 +21,8 @@ public static class ValidacionCobro
             throw new ArgumentException("Importe entregado fuera de rango o con más de dos decimales.");
         if (s.Metodo is not ("Efectivo" or "Tarjeta" or "Cortesía"))
             throw new ArgumentException("Seleccione efectivo, tarjeta o cortesía autorizada.");
+        if (s.Metodo == "Efectivo" && s.Entregado < s.TotalEsperado)
+            throw new ArgumentException($"El efectivo recibido no cubre el importe que aplicarás. Para un abono parcial, reduce el importe aplicado a lo recibido y revisa el saldo restante.");
         if (s.Metodo == "Cortesía" && (!s.CortesiaAutorizada || s.Entregado != 0))
             throw new ArgumentException("Confirme cortesía de total cero.");
         ReferenciaPago.Validar(s.Referencia);

@@ -54,7 +54,7 @@ public sealed partial class FormularioGestionMesa : Form
                 }
 
                 lblResumen.Text = $"Mesa {datos.m.Numero} · {datos.m.Estado}\n" + (_cuenta is null ? "Sin pedido activo." : $"Pedido #{_cuenta.PedidoId} · {FormatoPresentacion.Moneda(_cuenta.Total)}") + "\nSi hubo preparación o consumo, registre una incidencia; no borre el importe.";
-                var congelada = _cuenta is not null && repo.CobranzaParcialDisponible() && repo.ConsultarCobranza(_cuenta.PedidoId).Congelada;
+                var congelada = _cuenta is not null && repo.CobranzaParcialDisponible() && repo.ConsultarCobranza(_cuenta.PedidoId).Congelada && !(_cuenta.ImporteOriginal == 0 && _cuenta.Total == 0 && repo.ConsultarCobranza(_cuenta.PedidoId).Abonos.All(a => a.Estado == "Rechazado"));
                 if (_cuenta is not null && repo.CobranzaParcialDisponible())
                 {
                     var btnCobrar = Componentes.Boton("Cobrar saldo / revisar abonos");

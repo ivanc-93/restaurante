@@ -34,6 +34,13 @@ public sealed partial class FormularioDetalleMesa : Form
 
     private async Task RecargarSeguroAsync()
     {
+        if (InvokeRequired)
+        {
+            await Restaurante.Frontend.Infraestructura.ContextoInterfaz.Invocar(this, RecargarSeguroAsync);
+            return;
+        }
+
+        Restaurante.Frontend.Infraestructura.ContextoInterfaz.AsegurarActual();
         btnAgregarProducto.Enabled = btnRevisarCobro.Enabled = false;
         flpCatalogo.Enabled = false;
         cbClientes.Enabled = false;
@@ -57,7 +64,8 @@ public sealed partial class FormularioDetalleMesa : Form
                 var incierta = pedido is null ? null : _repositorio.ObtenerPagoIncierto(pedido.Id);
                 var detalles = pedido is null ? new List<DetallePedidoResumen>() : _repositorio.ListarDetallesPedido(pedido.Id).ToList();
                 var cobranza = pedido is not null && _repositorio.CobranzaParcialDisponible() ? _repositorio.ConsultarCobranza(pedido.Id) : null;
-                return (actual, pedido, productos, clientes, detalles, revision, incierta, cobranza);
+                var servicio = _repositorio.CuentasOperativasDisponibles() ? _repositorio.ConsultarServicioMesa(_mesa.Id) : null;
+                return (actual, pedido, productos, clientes, detalles, revision, incierta, cobranza, servicio);
             });
             var clienteId = (cbClientes.SelectedItem as Cliente)?.Id ?? 0;
             var productoId = (cbProductos.SelectedItem as ElementoMenu)?.Id;
@@ -84,7 +92,7 @@ public sealed partial class FormularioDetalleMesa : Form
             if (datos.cobranza is not null)
                 lblTotal.Text = $"Consumo {FormatoPresentacion.Moneda(datos.cobranza.Pedido.ImporteOriginal)}\nAjustes {FormatoPresentacion.Moneda(datos.cobranza.Pedido.Descuento)} · pagado {FormatoPresentacion.Moneda(datos.cobranza.Pagado)}\nSaldo {FormatoPresentacion.Moneda(datos.cobranza.Saldo)}";
             lblEstado.Text = _pedido is null ? "El primer producto abre y guarda el pedido." : "Comanda guardada. Agregar registra el consumo.";
-            _recuperacionPendiente = DiarioOperaciones.Listar(_repositorio).Count > 0;
+            _recuperacionPendiente = DiarioOperaciones.ParaPedido(_repositorio, _mesa.Id, _pedido?.Id).Count > 0;
             btnAgregarProducto.Enabled = _menu.Count > 0 && (_pedido is not null || (datos.actual.Estado == "Disponible" || datos.actual.Estado == "Reservada" && _reserva is not null)) && datos.incierta is null;
             if (datos.cobranza?.Congelada == true)
                 btnAgregarProducto.Enabled = false;
@@ -96,14 +104,16 @@ public sealed partial class FormularioDetalleMesa : Form
             btnRevisarCobro.Enabled = _pedido is not null && datos.detalles.Count > 0 && datos.incierta is null && !_recuperacionPendiente;
             btnGestionar.Enabled = !_recuperacionPendiente;
             if (_recuperacionPendiente)
-                lblEstado.Text = "Hay operaciones pendientes. Cierre la mesa y use Recuperar operaciones desde Inicio.";
+                lblEstado.Text = "Hay una operación pendiente de confirmar. Revísala aquí. Cerrar esta ventana no cancela el pedido ni libera la mesa.";
             if (datos.incierta is not null)
                 lblEstado.Text = "Tarjeta incierta: no repita el cobro. Utilice Gestionar cierre para conciliar.";
             _cargando = false;
             DibujarCatalogo();
             if (productoId is not null)
                 cbProductos.SelectedItem = cbProductos.Items.Cast<ElementoMenu>().FirstOrDefault(p => p.Id == productoId) ?? cbProductos.SelectedItem;
+            AplicarServicio(datos.servicio, datos.revision, datos.cobranza);
             FormatoPresentacion.Aplicar(this);
+            EstiloResumenCuentas();
             dgvDetalles.DefaultCellStyle.Font = new Font("Segoe UI", 10);
             dgvDetalles.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             if (dgvDetalles.Columns.Contains("Cantidad"))
@@ -191,7 +201,17 @@ public sealed partial class FormularioDetalleMesa : Form
         btnAgregarProducto.Enabled = btnRevisarCobro.Enabled = flpCatalogo.Enabled = cbClientes.Enabled = false;
         try
         {
-            if (_pedido is null && _reserva is not null)
+            if (_servicio?.Operativa == true)
+            {
+                var seleccion = CuentaSeleccionada();
+                if (seleccion is null || seleccion.Id < 0)
+                    throw new ArgumentException("Elige una cuenta concreta antes de agregar el producto.");
+                var s = new SolicitudProductoCuenta(Guid.NewGuid(), _mesa.Id, _servicio.PedidoId, _servicio.VersionPedido, seleccion.Id, seleccion.Version, producto.Id, cantidad, cliente > 0 ? cliente : null, _reserva?.Id, _reserva?.Version);
+                var r = await DiarioOperaciones.Ejecutar(_repositorio, "ProductoCuenta", s.OperacionId, s, () => _repositorio.AgregarProductoCuenta(s));
+                _cuentaSeleccionada = r.CuentaId;
+                _reserva = null;
+            }
+            else if (_pedido is null && _reserva is not null)
             {
                 var solicitud = new SolicitudAtencionReserva(Guid.NewGuid(), _reserva.Id, _mesa.Id, _reserva.Version, cliente > 0 ? cliente : null, [new DetallePedidoSolicitud(producto.Id, cantidad)]);
                 await DiarioOperaciones.Ejecutar(_repositorio, "AtenderReserva", solicitud.OperacionId, solicitud, () => _repositorio.AtenderReserva(solicitud));
@@ -237,7 +257,14 @@ public sealed partial class FormularioDetalleMesa : Form
             var revision = await Task.Run(() => _repositorio.RevisarCuenta(_pedido.Id));
             if (await Task.Run(_repositorio.CobranzaParcialDisponible))
             {
-                using var nueva = new FormularioCobranza(_repositorio, revision.PedidoId);
+                if (_servicio?.Operativa == true && CuentaSeleccionada()is { Id: 0 } general)
+                {
+                    var preparar = new SolicitudCuentaMesa(Guid.NewGuid(), _mesa.Id, revision.PedidoId, revision.Version, 0, null, "Renombrar", general.Nombre, true);
+                    _cuentaSeleccionada = await DiarioOperaciones.Ejecutar(_repositorio, "CuentaMesa", preparar.OperacionId, preparar, () => _repositorio.GestionarCuentaMesa(preparar));
+                    _servicio = await Task.Run(() => _repositorio.ConsultarServicioMesa(_mesa.Id));
+                }
+
+                using var nueva = new FormularioCobranza(_repositorio, revision.PedidoId, _servicio?.Operativa == true && _cuentaSeleccionada > 0 ? _cuentaSeleccionada : null);
                 nueva.ShowDialog(this);
                 if (nueva.Finalizado)
                 {
@@ -275,7 +302,7 @@ public sealed partial class FormularioDetalleMesa : Form
 
     private async void Gestionar_Click(object? sender, EventArgs e)
     {
-        if (_ocupado || _cargando)
+        if (_ocupado || _cargando || _recuperacionPendiente)
             return;
         using var gestion = new FormularioGestionMesa(_repositorio, _mesa, _dialogos);
         gestion.ShowDialog(this);
@@ -286,6 +313,12 @@ public sealed partial class FormularioDetalleMesa : Form
     {
         if (_ocupado || _cargando || _recuperacionPendiente || _pedido is null)
             return;
+        if (_servicio?.Operativa == true)
+        {
+            await EditarProductosCuenta(true);
+            return;
+        }
+
         _ocupado = true;
         try
         {

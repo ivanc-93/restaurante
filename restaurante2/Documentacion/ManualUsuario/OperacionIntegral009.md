@@ -1,6 +1,8 @@
-# Manual de operación: mesas, beneficios y cuentas separadas
+﻿# Manual de operación: mesas, beneficios y cuentas separadas
 
 Actualización 009 · 2 de noviembre de 2026.
+
+**Para la versión 010 consulte [Cuentas identificadas desde la comanda](CuentasIdentificadas010.md). Este suplemento conserva las reglas del flujo anterior para cuentas/pagos que ya estaban divididos.**
 
 ## Inicio y atención
 

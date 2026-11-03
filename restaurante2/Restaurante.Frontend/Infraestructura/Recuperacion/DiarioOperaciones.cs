@@ -42,6 +42,11 @@ internal static class DiarioOperaciones
     {
         var id = p.Tipo switch
         {
+            "CuentaMesa" => JsonSerializer.Deserialize<SolicitudCuentaMesa>(p.Datos)?.OperacionId,
+            "ProductoCuenta" => JsonSerializer.Deserialize<SolicitudProductoCuenta>(p.Datos)?.OperacionId,
+            "TraspasoCuenta" => JsonSerializer.Deserialize<SolicitudTraspasoCuenta>(p.Datos)?.OperacionId,
+            "BeneficioCuenta" => JsonSerializer.Deserialize<SolicitudBeneficioCuenta>(p.Datos)?.OperacionId,
+            "CorreccionCuenta" => JsonSerializer.Deserialize<SolicitudCorreccionCuenta>(p.Datos)?.OperacionId,
             "Beneficio" => JsonSerializer.Deserialize<SolicitudBeneficio>(p.Datos)?.OperacionId,
             "Abono" => JsonSerializer.Deserialize<SolicitudAbono>(p.Datos)?.OperacionId,
             "Division" => JsonSerializer.Deserialize<SolicitudDivision>(p.Datos)?.OperacionId,
@@ -67,6 +72,7 @@ internal static class DiarioOperaciones
 
     public static async Task<T> Ejecutar<T>(IRepositorioRestaurante repo, string tipo, Guid id, object datos, Func<T> accion)
     {
+        Restaurante.Frontend.Infraestructura.ContextoInterfaz.AsegurarActual();
         Directory.CreateDirectory(Carpeta(repo));
         // Exclusive OS file handle coordinates this operation between processes in the same profile.
         using var bloqueo = Bloquear(repo, id);
@@ -89,8 +95,23 @@ internal static class DiarioOperaciones
         try
         {
             var resultado = await Task.Run(accion);
-            File.Delete(ruta);
+            Archivar(ruta, "resuelta");
             return resultado;
+        }
+        catch (ArgumentException)
+        {
+            // Un rechazo de entrada solo deja de bloquear si SQL garantiza que el GUID no podrá aplicarse.
+            try
+            {
+                repo.AbandonarOperacion(id);
+                Archivar(ruta, "rechazada");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine("Conservada solicitud rechazada: " + ex.GetType().Name);
+            }
+
+            throw;
         }
         catch
         { /* Unknown/rejected requests remain until SQL records a terminal abandonment. */
@@ -115,6 +136,23 @@ internal static class DiarioOperaciones
     {
         switch (p.Tipo)
         {
+            case "CuentaMesa":
+                var cuentaMesa = JsonSerializer.Deserialize<SolicitudCuentaMesa>(p.Datos)!;
+                var idCuenta = await Ejecutar(repo, p.Tipo, p.Id, cuentaMesa, () => repo.GestionarCuentaMesa(cuentaMesa));
+                return $"Cuenta #{idCuenta} recuperada.";
+            case "ProductoCuenta":
+                var productoCuenta = JsonSerializer.Deserialize<SolicitudProductoCuenta>(p.Datos)!;
+                var producto = await Ejecutar(repo, p.Tipo, p.Id, productoCuenta, () => repo.AgregarProductoCuenta(productoCuenta));
+                return $"Producto en pedido #{producto.PedidoId}, cuenta #{producto.CuentaId}. No se duplicó consumo.";
+            case "TraspasoCuenta":
+                var traslado = JsonSerializer.Deserialize<SolicitudTraspasoCuenta>(p.Datos)!;
+                return await Ejecutar(repo, p.Tipo, p.Id, traslado, () => repo.TraspasarCuenta(traslado));
+            case "BeneficioCuenta":
+                var bc = JsonSerializer.Deserialize<SolicitudBeneficioCuenta>(p.Datos)!;
+                return MonedaGuatemala.Formatear(await Ejecutar(repo, p.Tipo, p.Id, bc, () => repo.AplicarBeneficioCuenta(bc)));
+            case "CorreccionCuenta":
+                var cc = JsonSerializer.Deserialize<SolicitudCorreccionCuenta>(p.Datos)!;
+                return MonedaGuatemala.Formatear(await Ejecutar(repo, p.Tipo, p.Id, cc, () => repo.CorregirCuenta(cc)));
             case "Beneficio":
                 var beneficio = JsonSerializer.Deserialize<SolicitudBeneficio>(p.Datos)!;
                 return MonedaGuatemala.Formatear(await Ejecutar(repo, p.Tipo, p.Id, beneficio, () => repo.AplicarBeneficio(beneficio)));
@@ -183,6 +221,17 @@ internal static class DiarioOperaciones
             throw new InvalidOperationException("Conserve el archivo ilegible y solicite revisión técnica. No se eliminará automáticamente.");
         using var bloqueo = Bloquear(repo, p.Id);
         repo.AbandonarOperacion(p.Id);
-        File.Delete(Ruta(repo, p.Id));
+        Archivar(Ruta(repo, p.Id), "abandonada");
     }
+
+    private static void Archivar(string ruta, string estado)
+    {
+        if (!File.Exists(ruta))
+            return;
+        var carpeta = Path.Combine(Path.GetDirectoryName(ruta)!, "Historial");
+        Directory.CreateDirectory(carpeta);
+        File.Move(ruta, Path.Combine(carpeta, Path.GetFileNameWithoutExtension(ruta) + "_" + estado + "_" + Guid.NewGuid().ToString("N") + ".bin"));
+    }
+
+    public static IReadOnlyList<OperacionPendienteLocal> ParaPedido(IRepositorioRestaurante repo, int mesaId, int? pedidoId) => Listar(repo).Where(p => AlcancePendiente.Afecta(p, mesaId, pedidoId)).ToList();
 }

@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 namespace Restaurante.Frontend.Formularios;
 partial class FormularioCobranza
 {
@@ -9,6 +9,7 @@ partial class FormularioCobranza
     private NumericUpDown nudImporte = null!, nudEntregado = null!;
     private TextBox ctReceptor = null!, ctIdentificacion = null!, ctReferencia = null!, ctMotivo = null!;
     private CheckBox chkPublico = null!, chkDatos = null!, chkPago = null!;
+    private Button btnUsarRecibido = null!, btnRevisarPendiente = null!;
     private Button btnConfirmar = null!, btnDividir = null!, btnVolver = null!, btnConciliarConfirmado = null!, btnConciliarRechazado = null!, btnCortesia = null!;
     private DataGridView dgvProductos = null!, dgvAbonos = null!;
     private void InitializeComponent()
@@ -116,7 +117,10 @@ partial class FormularioCobranza
             b.Margin = new Padding(0, 4, 8, 4);
         }
 
-        recibos.Controls.AddRange([btnRecibo, btnFinal]);
+        btnRevisarPendiente = Componentes.Boton("Revisar pendiente", false);
+        btnRevisarPendiente.Name = nameof(btnRevisarPendiente);
+        btnRevisarPendiente.Click += Pendiente_Click;
+        recibos.Controls.AddRange([btnRecibo, btnFinal, btnRevisarPendiente]);
         izquierda.Controls.Add(recibos, 0, 1);
         columnas.Controls.Add(izquierda, 0, 0);
         var derecha = new Panel
@@ -187,6 +191,11 @@ partial class FormularioCobranza
         };
         nudEntregado.ValueChanged += (_, _) => CambiarPago();
         Agregar(nudEntregado);
+        btnUsarRecibido = Componentes.Boton("Usar efectivo recibido como importe", false);
+        btnUsarRecibido.Name = nameof(btnUsarRecibido);
+        btnUsarRecibido.Visible = false;
+        btnUsarRecibido.Click += UsarRecibido_Click;
+        Agregar(btnUsarRecibido);
         lblCambio = Componentes.Etiqueta("");
         lblCambio.Name = nameof(lblCambio);
         Agregar(lblCambio);

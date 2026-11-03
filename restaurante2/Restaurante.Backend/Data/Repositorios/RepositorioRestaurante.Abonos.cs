@@ -17,6 +17,9 @@ public sealed partial class RepositorioRestaurante
     {
         if (!TieneCobranzaParcial(c, t))
             throw new InvalidOperationException("Se requiere esquema 009 completo. No se actualizará automáticamente.");
+        using var version = Consulta(c, t, "SELECT COUNT(*) FROM dbo.VersionEsquema WHERE Version=10;");
+        if ((int)version.ExecuteScalar()! > 0)
+            ExigirCuentasOperativas(c, t);
     }
 
     public bool CobranzaParcialDisponible()
@@ -45,12 +48,13 @@ public sealed partial class RepositorioRestaurante
 
     private static ResumenCobranza CobranzaEn(SqlConnection c, SqlTransaction t, CuentaRevision cuenta)
     {
+        var operativas = TieneCuentasOperativas(c, t);
         var cuentas = new List<CuentaSeparada>();
         var abonos = new List<AbonoResumen>();
-        using (var q = Consulta(c, t, "SELECT Id,Nombre,Original,Descuento,Total,COALESCE((SELECT SUM(Importe) FROM dbo.AbonosPedido a WHERE a.CuentaId=x.Id AND Estado=N'Confirmado'),0) FROM dbo.CuentasPedido x WHERE PedidoId=@p ORDER BY Id;", ("@p", cuenta.PedidoId)))
+        using (var q = Consulta(c, t, "SELECT Id,Nombre,Original,Descuento,Total,COALESCE((SELECT SUM(Importe) FROM dbo.AbonosPedido a WHERE a.CuentaId=x.Id AND Estado=N'Confirmado'),0)" + (operativas ? ",Operativa,Liquidada,NombreConfirmado" : "") + " FROM dbo.CuentasPedido x WHERE PedidoId=@p" + (operativas ? " AND Activa=1" : "") + " ORDER BY Id;", ("@p", cuenta.PedidoId)))
         using (var r = q.ExecuteReader())
             while (r.Read())
-                cuentas.Add(new(r.GetInt32(0), r.GetString(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4), r.GetDecimal(5), r.GetDecimal(4) - r.GetDecimal(5)));
+                cuentas.Add(new(r.GetInt32(0), r.GetString(1), r.GetDecimal(2), r.GetDecimal(3), r.GetDecimal(4), r.GetDecimal(5), r.GetDecimal(4) - r.GetDecimal(5), operativas && r.GetBoolean(6), operativas && r.GetBoolean(7), !operativas || r.GetBoolean(8)));
         using (var q = Consulta(c, t, "SELECT OperacionId,CuentaId,Estado,Metodo,Importe,Entregado,Cambio,Receptor,DATEADD(hour,-6,Fecha) FROM dbo.AbonosPedido WHERE PedidoId=@p ORDER BY Fecha,OperacionId;", ("@p", cuenta.PedidoId)))
         using (var r = q.ExecuteReader())
             while (r.Read())
@@ -148,9 +152,19 @@ public sealed partial class RepositorioRestaurante
                 if ((int)q.ExecuteScalar()! > 0)
                     throw new InvalidOperationException("Resuelve primero el pago del flujo anterior.");
             var cob = CobranzaEn(c, t, cuenta);
-            if (cob.Abonos.Any(a => a.Estado == "Incierto"))
+            var individual = s.CuentaId.HasValue && EsCuentaOperativa(c, t, s.CuentaId.Value);
+            if (cob.Abonos.Any(a => a.Estado == "Incierto" && (!individual || a.CuentaId == s.CuentaId || !a.CuentaId.HasValue)))
                 throw new InvalidOperationException("Existe una tarjeta incierta. Debe conciliarse antes de otro abono.");
             var saldo = cob.Cuentas.Count == 0 && !s.CuentaId.HasValue ? cob.Saldo : cob.Cuentas.SingleOrDefault(a => a.Id == s.CuentaId)?.Saldo ?? throw new ArgumentException("Selecciona una cuenta del pedido.");
+            if (individual)
+            {
+                var seleccion = cob.Cuentas.Single(x => x.Id == s.CuentaId);
+                if (!seleccion.NombreConfirmado)
+                    throw new InvalidOperationException("Confirma el nombre de la cuenta antes de cobrar; no es el receptor fiscal.");
+                if (seleccion.Liquidada)
+                    throw new InvalidOperationException("Esta cuenta ya está liquidada.");
+            }
+
             if (saldo != s.SaldoEsperado || s.Importe > saldo)
                 throw new InvalidOperationException("El saldo cambió o el abono excede lo pendiente. Actualiza la cuenta.");
             if (s.Datos.Metodo == "Efectivo" && s.Datos.Entregado < s.Importe || s.Datos.Metodo == "Tarjeta" && s.Datos.Entregado != s.Importe)
@@ -158,6 +172,12 @@ public sealed partial class RepositorioRestaurante
             var estado = s.Datos.Metodo == "Tarjeta" ? s.Datos.ResultadoTarjeta : "Confirmado";
             var cambio = s.Datos.Metodo == "Efectivo" ? s.Datos.Entregado - s.Importe : 0;
             Ejecutar(c, t, "INSERT dbo.AbonosPedido(OperacionId,PedidoId,CuentaId,Estado,Metodo,Importe,Entregado,Cambio,Receptor,Identificacion,Referencia,UsuarioId,SolicitudOriginal)VALUES(@op,@p,@c,@e,@m,@i,@ent,@cam,@r,@id,@ref,@u,@json);", ("@op", s.OperacionId), ("@p", s.PedidoId), ("@c", s.CuentaId), ("@e", estado), ("@m", s.Datos.Metodo), ("@i", s.Importe), ("@ent", s.Datos.Entregado), ("@cam", cambio), ("@r", s.Datos.PublicoGeneral ? "Público general" : s.Datos.Receptor.Trim()), ("@id", s.Datos.Identificacion), ("@ref", s.Datos.Referencia), ("@u", actor.Id), ("@json", JsonSerializer.Serialize(s)));
+            if (individual)
+            {
+                CapturarAlcanceAbono(c, t, s, estado);
+                LiquidarCuentasResueltas(c, t, s.PedidoId);
+            }
+
             var pendiente = cob.Saldo - (estado == "Confirmado" ? s.Importe : 0);
             var numero = estado == "Confirmado" && pendiente == 0 ? FinalizarAbonos(c, t, cuenta, s.Datos, actor) : null;
             Ejecutar(c, t, "UPDATE dbo.Pedidos SET Total=Total WHERE Id=@p;", ("@p", s.PedidoId));
@@ -201,6 +221,12 @@ public sealed partial class RepositorioRestaurante
                 throw new InvalidOperationException("El abono excedería el saldo.");
             var estado = s.Confirmado ? "Confirmado" : "Rechazado";
             Ejecutar(c, t, "UPDATE dbo.AbonosPedido SET Estado=@e,ConciliacionId=@id WHERE OperacionId=@op;UPDATE dbo.Pedidos SET Total=Total WHERE Id=@p;", ("@e", estado), ("@id", s.OperacionId), ("@op", s.AbonoId), ("@p", s.PedidoId));
+            if (TieneCuentasOperativas(c, t))
+            {
+                Ejecutar(c, t, "UPDATE dbo.AbonosPedido SET SaldoDespues=CASE WHEN @confirmado=1 THEN SaldoAntes-Importe ELSE SaldoAntes END WHERE OperacionId=@id;", ("@confirmado", s.Confirmado), ("@id", s.AbonoId));
+                LiquidarCuentasResueltas(c, t, s.PedidoId);
+            }
+
             var numero = s.Confirmado && pendiente == 0 ? FinalizarAbonos(c, t, cuenta, original.Datos, actor) : null;
             Auditar(c, t, s.OperacionId, actor, s.PedidoId, cuenta.MesaId, "ConciliarAbono", "Incierto", estado, s.Motivo, original.Importe);
             return new ResultadoAbono(s.AbonoId, estado, s.Confirmado ? original.Importe : 0, 0, pendiente, numero);
@@ -219,7 +245,9 @@ public sealed partial class RepositorioRestaurante
         using var consulta = Consulta(c, null, "SELECT a.Estado,a.Metodo,a.Importe,a.Entregado,a.Cambio,a.Receptor,DATEADD(hour,-6,a.Fecha),COALESCE(x.Nombre,N'Cuenta general'),a.Referencia FROM dbo.AbonosPedido a LEFT JOIN dbo.CuentasPedido x ON x.Id=a.CuentaId WHERE a.OperacionId=@id;", ("@id", id));
         using var r = consulta.ExecuteReader();
         r.Read();
-        return $"SABORES · RECIBO DE ABONO\r\nInterno académico — no válido como documento tributario\r\n\r\nRecibo: {id}\r\nPedido #{pedido} · {r.GetString(7)}\r\nFecha: {r.GetDateTime(6):dd/MM/yyyy HH:mm}\r\nReceptor: {r.GetString(5)}\r\nResultado: {r.GetString(0)}\r\nMétodo: {r.GetString(1)}\r\nImporte solicitado: {MonedaGuatemala.Formatear(r.GetDecimal(2))}\r\nAplicado: {MonedaGuatemala.Formatear(r.GetString(0) == "Confirmado" ? r.GetDecimal(2) : 0)}\r\nEntregado: {MonedaGuatemala.Formatear(r.GetDecimal(3))}\r\nCambio: {MonedaGuatemala.Formatear(r.GetDecimal(4))}\r\nReferencia: {(r.IsDBNull(8) ? "—" : r.GetString(8))}\r\n\r\nEste recibo no representa el consumo de otras personas ni el cierre de la mesa.";
+        var texto = $"SABORES · RECIBO DE ABONO\r\nInterno académico — no válido como documento tributario\r\n\r\nRecibo: {id}\r\nPedido #{pedido} · {r.GetString(7)}\r\nFecha: {r.GetDateTime(6):dd/MM/yyyy HH:mm}\r\nReceptor: {r.GetString(5)}\r\nResultado: {r.GetString(0)}\r\nMétodo: {r.GetString(1)}\r\nImporte solicitado: {MonedaGuatemala.Formatear(r.GetDecimal(2))}\r\nAplicado: {MonedaGuatemala.Formatear(r.GetString(0) == "Confirmado" ? r.GetDecimal(2) : 0)}\r\nEntregado: {MonedaGuatemala.Formatear(r.GetDecimal(3))}\r\nCambio: {MonedaGuatemala.Formatear(r.GetDecimal(4))}\r\nReferencia: {(r.IsDBNull(8) ? "—" : r.GetString(8))}\r\n\r\nEste recibo no representa el consumo de otras personas ni el cierre de la mesa.";
+        r.Close();
+        return texto + TextoAlcanceAbono(c, id);
     }
 
     private string ComprobanteAbonos(int pedidoId)

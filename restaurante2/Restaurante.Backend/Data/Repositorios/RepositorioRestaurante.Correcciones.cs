@@ -36,7 +36,8 @@ public sealed partial class RepositorioRestaurante
         {
             var cuenta = LeerCuenta(c, t, pedidoId);
             ExigirAbierto(cuenta);
-            SinPagoPendiente(c, t, pedidoId);
+            if (!TieneCuentasOperativas(c, t) || !CuentasEn(c, t, cuenta.MesaId, pedidoId).Any(x => EsCuentaOperativa(c, t, x.Id)))
+                SinPagoPendiente(c, t, pedidoId);
             if (cuenta.Estado != "Abierto")
                 throw new InvalidOperationException("La preparación ya fue declarada.");
             Ejecutar(c, t, "UPDATE dbo.Pedidos SET Estado=N'En preparación' WHERE Id=@p;", ("@p", pedidoId));

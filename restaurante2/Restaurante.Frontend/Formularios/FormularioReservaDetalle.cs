@@ -19,7 +19,7 @@ public sealed partial class FormularioReservaDetalle : Form
         lblMesa.Text = $"Mesa {mesa.Numero} · Reservada";
         ctTitular.Text = reserva?.Nombre ?? "Reserva anterior sin titular registrado.";
         lblMensaje.Text = reserva is null ? "Esta reserva anterior requiere revisión del responsable. No se inventará un titular ni se liberará automáticamente." : $"Reserva #{reserva.Id} · {reserva.Fecha:dd/MM/yyyy HH:mm}. El nombre no se copia automáticamente al comprobante.";
-        var habilitada = reserva is not null && DiarioOperaciones.Listar(repo).Count == 0;
+        var habilitada = reserva is not null && DiarioOperaciones.ParaPedido(repo, mesa.Id, null).Count == 0;
         btnAtenderReserva.Enabled = btnCancelarReserva.Enabled = ctMotivo.Enabled = habilitada;
         FormClosing += (_, e) => e.Cancel = ocupado;
     }

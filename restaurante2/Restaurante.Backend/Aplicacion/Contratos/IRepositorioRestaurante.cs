@@ -1,7 +1,7 @@
 using Restaurante.Backend.Dominio;
 
 namespace Restaurante.Backend.Aplicacion.Contratos;
-public interface IRepositorioRestaurante : IConsultasReportes, IGestionUsuarios, IReservasMesa, ICobranzaParcial
+public interface IRepositorioRestaurante : IConsultasReportes, IGestionUsuarios, IReservasMesa, ICobranzaParcial, ICuentasOperativas
 {
     bool CorreccionesDisponibles() => false;
     IReadOnlyList<LineaPedidoCorregible> ListarLineasCorregibles(int pedidoId) => throw new NotSupportedException();
@@ -31,6 +31,7 @@ public interface IRepositorioRestaurante : IConsultasReportes, IGestionUsuarios,
     void CerrarSesion();
     void ValidarEsquema();
     bool OperacionAplicada(Guid operacionId);
+    string EstadoOperacion(Guid id) => OperacionAplicada(id) ? "Aplicada" : "No registrada";
     CuentaRevision RevisarCuenta(int pedidoId);
     ResultadoCobro RegistrarCobro(SolicitudCobro solicitud);
     Guid? ObtenerPagoIncierto(int pedidoId);

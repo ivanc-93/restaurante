@@ -54,6 +54,8 @@ public sealed partial class RepositorioRestaurante
             {
                 "GestionMesa" => JsonSerializer.Deserialize<SolicitudGestionMesa>(json),
                 "ConciliarTarjeta" => JsonSerializer.Deserialize<SolicitudConciliacion>(json),
+                "BeneficioCuenta" => JsonSerializer.Deserialize<SolicitudBeneficioCuenta>(json),
+                "CorreccionCuenta" => JsonSerializer.Deserialize<SolicitudCorreccionCuenta>(json),
                 "Beneficio" => JsonSerializer.Deserialize<SolicitudBeneficio>(json),
                 "ConciliarAbono" => JsonSerializer.Deserialize<SolicitudConciliacionAbono>(json),
                 "Ajuste" => JsonSerializer.Deserialize<SolicitudAjuste>(json),
@@ -69,6 +71,8 @@ public sealed partial class RepositorioRestaurante
 
         var solicitudId = solicitud switch
         {
+            SolicitudBeneficioCuenta s => s.OperacionId,
+            SolicitudCorreccionCuenta s => s.OperacionId,
             SolicitudBeneficio s => s.OperacionId,
             SolicitudConciliacionAbono s => s.OperacionId,
             SolicitudCorreccionLinea s => s.OperacionId,
@@ -128,6 +132,20 @@ public sealed partial class RepositorioRestaurante
             version = a.Version;
             total = a.TotalEsperado;
             motivo = a.Motivo;
+        }
+        else if (solicitud is SolicitudBeneficioCuenta bc)
+        {
+            pedido = bc.PedidoId;
+            version = bc.VersionPedido;
+            total = bc.TotalEsperado;
+            motivo = bc.Motivo;
+        }
+        else if (solicitud is SolicitudCorreccionCuenta cc)
+        {
+            pedido = cc.PedidoId;
+            version = cc.VersionPedido;
+            total = cc.TotalEsperado;
+            motivo = cc.Motivo;
         }
         else if (solicitud is SolicitudBeneficio beneficio)
         {

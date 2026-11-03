@@ -86,7 +86,7 @@ public sealed partial class FormularioPrincipal
             {
                 var pedido = pedidos.FirstOrDefault(p => p.NumeroMesa == mesa.Numero && p.Estado is "Abierto" or "En preparación");
                 var reserva = reservas.FirstOrDefault(r => r.MesaId == mesa.Id);
-                var tarjeta = new TarjetaMesa(mesa, pedido, reserva, reservasHabilitadas, operacionesPendientes);
+                var tarjeta = new TarjetaMesa(mesa, pedido, reserva, reservasHabilitadas, DiarioOperaciones.ParaPedido(_repositorio, mesa.Id, pedido?.Id).Count > 0);
                 tarjeta.btnReservarMesa.Click += async (_, _) => await EjecutarSeguro(async () =>
                 {
                     using var reservar = new FormularioReservarMesa(_repositorio, mesa);

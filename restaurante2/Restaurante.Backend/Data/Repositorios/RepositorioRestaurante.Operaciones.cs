@@ -259,7 +259,8 @@ public sealed partial class RepositorioRestaurante
         return new PedidoCreado(id, importe, null);
     }
 
-    private static decimal InsertarLinea(SqlConnection c, SqlTransaction t, int pedidoId, int menuId, int cantidad)
+    private static decimal InsertarLinea(SqlConnection c, SqlTransaction t, int pedidoId, int menuId, int cantidad) => InsertarLineaAsignable(c, t, pedidoId, menuId, cantidad).Importe;
+    private static (int Id, decimal Importe) InsertarLineaAsignable(SqlConnection c, SqlTransaction t, int pedidoId, int menuId, int cantidad)
     {
         using var q = Consulta(c, t, "SELECT Nombre,Tipo,Precio,Categoria,Alcoholica FROM dbo.Menu WHERE Id=@id AND Activo=1;", ("@id", menuId));
         ElementoMenu producto;
@@ -271,11 +272,12 @@ public sealed partial class RepositorioRestaurante
         }
 
         var importe = producto.CalcularImporte(cantidad);
-        Ejecutar(c, t, """
-            INSERT dbo.DetallesPedido(PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)VALUES(@p,@m,@n,@precio,@nombre,@tipo);
-            UPDATE dbo.Pedidos SET Total=Total+@importe,ImporteOriginal=COALESCE(ImporteOriginal,Total)+@importe WHERE Id=@p;
+        using var insertar = Consulta(c, t, """
+            INSERT dbo.DetallesPedido(PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)OUTPUT INSERTED.Id VALUES(@p,@m,@n,@precio,@nombre,@tipo);
             """, ("@p", pedidoId), ("@m", menuId), ("@n", cantidad), ("@precio", producto.Precio), ("@nombre", producto.Nombre), ("@tipo", producto.Tipo), ("@importe", importe));
-        return importe;
+        var detalle = (int)insertar.ExecuteScalar()!;
+        Ejecutar(c, t, "UPDATE dbo.Pedidos SET Total=Total+@i,ImporteOriginal=COALESCE(ImporteOriginal,Total)+@i WHERE Id=@p;", ("@i", importe), ("@p", pedidoId));
+        return (detalle, importe);
     }
 
     public decimal AgregarProductoAPedido(int pedidoId, int menuId, int cantidad, Guid? operacionId = null)

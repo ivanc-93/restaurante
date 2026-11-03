@@ -24,7 +24,7 @@ public sealed partial class FormularioReservarMesa : Form
             return;
         if (solicitud is null)
         {
-            if (DiarioOperaciones.Listar(repo).Count > 0)
+            if (DiarioOperaciones.ParaPedido(repo, mesa.Id, null).Count > 0)
             {
                 lblMensaje.Text = "Recupera las operaciones pendientes desde Inicio antes de registrar otra reserva.";
                 return;

@@ -3,6 +3,19 @@ using System.Data;
 namespace Restaurante.Backend.Data.Repositorios;
 public sealed partial class RepositorioRestaurante
 {
+    public string EstadoOperacion(Guid id)
+    {
+        var actor = ExigirSesion();
+        using var c = AbrirConexion();
+        using var q = Consulta(c, null, "SELECT Tipo,UsuarioId FROM dbo.OperacionesRestaurante WHERE Id=@id;", ("@id", id));
+        using var r = q.ExecuteReader();
+        if (!r.Read())
+            return "No registrada";
+        if (r.GetInt32(1) != actor.Id)
+            throw new UnauthorizedAccessException("La operación pertenece a otro usuario.");
+        return r.GetString(0) == "Abandonada" ? "Abandonada" : "Aplicada";
+    }
+
     public void AbandonarOperacion(Guid id)
     {
         if (id == Guid.Empty)

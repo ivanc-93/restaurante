@@ -3,6 +3,9 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioDetalleMesa
 {
     private System.ComponentModel.IContainer? components;
+    private DataGridView dgvCuentasServicio = null!;
+    private ComboBox cbCuentasServicio = null!;
+    private Button btnCrearCuenta = null!, btnNombreCuenta = null!, btnMoverCuenta = null!, btnBeneficioCuenta = null!, btnPendienteMesa = null!;
     private Label lblResumen = null!;
     private Label lblTotal = null!;
     private Label lblEstado = null!;
@@ -112,9 +115,10 @@ partial class FormularioDetalleMesa
         tlpLayout.Dock = DockStyle.Fill;
         tlpLayout.Padding = new Padding(16);
         tlpLayout.ColumnCount = 2;
-        tlpLayout.RowCount = 2;
+        tlpLayout.RowCount = 3;
         tlpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
         tlpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+        tlpLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         tlpLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         tlpLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         lblResumen.Text = "Cargando mesa…";
@@ -123,6 +127,56 @@ partial class FormularioDetalleMesa
         lblResumen.Font = new Font("Segoe UI", 15, FontStyle.Bold);
         tlpLayout.Controls.Add(lblResumen, 0, 0);
         tlpLayout.SetColumnSpan(lblResumen, 2);
+        var flpCuentasServicio = new FlowLayoutPanel
+        {
+            Name = "flpCuentasServicio",
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            WrapContents = true
+        };
+        cbCuentasServicio = new()
+        {
+            Name = nameof(cbCuentasServicio),
+            Width = 300,
+            DropDownWidth = 650,
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            AccessibleName = "Cuenta a la que agregarás productos"
+        };
+        cbCuentasServicio.SelectedIndexChanged += (_, _) => CambiarCuentaServicio();
+        flpCuentasServicio.Controls.Add(cbCuentasServicio);
+        btnCrearCuenta = Componentes.Boton("Agregar cuenta", false);
+        btnCrearCuenta.Name = nameof(btnCrearCuenta);
+        btnCrearCuenta.Click += CrearCuenta_Click;
+        btnNombreCuenta = Componentes.Boton("Nombre / retirar", false);
+        btnNombreCuenta.Name = nameof(btnNombreCuenta);
+        btnNombreCuenta.Click += NombreCuenta_Click;
+        btnMoverCuenta = Componentes.Boton("Mover / corregir", false);
+        btnMoverCuenta.Name = nameof(btnMoverCuenta);
+        btnMoverCuenta.Click += MoverCuenta_Click;
+        btnBeneficioCuenta = Componentes.Boton("Beneficio", false);
+        btnBeneficioCuenta.Name = nameof(btnBeneficioCuenta);
+        btnBeneficioCuenta.Click += BeneficioCuenta_Click;
+        btnPendienteMesa = Componentes.Boton("Revisar operación pendiente", false);
+        btnPendienteMesa.Name = nameof(btnPendienteMesa);
+        btnPendienteMesa.Click += PendienteMesa_Click;
+        foreach (var b in new[]
+        {
+            btnCrearCuenta,
+            btnNombreCuenta,
+            btnMoverCuenta,
+            btnBeneficioCuenta,
+            btnPendienteMesa
+        }
+
+        )
+        {
+            b.Font = new Font("Segoe UI", 10);
+            b.Margin = new Padding(6, 0, 0, 6);
+            flpCuentasServicio.Controls.Add(b);
+        }
+
+        tlpLayout.Controls.Add(flpCuentasServicio, 0, 1);
+        tlpLayout.SetColumnSpan(flpCuentasServicio, 2);
         tlpIzquierda.Dock = DockStyle.Fill;
         tlpIzquierda.ColumnCount = 1;
         tlpIzquierda.RowCount = 3;
@@ -175,6 +229,25 @@ partial class FormularioDetalleMesa
         tlpIzquierda.Controls.Add(flpFiltros, 0, 0);
         tlpIzquierda.Controls.Add(flpCatalogo, 0, 1);
         tlpIzquierda.Controls.Add(flpAcciones, 0, 2);
+        foreach (Control control in tlpIzquierda.Controls)
+            tlpIzquierda.SetRow(control, tlpIzquierda.GetRow(control) + 1);
+        tlpIzquierda.RowCount = 4;
+        tlpIzquierda.RowStyles.Insert(0, new RowStyle(SizeType.Absolute, 0));
+        dgvCuentasServicio = new()
+        {
+            Name = nameof(dgvCuentasServicio),
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            Visible = false
+        };
+        tlpIzquierda.Controls.Add(dgvCuentasServicio, 0, 0);
+        dgvCuentasServicio.CellClick += (_, e) =>
+        {
+            if (e.RowIndex >= 0 && dgvCuentasServicio.Rows[e.RowIndex].Cells["Id"].Value is int id)
+                cbCuentasServicio.SelectedItem = cbCuentasServicio.Items.Cast<Restaurante.Backend.Dominio.CuentaOperativa>().Single(x => x.Id == id);
+        };
         tlpDerecha.Dock = DockStyle.Top;
         tlpDerecha.AutoSize = true;
         tlpDerecha.AutoSizeMode = AutoSizeMode.GrowAndShrink;
@@ -264,6 +337,7 @@ partial class FormularioDetalleMesa
         menu.Items.Add("Declarar preparación", null, Preparar_Click);
         var opciones = Componentes.Boton("Comanda ▾", false);
         opciones.Name = "btnOpcionesComanda";
+        opciones.ContextMenuStrip = menu;
         opciones.Font = new Font("Segoe UI", 10);
         opciones.Click += (_, _) => menu.Show(opciones, new Point(0, opciones.Height));
         flpGestionAcciones.Controls.Add(opciones);
@@ -274,7 +348,7 @@ partial class FormularioDetalleMesa
         tlpDerecha.Controls.Add(lblEstado, 0, 3);
         tlpDerecha.Controls.Add(lblTotal, 0, 4);
         tlpDerecha.Controls.Add(btnRevisarCobro, 0, 5);
-        tlpLayout.Controls.Add(tlpIzquierda, 0, 1);
+        tlpLayout.Controls.Add(tlpIzquierda, 0, 2);
         var pnlComanda = new Panel
         {
             Name = "pnlComanda",
@@ -314,7 +388,7 @@ partial class FormularioDetalleMesa
         tlpResumenCobro.Controls.Add(btnRevisarCobro, 0, 1);
         tlpComanda.Controls.Add(pnlComanda, 0, 0);
         tlpComanda.Controls.Add(tlpResumenCobro, 0, 1);
-        tlpLayout.Controls.Add(tlpComanda, 1, 1);
+        tlpLayout.Controls.Add(tlpComanda, 1, 2);
         tlpLayout.SizeChanged += (_, _) => lblResumen.MaximumSize = new Size(Math.Max(250, tlpLayout.ClientSize.Width - 50), 0);
         Controls.Add(tlpLayout);
         AutoScaleDimensions = new SizeF(96, 96);

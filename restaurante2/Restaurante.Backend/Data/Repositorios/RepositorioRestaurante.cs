@@ -249,8 +249,12 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
 
     public PedidoResumen? ObtenerPedidoAbierto(int mesaId)
     {
-        ExigirSesion();
         using var conexion = AbrirConexion();
+        using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
+        SesionEn(conexion, transaccion);
+        // Mismo orden que las escrituras: mesa antes de pedido; evita inversión de bloqueos al refrescar.
+        using (var bloqueo = Consulta(conexion, transaccion, "SELECT Id FROM dbo.Mesas WITH(UPDLOCK,HOLDLOCK) WHERE Id=@m;", ("@m", mesaId)))
+            bloqueo.ExecuteScalar();
         using var comando = new SqlCommand("""
             SELECT TOP (1) p.Id, COALESCE(p.MesaHistorica,m.Numero), COALESCE(p.ClienteHistorico,N'Público general'),
                 p.Fecha, p.Estado, p.Total, f.NumeroFactura
@@ -260,10 +264,13 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
             LEFT JOIN dbo.Facturas f ON f.PedidoId=p.Id
             WHERE p.MesaId=@mesa AND p.Estado IN (N'Abierto',N'En preparación')
             ORDER BY p.Fecha DESC, p.Id DESC;
-            """, conexion);
+            """, conexion, transaccion);
         comando.Parameters.Add("@mesa", SqlDbType.Int).Value = mesaId;
         using var lector = comando.ExecuteReader();
-        return lector.Read() ? new PedidoResumen(lector.GetInt32(0), lector.GetInt32(1), lector.GetString(2), lector.GetDateTime(3), lector.GetString(4), lector.GetDecimal(5), lector.IsDBNull(6) ? null : lector.GetString(6)) : null;
+        var resultado = lector.Read() ? new PedidoResumen(lector.GetInt32(0), lector.GetInt32(1), lector.GetString(2), lector.GetDateTime(3), lector.GetString(4), lector.GetDecimal(5), lector.IsDBNull(6) ? null : lector.GetString(6)) : null;
+        lector.Close();
+        transaccion.Commit();
+        return resultado;
     }
 
     public IReadOnlyList<DetallePedidoResumen> ListarDetallesPedido(int pedidoId)

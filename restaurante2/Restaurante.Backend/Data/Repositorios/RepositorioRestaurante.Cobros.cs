@@ -74,6 +74,8 @@ public sealed partial class RepositorioRestaurante
         Ejecutar(c, t, "UPDATE dbo.Pedidos SET Estado=N'Facturado' WHERE Id=@p;", ("@p", cuenta.PedidoId));
         if (cerrarMesa)
             Ejecutar(c, t, "UPDATE dbo.Mesas SET Estado=N'En limpieza' WHERE Id=@m;", ("@m", cuenta.MesaId));
+        if (TieneCuentasOperativas(c, t))
+            LiquidarCuentasResueltas(c, t, cuenta.PedidoId);
         return numero;
     }
 
@@ -157,7 +159,16 @@ public sealed partial class RepositorioRestaurante
                 throw new InvalidOperationException("El pedido no pertenece a la mesa.");
             ExigirAbierto(cuenta);
             ExigirVersion(cuenta, s.Version ?? "");
-            SinPagoPendiente(c, t, cuenta.PedidoId);
+            var vacio = cuenta.ImporteOriginal == 0 && cuenta.Total == 0 && TieneCuentasOperativas(c, t) && CuentasEn(c, t, cuenta.MesaId, cuenta.PedidoId).All(x => x.Pagado == 0 && x.Productos.Count == 0);
+            if (!vacio)
+                SinPagoPendiente(c, t, cuenta.PedidoId);
+            else
+            {
+                using var pago = Consulta(c, t, "SELECT COUNT(*) FROM dbo.AbonosPedido WHERE PedidoId=@p AND Estado IN(N'Confirmado',N'Incierto');", ("@p", cuenta.PedidoId));
+                if ((int)pago.ExecuteScalar()! > 0)
+                    throw new InvalidOperationException("Existen pagos protegidos.");
+            }
+
             using (var f = Consulta(c, t, "SELECT COUNT(*) FROM dbo.Facturas WHERE PedidoId=@p;", ("@p", cuenta.PedidoId)))
                 if ((int)f.ExecuteScalar()! > 0)
                     throw new InvalidOperationException("Existe un comprobante. No está habilitada su corrección financiera.");
@@ -177,7 +188,7 @@ public sealed partial class RepositorioRestaurante
     public string ConsultarComprobante(int pedidoId)
     {
         ExigirLecturaPedido(pedidoId);
-        if (CobranzaParcialDisponible() && ConsultarCobranza(pedidoId).Abonos.Count > 0)
+        if (CobranzaParcialDisponible() && (ConsultarCobranza(pedidoId).Abonos.Count > 0 || ConsultarCobranza(pedidoId).Cuentas.Any(x => x.Operativa)))
             return ComprobanteAbonos(pedidoId);
         using var c = AbrirConexion();
         using var q = Consulta(c, null, """
@@ -217,7 +228,7 @@ public sealed partial class RepositorioRestaurante
               FROM dbo.PagosManuales pm JOIN dbo.Usuarios u ON u.Id=pm.UsuarioId WHERE pm.Fecha>=@desdeUtc AND pm.Fecha<@hastaUtc
             UNION ALL
             SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,a.Accion,a.Posterior,a.Importe,u.Nombre,a.Motivo FROM dbo.AuditoriaOperaciones a JOIN dbo.Usuarios u ON u.Id=a.UsuarioId
-              WHERE a.Accion IN(N'Cancelar',N'Incidencia',N'CorreccionLinea',N'ResolverIncidencia') AND a.Fecha>=@desdeUtc AND a.Fecha<@hastaUtc
+              WHERE a.Accion IN(N'Cancelar',N'Incidencia',N'CorreccionLinea',N'ResolverIncidencia',N'BeneficioCuenta',N'CorreccionCuenta',N'TraspasoCuenta') AND a.Fecha>=@desdeUtc AND a.Fecha<@hastaUtc
             UNION ALL
             SELECT DATEADD(hour,-6,a.Fecha),a.PedidoId,a.Tipo,
               CASE WHEN a.Vigente=1 THEN N'Vigente' ELSE N'Invalidado' END,a.Descuento,u.Nombre,a.Motivo
