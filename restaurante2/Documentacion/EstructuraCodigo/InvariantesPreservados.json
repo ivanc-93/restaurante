@@ -1,0 +1,23 @@
+{
+  "Mutacion": true,
+  "SesionEn": true,
+  "ValidarCobro": true,
+  "Crear": true,
+  "Verificar": true,
+  "SolicitudAjuste.cs": true,
+  "SolicitudCobro.cs": true,
+  "SolicitudConciliacion.cs": true,
+  "SolicitudCorreccionLinea.cs": true,
+  "SolicitudGestionMesa.cs": true,
+  "SolicitudIncorporacion.cs": true,
+  "SolicitudPedido.cs": true,
+  "SolicitudResolucionIncidencia.cs": true,
+  "Carpeta": true,
+  "Prefijo": true,
+  "Ruta": true,
+  "ValidarDatos": true,
+  "Ejecutar": true,
+  "Bloquear": true,
+  "Reanudar": true,
+  "DescartarRechazada": true
+}

@@ -117,3 +117,8 @@ La matriz trazable de requisitos está en `Requerimientos.md`. Los pendientes ac
 ## Interfaz POS y respaldo
 
 Consulta [cambios, pruebas, limitaciones y recuperación](Pruebas/InterfazPOS.md). Ese documento describe la etapa visual anterior. Para la implementación vigente, el esquema 4 y los respaldos SQL, consultar [Cobros manuales](Pruebas/CobrosManuales.md) y [Actualización del grupo](BaseDatos/ActualizacionGrupo.md).
+
+
+## Guía para estudiar y exponer el código
+
+Consulta [la guía de exposición y los inventarios](Documentacion/EstructuraCodigo/README.md). Incluye nombres de controles, recorridos, POO, pruebas y reversión de la reorganización.
