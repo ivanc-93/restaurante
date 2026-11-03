@@ -13,9 +13,11 @@ partial class FormularioMesa
     private Label estadoEtiqueta = null!;
     protected override void Dispose(bool disposing)
     {
-        if (disposing) components?.Dispose();
+        if (disposing)
+            components?.Dispose();
         base.Dispose(disposing);
     }
+
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
@@ -54,7 +56,7 @@ partial class FormularioMesa
         cancelar.Text = "Cancelar";
         cancelar.SetBounds(25, 260, 150, 42);
         cancelar.DialogResult = DialogResult.Cancel;
-        Controls.AddRange(new Control[] {numeroEtiqueta, _numero, capacidadEtiqueta, _capacidad, estadoEtiqueta, _estado, aceptar, cancelar});
+        Controls.AddRange(new Control[] { numeroEtiqueta, _numero, capacidadEtiqueta, _capacidad, estadoEtiqueta, _estado, aceptar, cancelar });
         AcceptButton = aceptar;
         CancelButton = cancelar;
         AutoScaleDimensions = new SizeF(7F, 15F);

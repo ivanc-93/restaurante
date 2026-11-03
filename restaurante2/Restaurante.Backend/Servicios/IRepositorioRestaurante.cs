@@ -1,36 +1,38 @@
 using Restaurante.Backend.Dominio;
 
 namespace Restaurante.Backend.Servicios;
-
 public interface IRepositorioRestaurante
 {
     bool CorreccionesDisponibles() => false;
     IReadOnlyList<LineaPedidoCorregible> ListarLineasCorregibles(int pedidoId) => throw new NotSupportedException();
     decimal CorregirLinea(SolicitudCorreccionLinea s) => throw new NotSupportedException();
-    string MarcarPreparacion(int pedidoId,Guid operacionId) => throw new NotSupportedException();
+    string MarcarPreparacion(int pedidoId, Guid operacionId) => throw new NotSupportedException();
     IReadOnlyList<IncidenciaResumen> ListarIncidencias() => throw new NotSupportedException();
     string ResolverIncidencia(SolicitudResolucionIncidencia s) => throw new NotSupportedException();
     bool RecuperacionDisponible() => false;
     void AbandonarOperacion(Guid id) => throw new NotSupportedException("El repositorio no admite abandono seguro.");
     bool NecesitaCodigoRecuperacion();
-    ResultadoGeneracionCodigo IntentarGenerarCodigoRecuperacion(string claveActual)=>new(EstadoGeneracionCodigo.NoDisponible,"Este repositorio no admite generación guiada de códigos.");
+    ResultadoGeneracionCodigo IntentarGenerarCodigoRecuperacion(string claveActual) => new(EstadoGeneracionCodigo.NoDisponible, "Este repositorio no admite generación guiada de códigos.");
     string GenerarCodigoRecuperacion(string claveActual);
-    ResultadoRecuperacion IntentarConfirmarCodigoRecuperacion(string codigo)=>new(false,"Este repositorio no admite confirmación guiada del código.");
+    ResultadoRecuperacion IntentarConfirmarCodigoRecuperacion(string codigo) => new(false, "Este repositorio no admite confirmación guiada del código.");
     void ConfirmarCodigoRecuperacion(string codigo);
-    ResultadoRecuperacion RecuperarConAdministrador(Guid operacion,string recibo,string objetivo,string administrador,string claveAdministrador,string nueva);
-    ResultadoRecuperacion RecuperarConCodigo(Guid operacion,string recibo,string usuario,string codigo,string nueva);
-    ResultadoRecuperacion ConsultarRecuperacion(Guid operacion,string recibo);
-    void CambiarMiContrasena(string anterior,string nueva);
+    ResultadoRecuperacion RecuperarConAdministrador(Guid operacion, string recibo, string objetivo, string administrador, string claveAdministrador, string nueva);
+    ResultadoRecuperacion RecuperarConCodigo(Guid operacion, string recibo, string usuario, string codigo, string nueva);
+    ResultadoRecuperacion ConsultarRecuperacion(Guid operacion, string recibo);
+    void CambiarMiContrasena(string anterior, string nueva);
     IReadOnlyList<UsuarioGestion> ListarUsuarios();
     IReadOnlyList<RegistroSeguridad> ConsultarAuditoriaSeguridad();
-    void GuardarUsuario(int? id,string nombre,string usuario,string rol,bool activo,string? nuevaClave);
-    void AutorizarOperacion(Guid id,string tipo,string solicitudJson,string usuario,string clave);
-    ResultadoAutorizacion IntentarAutorizarOperacion(Guid id,string tipo,string solicitudJson,string usuario,string clave);
+    void GuardarUsuario(int? id, string nombre, string usuario, string rol, bool activo, string? nuevaClave);
+    void AutorizarOperacion(Guid id, string tipo, string solicitudJson, string usuario, string clave);
+    ResultadoAutorizacion IntentarAutorizarOperacion(Guid id, string tipo, string solicitudJson, string usuario, string clave);
     bool RevocarAutorizacion(Guid id);
     decimal AplicarAjuste(SolicitudAjuste solicitud);
     UsuarioAutenticado? UsuarioActual { get; }
+
     string IdentificadorBase { get; }
+
     bool BaseEsPruebas { get; }
+
     void CerrarSesion();
     void ValidarEsquema();
     bool OperacionAplicada(Guid operacionId);
@@ -41,7 +43,7 @@ public interface IRepositorioRestaurante
     ResultadoCobro ConciliarTarjeta(Guid operacionIncierta, bool confirmado, string motivo, Guid operacionId);
     string GestionarMesa(SolicitudGestionMesa solicitud);
     string ConsultarComprobante(int pedidoId);
-    IReadOnlyList<MovimientoOperacion> ReportarOperaciones(DateTime desde,DateTime hasta);
+    IReadOnlyList<MovimientoOperacion> ReportarOperaciones(DateTime desde, DateTime hasta);
     UsuarioAutenticado? IniciarSesion(string usuario, string contrasena);
     ResumenRestaurante ObtenerResumen();
     IReadOnlyList<Mesa> ListarMesas();

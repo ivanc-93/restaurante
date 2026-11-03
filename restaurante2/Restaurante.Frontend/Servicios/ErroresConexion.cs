@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace Restaurante.Frontend.Servicios;
-
 internal static class ErroresConexion
 {
     internal static string Describir(Exception error, bool validandoEsquema = false)
@@ -39,22 +38,19 @@ internal static class ErroresConexion
             // Never record Message, Data or SQL text: these may contain secrets or user input.
             var registro = new
             {
-                Referencia = referencia, FechaUtc = DateTime.UtcNow,
+                Referencia = referencia,
+                FechaUtc = DateTime.UtcNow,
                 Arquitectura = RuntimeInformation.ProcessArchitecture.ToString(),
                 RutaAplicacionLongitud = AppContext.BaseDirectory.Length,
-                Errores = Cadena(error).Select(e => new
-                {
-                    Tipo = e.GetType().FullName, e.HResult,
-                    CodigoNativo = e is System.ComponentModel.Win32Exception win32 ? (int?)win32.NativeErrorCode : null,
-                    Metodos = new System.Diagnostics.StackTrace(e, false).GetFrames()?.Select(f =>
-                        f.GetMethod()?.DeclaringType?.FullName + "." + f.GetMethod()?.Name).ToArray(),
-                    CodigosSql = e is SqlException sql ? sql.Errors.Cast<SqlError>().Select(s => new { s.Number, s.State, s.Class }).ToArray() : null
-                }).ToArray()
+                Errores = Cadena(error).Select(e => new { Tipo = e.GetType().FullName, e.HResult, CodigoNativo = e is System.ComponentModel.Win32Exception win32 ? (int? )win32.NativeErrorCode : null, Metodos = new System.Diagnostics.StackTrace(e, false).GetFrames()?.Select(f => f.GetMethod()?.DeclaringType?.FullName + "." + f.GetMethod()?.Name).ToArray(), CodigosSql = e is SqlException sql ? sql.Errors.Cast<SqlError>().Select(s => new { s.Number, s.State, s.Class }).ToArray() : null }).ToArray()
             };
             File.AppendAllText(Path.Combine(carpeta, "conexion-" + DateTime.UtcNow.ToString("yyyyMMdd") + ".jsonl"), JsonSerializer.Serialize(registro) + Environment.NewLine);
             return " Diagnóstico: " + referencia + " (carpeta Diagnosticos de SaboresRestaurante en los datos locales de Windows).";
         }
-        catch (Exception) { return " No se pudo guardar el diagnóstico local. Referencia: " + referencia + "."; }
+        catch (Exception)
+        {
+            return " No se pudo guardar el diagnóstico local. Referencia: " + referencia + ".";
+        }
     }
 
     private static IEnumerable<Exception> Cadena(Exception error)
@@ -63,9 +59,11 @@ internal static class ErroresConexion
         if (error is AggregateException aggregate)
         {
             foreach (var inner in aggregate.InnerExceptions)
-                foreach (var item in Cadena(inner)) yield return item;
+                foreach (var item in Cadena(inner))
+                    yield return item;
         }
         else if (error.InnerException is not null)
-            foreach (var item in Cadena(error.InnerException)) yield return item;
+            foreach (var item in Cadena(error.InnerException))
+                yield return item;
     }
 }

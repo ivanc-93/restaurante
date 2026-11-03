@@ -1,11 +1,12 @@
 using Restaurante.Backend.Dominio;
-namespace Restaurante.Frontend.Formularios;
 
+namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioMesa : Form
 {
     public int NumeroMesa => (int)_numero.Value;
     public int Capacidad => (int)_capacidad.Value;
     public string EstadoMesa => _estado.Text;
+
     public FormularioMesa() => InitializeComponent();
     public FormularioMesa(Mesa? mesa = null, bool soloLectura = false, int siguienteNumero = 1) : this()
     {

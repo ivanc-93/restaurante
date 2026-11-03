@@ -1,5 +1,4 @@
 namespace Restaurante.Backend.Dominio;
-
 public sealed class SolicitudPedido
 {
     public Guid OperacionId { get; init; } = Guid.NewGuid();

@@ -3,35 +3,33 @@ using System.Text;
 using Microsoft.Data.SqlClient;
 
 namespace Restaurante.Backend.Servicios;
-
 public sealed class ConfiguracionConexion : IConfiguracionConexion
 {
-    private readonly string _ruta = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SaboresRestaurante", "conexion.bin");
+    private readonly string _ruta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SaboresRestaurante", "conexion.bin");
     private readonly object _candado = new();
     private string? _cadena;
-
-    public ConfiguracionConexion() : this(null) { }
+    public ConfiguracionConexion() : this(null)
+    {
+    }
 
     public ConfiguracionConexion(string? rutaArchivo)
     {
-        if (rutaArchivo is not null) _ruta = Path.GetFullPath(rutaArchivo);
-        if (!File.Exists(_ruta)) return;
+        if (rutaArchivo is not null)
+            _ruta = Path.GetFullPath(rutaArchivo);
+        if (!File.Exists(_ruta))
+            return;
         try
         {
             var protegido = File.ReadAllBytes(_ruta);
-            _cadena = Encoding.UTF8.GetString(
-                ProtectedData.Unprotect(protegido, null, DataProtectionScope.CurrentUser));
+            _cadena = Encoding.UTF8.GetString(ProtectedData.Unprotect(protegido, null, DataProtectionScope.CurrentUser));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
+        catch (Exception ex)when (ex is IOException or UnauthorizedAccessException or CryptographicException)
         {
             ErrorCarga = "No se pudo leer la configuración guardada. Configure nuevamente la conexión SQL.";
         }
     }
 
     public string? ErrorCarga { get; private set; }
-
     public bool EstaConfigurada => !string.IsNullOrWhiteSpace(_cadena);
 
     public SqlConnection CrearConexion()
@@ -44,32 +42,33 @@ public sealed class ConfiguracionConexion : IConfiguracionConexion
         }
     }
 
-    public void ProbarYGuardar(string servidor, int puerto, string baseDatos, string usuario,
-        string contrasena, bool confiarCertificado)
+    public void ProbarYGuardar(string servidor, int puerto, string baseDatos, string usuario, string contrasena, bool confiarCertificado)
     {
-        var opciones = new SqlConnectionStringBuilder(CrearCadena(servidor,puerto,baseDatos,usuario,contrasena,confiarCertificado));
-        using (var prueba = new SqlConnection(opciones.ConnectionString)) prueba.Open();
+        var opciones = new SqlConnectionStringBuilder(CrearCadena(servidor, puerto, baseDatos, usuario, contrasena, confiarCertificado));
+        using (var prueba = new SqlConnection(opciones.ConnectionString))
+            prueba.Open();
         new RepositorioRestaurante(new ConfiguracionConexionTemporal(opciones.ConnectionString)).ValidarEsquema();
         var directorio = Path.GetDirectoryName(_ruta)!;
         Directory.CreateDirectory(directorio);
-        var protegido = ProtectedData.Protect(Encoding.UTF8.GetBytes(opciones.ConnectionString),null,DataProtectionScope.CurrentUser);
+        var protegido = ProtectedData.Protect(Encoding.UTF8.GetBytes(opciones.ConnectionString), null, DataProtectionScope.CurrentUser);
         var temporal = _ruta + ".tmp";
         File.WriteAllBytes(temporal, protegido);
         if (File.Exists(_ruta))
             File.Copy(_ruta, _ruta + ".respaldo-" + Guid.NewGuid().ToString("N"), false);
         File.Move(temporal, _ruta, true);
-        lock (_candado) _cadena = opciones.ConnectionString;
+        lock (_candado)
+            _cadena = opciones.ConnectionString;
         ErrorCarga = null;
     }
-    public static string CrearCadena(string servidor,int puerto,string baseDatos,string usuario,string contrasena,bool confiarCertificado)
+
+    public static string CrearCadena(string servidor, int puerto, string baseDatos, string usuario, string contrasena, bool confiarCertificado)
     {
         if (string.IsNullOrWhiteSpace(servidor) || string.IsNullOrWhiteSpace(baseDatos))
             throw new ArgumentException("La IP del servidor y la base de datos son obligatorias.");
         if (puerto is < 0 or > 65535)
             throw new ArgumentOutOfRangeException(nameof(puerto), "Use 0 para conexión automática o un puerto entre 1 y 65535.");
-
         var destino = servidor.Trim();
-        var localDb = destino.StartsWith("(localdb)\\",StringComparison.OrdinalIgnoreCase);
+        var localDb = destino.StartsWith("(localdb)\\", StringComparison.OrdinalIgnoreCase);
         if (!localDb && puerto > 0)
         {
             if (destino.Contains(','))

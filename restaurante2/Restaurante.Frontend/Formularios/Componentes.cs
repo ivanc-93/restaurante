@@ -2,7 +2,6 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 
 namespace Restaurante.Frontend.Formularios;
-
 internal static class Componentes
 {
     public static readonly Color Verde = Color.FromArgb(48, 78, 59);
@@ -15,7 +14,6 @@ internal static class Componentes
     public static readonly Color Secundario = Color.FromArgb(93, 100, 91);
     public static readonly Font Fuente = new("Segoe UI", 12f);
     public static readonly Font FuenteTitulo = new("Segoe UI", 24f, FontStyle.Bold);
-
     public static Label Etiqueta(string texto, int tamano = 12, bool negrita = false)
     {
         return new Label
@@ -37,7 +35,6 @@ internal static class Componentes
         Dock = DockStyle.Fill,
         Margin = new Padding(0, 4, 0, 13)
     };
-
     public static Button Boton(string texto, bool primario = true) => new()
     {
         AutoSize = true,
@@ -45,7 +42,11 @@ internal static class Componentes
         Height = 48,
         MinimumSize = new Size(0, 48),
         FlatStyle = FlatStyle.Flat,
-        FlatAppearance = { BorderSize = primario ? 0 : 1, BorderColor = Color.FromArgb(220, 222, 215) },
+        FlatAppearance =
+        {
+            BorderSize = primario ? 0 : 1,
+            BorderColor = Color.FromArgb(220, 222, 215)
+        },
         BackColor = primario ? Verde : Color.White,
         ForeColor = primario ? Color.White : Tinta,
         Font = new Font("Segoe UI", 12f, FontStyle.Bold),
@@ -53,7 +54,6 @@ internal static class Componentes
         Margin = new Padding(0, 6, 0, 6),
         Padding = new Padding(10, 0, 10, 0)
     };
-
     public static Panel Tarjeta() => new()
     {
         BackColor = Color.White,
@@ -61,7 +61,6 @@ internal static class Componentes
         Margin = new Padding(0, 0, 14, 14),
         BorderStyle = BorderStyle.FixedSingle
     };
-
     public static void EstilizarTabla(DataGridView tabla)
     {
         tabla.BackgroundColor = Color.White;
@@ -71,13 +70,13 @@ internal static class Componentes
         tabla.EnableHeadersVisualStyles = false;
         tabla.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(246, 247, 242);
         tabla.ColumnHeadersDefaultCellStyle.ForeColor = Secundario;
-        tabla.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(246,247,242);
+        tabla.ColumnHeadersDefaultCellStyle.SelectionBackColor = Color.FromArgb(246, 247, 242);
         tabla.ColumnHeadersDefaultCellStyle.SelectionForeColor = Tinta;
         tabla.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 12, FontStyle.Bold);
         tabla.ColumnHeadersHeight = 48;
         tabla.DefaultCellStyle.Font = Fuente;
         tabla.DefaultCellStyle.ForeColor = Tinta;
-        tabla.DefaultCellStyle.Padding = new Padding(8,8,8,8);
+        tabla.DefaultCellStyle.Padding = new Padding(8, 8, 8, 8);
         tabla.DefaultCellStyle.SelectionBackColor = Seleccion;
         tabla.DefaultCellStyle.SelectionForeColor = Tinta;
         tabla.RowTemplate.Height = 48;
