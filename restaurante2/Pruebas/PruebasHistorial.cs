@@ -1,8 +1,18 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Data;
 using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
+
 
 internal static class PruebasHistorial
 {

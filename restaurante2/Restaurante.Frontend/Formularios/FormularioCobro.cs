@@ -1,5 +1,4 @@
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
 using Restaurante.Frontend.Servicios;
 
 namespace Restaurante.Frontend.Formularios;
@@ -85,10 +84,10 @@ public sealed partial class FormularioCobro : Form
         if (_cuenta is null)
             return;
         ctReceptor.Enabled = ctIdentificacion.Enabled = !chkPublico.Checked;
-        ctReceptor.Visible = ctIdentificacion.Visible = flpCampos.Controls["lblReceptor"]!.Visible = flpCampos.Controls["lblIdentificacion"]!.Visible = !chkPublico.Checked;
-        ctDireccion.Visible = ctCorreo.Visible = flpCampos.Controls["lblDireccion"]!.Visible = flpCampos.Controls["lblCorreo"]!.Visible = chkOpcionales.Checked;
-        ctObservacion.Visible = flpCampos.Controls["lblObservacion"]!.Visible = chkOpcionales.Checked || cbMetodo.Text == "Tarjeta";
-        cbResultadoTarjeta.Visible = ctReferencia.Visible = flpCampos.Controls["lblResultado"]!.Visible = flpCampos.Controls["lblReferencia"]!.Visible = cbMetodo.Text == "Tarjeta";
+        ctReceptor.Visible = ctIdentificacion.Visible = lblReceptor.Visible = lblIdentificacion.Visible = !chkPublico.Checked;
+        ctDireccion.Visible = ctCorreo.Visible = lblDireccion.Visible = lblCorreo.Visible = chkOpcionales.Checked;
+        ctObservacion.Visible = lblObservacion.Visible = chkOpcionales.Checked || cbMetodo.Text == "Tarjeta";
+        cbResultadoTarjeta.Visible = ctReferencia.Visible = lblResultado.Visible = lblReferencia.Visible = cbMetodo.Text == "Tarjeta";
         if (chkPublico.Checked)
         {
             ctReceptor.Text = "Público general";

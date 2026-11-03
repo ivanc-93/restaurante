@@ -1,7 +1,8 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioAjuste
 {
-    private Label lblResumen = null!, lblMensaje = null!;
+    private Label lblResumen = null!;
+    private Label lblMensaje = null!;
     private ComboBox cbTipo = null!;
     private NumericUpDown nudDescuento = null!;
     private TextBox ctMotivo = null!;

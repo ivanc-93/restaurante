@@ -1,0 +1,35 @@
+OK Conserva acceso administrativo de usuarios
+OK Conserva cambio de contraseña
+OK Ocho tarjetas reales con datos SQL
+OK Cada mesa muestra su icono visible
+OK Los estados de mesa caben completos en su franja
+OK Las acciones caben dentro de las tarjetas
+OK Un icono desconocido presenta alternativa visible
+OK Los recursos de mesa se reutilizan sin recarga
+OK Búsqueda de mesa funcional
+OK Filtro de limpieza funcional
+ABRIR FormularioDetalleMesa
+ATENDER FormularioDetalleMesa
+OK Tarjeta abre y registra pedido mediante controles
+ABRIR FormularioDetalleMesa
+ATENDER FormularioDetalleMesa
+OK Continuar abre el pedido existente
+ABRIR FormularioGestionMesa
+ATENDER FormularioGestionMesa
+DIALOGO: Confirmar gestión · ¿Confirmar Confirmar limpieza para la mesa 4?
+Limpieza terminada y mesa revisada
+DIALOGO: Gestión registrada · Disponible
+OK Limpieza usa la operación existente y libera mesa
+OK Búsqueda de clientes funcional
+DIALOGO: Catálogos · Datos guardados.
+OK Guardar catálogo modifica únicamente cliente de prueba
+DIALOGO: Confirmar · ¿Desactivar el registro? Su historial se conservará.
+OK Desactivar conserva historial del cliente de prueba
+OK Tarjeta incierta puede registrarse sin inventar confirmación de pago
+OK Cobro exige confirmaciones
+DIALOGO: Resultado de la operación · Comprobante F-00000002. Pago registrado por el operador y cierre con paso de mesa a limpieza. Consulte Mesas para su estado actual.
+OK Cobro real de prueba confirma y calcula cambio
+OK Cobro conserva paso a limpieza
+OK Mesero no ve administrar mesas
+OK Catálogo conserva restricciones de Mesero
+TOTAL 22 comprobaciones visuales y funcionales correctas; DPI nativo 96.

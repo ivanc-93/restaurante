@@ -1,5 +1,15 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Reflection;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Frontend.Formularios;
 using Restaurante.Frontend.Servicios;
 
@@ -13,12 +23,12 @@ internal static class Program
         if(args.Length==2&&args[0]=="--primera-instalacion")
         {
             try{return PruebasPrimeraInstalacion.Ejecutar(args[1]);}
-            catch(Exception e){Console.Error.WriteLine(e.GetType().Name+": "+e.Message);return 1;}
+            catch(Exception e){Console.Error.WriteLine(e);return 1;}
         }
         if(args.Length==2&&args[0]=="--primera-interfaz")
         {
             try{return PruebasInterfazInicial.Ejecutar(args[1]);}
-            catch(Exception e){Console.Error.WriteLine(e.GetType().Name+": "+e.Message);return 1;}
+            catch(Exception e){Console.Error.WriteLine(e);return 1;}
         }
         if (args.SequenceEqual(new[] { "--dependencia-ausente" }))
         {

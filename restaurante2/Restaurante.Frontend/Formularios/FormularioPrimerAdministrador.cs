@@ -1,4 +1,3 @@
-using Restaurante.Backend.Servicios;
 using Restaurante.Frontend.Servicios;
 
 namespace Restaurante.Frontend.Formularios;
@@ -8,7 +7,9 @@ public sealed partial class FormularioPrimerAdministrador : Form
     private readonly ServicioPreparacionInicial preparador = null!;
     private PreparacionPrimerAdministrador? preparada;
     private readonly IDialogosUsuario dialogos = new DialogosUsuario();
-    private bool ocupado, puedePreparar, admiteInstalacion = true;
+    private bool ocupado;
+    private bool puedePreparar;
+    private bool admiteInstalacion = true;
     public FormularioPrimerAdministrador() => InitializeComponent();
     public FormularioPrimerAdministrador(IConfiguracionConexion cfg, IDialogosUsuario? dialogos = null) : this()
     {

@@ -2,7 +2,10 @@ namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioUsuarios
 {
     private DataGridView dgvRegistros = null!;
-    private TextBox ctNombre = null!, ctUsuario = null!, ctContrasena = null!, ctConfirmarClave = null!;
+    private TextBox ctNombre = null!;
+    private TextBox ctUsuario = null!;
+    private TextBox ctContrasena = null!;
+    private TextBox ctConfirmarClave = null!;
     private ComboBox cbRol = null!;
     private CheckBox chkActivo = null!;
     private Label lblMensaje = null!;
@@ -47,7 +50,7 @@ public sealed partial class FormularioUsuarios
         flpP.Controls.Add(chkActivo);
         ctContrasena = DisenoFormulario.Campo(flpP, "Contraseña temporal de 12 caracteres o más; vacío conserva la existente", true);
         ctConfirmarClave = DisenoFormulario.Campo(flpP, "Confirmar contraseña temporal si se cambia", true);
-        flpP.Controls.Add(new Label { Text = Restaurante.Backend.Servicios.Contrasenas.Ayuda, AutoSize = true, MaximumSize = new Size(650, 0) });
+        flpP.Controls.Add(new Label { Text = Restaurante.Backend.Seguridad.Contrasenas.Ayuda, AutoSize = true, MaximumSize = new Size(650, 0) });
         btnGuardar = DisenoFormulario.Boton(flpP, "Guardar usuario", Guardar_Click);
         lblMensaje = DisenoFormulario.Mensaje(flpP);
     }

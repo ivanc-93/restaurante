@@ -1,12 +1,18 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioConexion
 {
-    private TextBox ctServidor = null!, ctBaseDatos = null!, ctSqlUsuario = null!, ctContrasenaSql = null!, ctAdmin = null!, ctAdminClave = null!;
+    private TextBox ctServidor = null!;
+    private TextBox ctBaseDatos = null!;
+    private TextBox ctSqlUsuario = null!;
+    private TextBox ctContrasenaSql = null!;
+    private TextBox ctAdmin = null!;
+    private TextBox ctAdminClave = null!;
     private ComboBox cbAutenticacion = null!;
     private NumericUpDown nudPuerto = null!;
     private CheckBox chkCertificado = null!;
     private Label lblMensaje = null!;
-    private Button btnProbar = null!, btnGuardar = null!;
+    private Button btnProbar = null!;
+    private Button btnGuardar = null!;
     private void InitializeComponent()
     {
         var flpP = DisenoFormulario.Preparar(this, "Preparar conexión del equipo");

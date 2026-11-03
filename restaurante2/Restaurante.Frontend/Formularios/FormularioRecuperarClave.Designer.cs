@@ -2,11 +2,20 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioRecuperarClave
 {
     private ComboBox cbMetodo = null!;
-    private TextBox ctUsuario = null!, ctCodigo = null!, ctAdministrador = null!, ctClaveAdministrador = null!, ctNueva = null!, ctConfirmacion = null!;
+    private TextBox ctUsuario = null!;
+    private TextBox ctCodigo = null!;
+    private TextBox ctAdministrador = null!;
+    private TextBox ctClaveAdministrador = null!;
+    private TextBox ctNueva = null!;
+    private TextBox ctConfirmacion = null!;
     private Label lblMensaje = null!;
-    private Button btnRecuperar = null!, btnConsultar = null!, btnCancelar = null!;
+    private Button btnRecuperar = null!;
+    private Button btnConsultar = null!;
+    private Button btnCancelar = null!;
     private CheckBox chkMostrar = null!;
-    private Control[] camposAdministrador = [], camposCodigo = [], camposNueva = [];
+    private Control[] camposAdministrador = [];
+    private Control[] camposCodigo = [];
+    private Control[] camposNueva = [];
     private void InitializeComponent()
     {
         var flpP = DisenoFormulario.Preparar(this, "Recuperar acceso a Sabores");
@@ -26,7 +35,7 @@ partial class FormularioRecuperarClave
         comienzo = flpP.Controls.Count;
         ctNueva = DisenoFormulario.Campo(flpP, "Contraseña nueva (12 a 128 caracteres)", true);
         ctConfirmacion = DisenoFormulario.Campo(flpP, "Confirmar contraseña nueva", true);
-        flpP.Controls.Add(new Label { Text = Restaurante.Backend.Servicios.Contrasenas.Ayuda, AutoSize = true, MaximumSize = new Size(650, 0) });
+        flpP.Controls.Add(new Label { Text = Restaurante.Backend.Seguridad.Contrasenas.Ayuda, AutoSize = true, MaximumSize = new Size(650, 0) });
         chkMostrar = new CheckBox
         {
             Text = "Mostrar contraseñas y código",

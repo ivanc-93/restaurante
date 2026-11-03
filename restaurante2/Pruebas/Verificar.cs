@@ -1,8 +1,18 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Drawing;
 using System.Windows.Forms;
 using Microsoft.Data.SqlClient;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Frontend.Formularios;
 
 internal static class Verificar
@@ -234,8 +244,9 @@ internal static class Verificar
         });
         Caso("Catálogos y reportes cargan datos en la interfaz",()=>
         {
-            using(var catalogos=new FormularioCatalogos(repo,true))
+            using(var catalogos=new FormularioCatalogos(repo,true,dialogos:new DialogosPrueba()))
             {
+                SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
                 catalogos.Opacity=0; catalogos.ShowInTaskbar=false; catalogos.Show();
                 Esperar(()=>catalogos.Enabled && Campo<DataGridView>(catalogos,"dgvRegistros").DataSource is not null);
                 Capturar(catalogos,"CatalogosClientes");
@@ -246,6 +257,7 @@ internal static class Verificar
                 Esperar(()=>catalogos.Enabled && Campo<TextBox>(catalogos,"ctUbicacion").Text=="Guatemala");
                 Capturar(catalogos,"CatalogosRestaurante"); catalogos.Close();
             }
+            SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
             using var reportes=new FormularioReportes(repo);
             reportes.Opacity=0; reportes.ShowInTaskbar=false; reportes.Show();
             Esperar(()=>Campo<bool>(reportes,"_listo") && !Campo<bool>(reportes,"_cargando"));

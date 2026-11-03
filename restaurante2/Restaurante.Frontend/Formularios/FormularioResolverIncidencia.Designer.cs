@@ -1,11 +1,19 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioResolverIncidencia
 {
-    private Label lblResumen = null!, lblMensaje = null!;
-    private ComboBox cbDesenlace = null!, cbMetodo = null!;
-    private TextBox ctMotivo = null!, ctReceptor = null!, ctIdentificacion = null!, ctDireccion = null!, ctCorreo = null!, ctReferencia = null!;
+    private Label lblResumen = null!;
+    private Label lblMensaje = null!;
+    private ComboBox cbDesenlace = null!;
+    private ComboBox cbMetodo = null!;
+    private TextBox ctMotivo = null!;
+    private TextBox ctReceptor = null!;
+    private TextBox ctIdentificacion = null!;
+    private TextBox ctDireccion = null!;
+    private TextBox ctCorreo = null!;
+    private TextBox ctReferencia = null!;
     private NumericUpDown nudEntregado = null!;
-    private CheckBox chkPublico = null!, chkConfirmacion = null!;
+    private CheckBox chkPublico = null!;
+    private CheckBox chkConfirmacion = null!;
     private Button btnResolver = null!;
     private void InitializeComponent()
     {

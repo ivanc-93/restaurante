@@ -20,6 +20,13 @@ partial class FormularioCobro
     private CheckBox chkPagoConfirmado = null!;
     private Label lblSaldo = null!;
     private Label lblMensaje = null!;
+    private Label lblReceptor = null!;
+    private Label lblIdentificacion = null!;
+    private Label lblDireccion = null!;
+    private Label lblCorreo = null!;
+    private Label lblResultado = null!;
+    private Label lblReferencia = null!;
+    private Label lblObservacion = null!;
     private Button btnConfirmar = null!;
     private TableLayoutPanel tlpEstructura = null!;
     private FlowLayoutPanel flpCampos = null!;
@@ -149,7 +156,7 @@ partial class FormularioCobro
         flpCampos.Margin = new Padding(14, 0, 0, 0);
         dgvTablaCuenta = new DataGridView
         {
-            Name = "tablaCuenta",
+            Name = "dgvTablaCuenta",
             Dock = DockStyle.Fill,
             AutoGenerateColumns = false,
             TabStop = false
@@ -235,24 +242,66 @@ partial class FormularioCobro
         flpCampos.Controls.Add(new Label { Text = "Copiar cliente existente (opcional)", AutoSize = true });
         flpCampos.Controls.Add(cbCliente);
         flpCampos.Controls.Add(chkPublico);
-        flpCampos.Controls.Add(new Label { Name = "lblReceptor", Text = "Nombre del receptor", AutoSize = true });
+        lblReceptor = new Label
+        {
+            Name = "lblReceptor",
+            Text = "Nombre del receptor",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblReceptor);
         flpCampos.Controls.Add(ctReceptor);
-        flpCampos.Controls.Add(new Label { Name = "lblIdentificacion", Text = "NIT / identificación (opcional, sin validación SAT)", AutoSize = true });
+        lblIdentificacion = new Label
+        {
+            Name = "lblIdentificacion",
+            Text = "NIT / identificación (opcional, sin validación SAT)",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblIdentificacion);
         flpCampos.Controls.Add(ctIdentificacion);
         flpCampos.Controls.Add(chkOpcionales);
-        flpCampos.Controls.Add(new Label { Name = "lblDireccion", Text = "Dirección (opcional)", AutoSize = true });
+        lblDireccion = new Label
+        {
+            Name = "lblDireccion",
+            Text = "Dirección (opcional)",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblDireccion);
         flpCampos.Controls.Add(ctDireccion);
-        flpCampos.Controls.Add(new Label { Name = "lblCorreo", Text = "Correo (opcional)", AutoSize = true });
+        lblCorreo = new Label
+        {
+            Name = "lblCorreo",
+            Text = "Correo (opcional)",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblCorreo);
         flpCampos.Controls.Add(ctCorreo);
         flpCampos.Controls.Add(new Label { Text = "Método de pago manual", AutoSize = true });
         flpCampos.Controls.Add(cbMetodo);
-        flpCampos.Controls.Add(new Label { Name = "lblResultado", Text = "Resultado del terminal externo (solo tarjeta)", AutoSize = true });
+        lblResultado = new Label
+        {
+            Name = "lblResultado",
+            Text = "Resultado del terminal externo (solo tarjeta)",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblResultado);
         flpCampos.Controls.Add(cbResultadoTarjeta);
         flpCampos.Controls.Add(new Label { Text = "Entregado en efectivo / importe externo", AutoSize = true });
         flpCampos.Controls.Add(nudEntregado);
-        flpCampos.Controls.Add(new Label { Name = "lblReferencia", Text = "Referencia externa (sin número de tarjeta)", AutoSize = true });
+        lblReferencia = new Label
+        {
+            Name = "lblReferencia",
+            Text = "Referencia externa (sin número de tarjeta)",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblReferencia);
         flpCampos.Controls.Add(ctReferencia);
-        flpCampos.Controls.Add(new Label { Name = "lblObservacion", Text = "Observación", AutoSize = true });
+        lblObservacion = new Label
+        {
+            Name = "lblObservacion",
+            Text = "Observación",
+            AutoSize = true
+        };
+        flpCampos.Controls.Add(lblObservacion);
         flpCampos.Controls.Add(ctObservacion);
         flpCampos.Controls.Add(chkDatosConfirmados);
         flpCampos.Controls.Add(chkPagoConfirmado);

@@ -1,0 +1,9 @@
+OK Windows autorizado habilita preparación
+OK Confirmación cancelada conserva token anterior
+OK Confirmación aceptada prepara instalación desde interfaz
+OK El usuario no introduce ni visualiza el token generado
+OK La interfaz comunica preparación verificada
+OK Validación conserva datos no sensibles
+OK El mismo botón crea administrador sin entrada manual de token
+OK Cuenta creada y token consumido en SQL
+TOTAL 8 comprobaciones de interfaz inicial correctas

@@ -1,9 +1,19 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Data.SqlClient;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Frontend.Formularios;
 namespace PruebasRoles;
 internal static class PruebasRechazosAutorizacion
@@ -12,7 +22,7 @@ internal static class PruebasRechazosAutorizacion
  public static void Ejecutar(string cadena,RepositorioRestaurante admin,string dir,Action<bool,string> ok)
  {
     if(!new SqlConnectionStringBuilder(cadena).InitialCatalog.StartsWith("Restaurante_Pruebas_"))throw new Exception("Solo bases aisladas.");
-    Directory.CreateDirectory(dir);ApplicationConfiguration.Initialize();var sufijo=Guid.NewGuid().ToString("N")[..8];
+    Directory.CreateDirectory(dir);global::ApplicationConfiguration.Initialize();var sufijo=Guid.NewGuid().ToString("N")[..8];
     RepositorioRestaurante Repo(string u,string p){var r=new RepositorioRestaurante(new ConfiguracionConexionTemporal(cadena));if(r.IniciarSesion(u,p) is null)throw new Exception("No autentica fixture");return r;}
     string Crear(string rol,bool cambiar=true)
     {var u=rol+sufijo+Guid.NewGuid().ToString("N")[..4];admin.GuardarUsuario(null,"Persona ficticia "+rol,u,rol,true,Temporal);if(cambiar){var r=Repo(u,Temporal);r.CambiarMiContrasena(Temporal,Personal);}return u;}

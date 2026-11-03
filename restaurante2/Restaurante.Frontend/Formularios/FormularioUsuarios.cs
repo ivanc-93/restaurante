@@ -1,15 +1,15 @@
 using Microsoft.Data.SqlClient;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
 
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioUsuarios : Form
 {
-    private readonly IRepositorioRestaurante repo = null!;
+    private readonly IGestionUsuarios repo = null!;
     private int? id;
-    private bool ocupado, resultadoIncierto;
+    private bool ocupado;
+    private bool resultadoIncierto;
     public FormularioUsuarios() => InitializeComponent();
-    public FormularioUsuarios(IRepositorioRestaurante repo) : this()
+    public FormularioUsuarios(IGestionUsuarios repo) : this()
     {
         this.repo = repo;
         Shown += async (_, _) => await Recargar();

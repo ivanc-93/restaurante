@@ -1,8 +1,18 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Text.Json;
 using System.Security.Cryptography;
 using Microsoft.Data.SqlClient;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Frontend.Formularios;
 using Restaurante.Frontend.Servicios;
 namespace PruebasRoles;
@@ -35,7 +45,7 @@ internal static class PruebasAuditoria
         var pedido=Abrir();ok(admin.RevisarCuenta(pedido.Id).Total==producto.Precio*2,"Administrador revisa cuenta abierta");ok(gerente.RevisarCuenta(pedido.Id).Total>0,"Gerente revisa cuenta abierta");ok(mesero.RevisarCuenta(pedido.Id).Total>0,"Mesero revisa cuenta abierta");
         admin.RegistrarCobro(Efectivo(pedido.Id));Deniega(()=>mesero.RevisarCuenta(pedido.Id),"Mesero no revisa cerrado facturado por otro operador");Deniega(()=>mesero.ListarDetallesPedido(pedido.Id),"Misma restricción en detalles");Deniega(()=>mesero.ConsultarComprobante(pedido.Id),"Misma restricción en comprobante");ok(gerente.RevisarCuenta(pedido.Id).Estado=="Facturado","Gerente conserva lectura de cerrados");
         admin.ActualizarMesa(mesa.Id,numero+1000000,6,"En limpieza");ok(admin.ListarMesas().Single(x=>x.Id==mesa.Id).Estado=="En limpieza","Editar metadatos no libera mesa en limpieza");Deniega(()=>admin.ActualizarMesa(mesa.Id,numero+1000000,6,"Disponible"),"Catálogo no evita confirmación de limpieza");
-        ApplicationConfiguration.Initialize();using(var f=new FormularioMesa(new Mesa(mesa.Id,10001,6,"En limpieza"))){ok(f.NumeroMesa==10001&&f.EstadoMesa=="En limpieza","Editor conserva número 10001 y estado real");}
+        global::ApplicationConfiguration.Initialize();using(var f=new FormularioMesa(new Mesa(mesa.Id,10001,6,"En limpieza"))){ok(f.NumeroMesa==10001&&f.EstadoMesa=="En limpieza","Editor conserva número 10001 y estado real");}
         Limpiar();pedido=Abrir(3);var cuenta=mesero.RevisarCuenta(pedido.Id);var linea=mesero.ListarLineasCorregibles(pedido.Id).Single();
         var correccion=new SolicitudCorreccionLinea(Guid.NewGuid(),pedido.Id,linea.Id,1,cuenta.Version,cuenta.Total,"Error de captura ficticio",true);
         Deniega(()=>mesero.CorregirLinea(correccion),"Corrección de mesero sin autorización rechazada");Autorizar(correccion.OperacionId,"CorreccionLinea",correccion);
@@ -148,7 +158,7 @@ internal static class PruebasAuditoria
     private static decimal Fallar(string mensaje)=>throw new IOException(mensaje);
     public static void Visual(string cadena,RepositorioRestaurante admin,string tipo)
     {
-        ApplicationConfiguration.Initialize();
+        global::ApplicationConfiguration.Initialize();
         if(tipo=="resolucion"&&!admin.ListarIncidencias().Any(x=>x.Estado=="Pendiente"))
         {
             var n=admin.ListarMesas().Max(x=>x.Numero)+1;admin.CrearMesa(n,2);var m=admin.ListarMesas().Single(x=>x.Numero==n);var producto=admin.ListarMenu().First(x=>x.Precio>0);

@@ -1,9 +1,12 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioAutorizar
 {
-    private TextBox ctUsuario = null!, ctContrasena = null!;
-    private Label lblResumen = null!, lblMensaje = null!;
-    private Button btnAutorizar = null!, btnCancelar = null!;
+    private TextBox ctUsuario = null!;
+    private TextBox ctContrasena = null!;
+    private Label lblResumen = null!;
+    private Label lblMensaje = null!;
+    private Button btnAutorizar = null!;
+    private Button btnCancelar = null!;
     private CheckBox chkMostrarContrasena = null!;
     private void InitializeComponent()
     {

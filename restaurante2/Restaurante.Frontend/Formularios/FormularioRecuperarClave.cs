@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
 using Restaurante.Frontend.Servicios;
 
 namespace Restaurante.Frontend.Formularios;
@@ -10,7 +9,9 @@ public sealed partial class FormularioRecuperarClave : Form
     private readonly DiarioRecuperacion diario;
     private Guid operacion = Guid.NewGuid();
     private string recibo = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-    private bool ocupado, incierto, terminado;
+    private bool ocupado;
+    private bool incierto;
+    private bool terminado;
     public FormularioRecuperarClave(IRepositorioRestaurante repositorio, string? carpetaComprobante = null)
     {
         repo = repositorio;
@@ -106,7 +107,8 @@ public sealed partial class FormularioRecuperarClave : Form
         Estado(true);
         lblMensaje.Text = "Verificando recuperación…";
         string texto;
-        bool correcto = false, dudoso = false;
+        bool correcto = false;
+        bool dudoso = false;
         try
         {
             diario.Guardar(operacion, recibo);
@@ -147,7 +149,8 @@ public sealed partial class FormularioRecuperarClave : Form
             return;
         Estado(true);
         string texto;
-        bool correcto = false, dudoso = false;
+        bool correcto = false;
+        bool dudoso = false;
         try
         {
             var r = await Task.Run(() => repo.ConsultarRecuperacion(operacion, recibo)).ConfigureAwait(false);

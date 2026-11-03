@@ -81,7 +81,6 @@ partial class FormularioPrincipal
         lblUsuarioLabel.ForeColor = Color.White;
         lblUsuarioLabel.Font = new Font("Segoe UI", 11);
         btnCerrarSesion.Text = "Cerrar sesión";
-        Iconos.Aplicar(btnCerrarSesion, "log-out");
         btnCerrarSesion.Dock = DockStyle.Bottom;
         btnCerrarSesion.Height = 42;
         btnCerrarSesion.BackColor = Componentes.Verde;

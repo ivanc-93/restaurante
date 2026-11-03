@@ -1,14 +1,15 @@
 using System.Text.Json;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
 
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioAutorizar : Form
 {
     private readonly IRepositorioRestaurante repo = null!;
     private readonly Guid id;
-    private readonly string tipo = "", json = "";
-    private bool ocupado, cerrando;
+    private readonly string tipo = "";
+    private readonly string json = "";
+    private bool ocupado;
+    private bool cerrando;
     public ResultadoAutorizacion? Resultado { get; private set; }
     public string? AdvertenciaCierre { get; private set; }
 

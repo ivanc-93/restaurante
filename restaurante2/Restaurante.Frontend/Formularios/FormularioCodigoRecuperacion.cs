@@ -1,11 +1,9 @@
-using Restaurante.Backend.Servicios;
-
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioCodigoRecuperacion : Form
 {
-    private readonly IRepositorioRestaurante repo;
+    private readonly ICodigosEmergencia repo;
     private bool ocupado;
-    public FormularioCodigoRecuperacion(IRepositorioRestaurante repositorio)
+    public FormularioCodigoRecuperacion(ICodigosEmergencia repositorio)
     {
         repo = repositorio;
         InitializeComponent();

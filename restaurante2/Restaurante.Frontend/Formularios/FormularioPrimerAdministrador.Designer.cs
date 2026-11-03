@@ -1,9 +1,16 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioPrimerAdministrador
 {
-    private TextBox ctToken = null!, ctNombre = null!, ctUsuario = null!, ctContrasena = null!, ctRepetir = null!;
-    private Label lblMensaje = null!, lblEstadoInicial = null!, lblEtiquetaToken = null!;
-    private Button btnGuardar = null!, btnPrepararWindows = null!;
+    private TextBox ctToken = null!;
+    private TextBox ctNombre = null!;
+    private TextBox ctUsuario = null!;
+    private TextBox ctContrasena = null!;
+    private TextBox ctRepetir = null!;
+    private Label lblMensaje = null!;
+    private Label lblEstadoInicial = null!;
+    private Label lblEtiquetaToken = null!;
+    private Button btnGuardar = null!;
+    private Button btnPrepararWindows = null!;
     private void InitializeComponent()
     {
         var flpP = DisenoFormulario.Preparar(this, "Crear primer administrador");
@@ -37,7 +44,7 @@ public sealed partial class FormularioPrimerAdministrador
         ctUsuario = DisenoFormulario.Campo(flpP, "Usuario");
         ctContrasena = DisenoFormulario.Campo(flpP, "Contraseña de al menos 12 caracteres", true);
         ctRepetir = DisenoFormulario.Campo(flpP, "Confirmar contraseña", true);
-        flpP.Controls.Add(new Label { Text = Restaurante.Backend.Servicios.Contrasenas.Ayuda, AutoSize = true, MaximumSize = new Size(650, 0) });
+        flpP.Controls.Add(new Label { Text = Restaurante.Backend.Seguridad.Contrasenas.Ayuda, AutoSize = true, MaximumSize = new Size(650, 0) });
         btnGuardar = DisenoFormulario.Boton(flpP, "Completar instalación de la base", Guardar_Click);
         lblMensaje = DisenoFormulario.Mensaje(flpP);
     }

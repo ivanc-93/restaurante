@@ -1,13 +1,11 @@
-using Restaurante.Backend.Servicios;
-
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioReportes : Form
 {
-    private readonly IRepositorioRestaurante _repositorio = null!;
+    private readonly IConsultasReportes _repositorio = null!;
     private bool _listo;
     private bool _cargando;
     public FormularioReportes() => InitializeComponent();
-    public FormularioReportes(IRepositorioRestaurante repositorio) : this()
+    public FormularioReportes(IConsultasReportes repositorio) : this()
     {
         _repositorio = repositorio;
         Componentes.EstilizarTabla(dgvVentas);
@@ -20,41 +18,59 @@ public sealed partial class FormularioReportes : Form
         {
             Name = "tpOperaciones"
         };
-        tpOperaciones.Controls.Add(new DataGridView { Name = "operaciones", Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AutoGenerateColumns = true });
-        tpOperaciones.Controls.Add(new Label { Name = "resumenOperaciones", Dock = DockStyle.Bottom, AutoSize = true, MaximumSize = new Size(950, 0), Padding = new Padding(10) });
+        dgvOperaciones = new DataGridView
+        {
+            Name = "dgvOperaciones",
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AutoGenerateColumns = true
+        };
+        tpOperaciones.Controls.Add(dgvOperaciones);
+        lblResumenOperaciones = new Label
+        {
+            Name = "lblResumenOperaciones",
+            Dock = DockStyle.Bottom,
+            AutoSize = true,
+            MaximumSize = new Size(950, 0),
+            Padding = new Padding(10)
+        };
+        tpOperaciones.Controls.Add(lblResumenOperaciones);
         tabPestanas.TabPages.Add(tpOperaciones);
         Pestana_Cambio(this, EventArgs.Empty);
-        Shown += async (_, _) =>
+        Shown += FormularioReportes_Shown;
+    }
+
+    private async void FormularioReportes_Shown(object? sender, EventArgs e)
+    {
+        flpFiltros.Enabled = false;
+        try
         {
-            flpFiltros.Enabled = false;
-            try
+            var opciones = await Task.Run(() => (Mesas: _repositorio.ListarMesas(), Clientes: _repositorio.ListarClientesHistoricos()));
+            if (IsDisposed || Disposing)
+                return;
+            cbMesa.DataSource = new List<OpcionFiltro>
             {
-                var opciones = await Task.Run(() => (Mesas: _repositorio.ListarMesas(), Clientes: _repositorio.ListarClientesHistoricos()));
-                if (IsDisposed || Disposing)
-                    return;
-                cbMesa.DataSource = new List<OpcionFiltro>
-                {
-                    new(null, "Todas las mesas")
-                }.Concat(opciones.Mesas.Select(m => new OpcionFiltro(m.Id, $"Mesa {m.Numero}"))).ToList();
-                cbCliente.DataSource = new List<OpcionFiltro>
-                {
-                    new(null, "Todos los clientes"),
-                    new(0, "Público general")
-                }.Concat(opciones.Clientes.Select(c => new OpcionFiltro(c.Id, c.Nombre))).ToList();
-                _listo = true;
-                await CargarAsync();
-            }
-            catch (Exception ex)
+                new(null, "Todas las mesas")
+            }.Concat(opciones.Mesas.Select(m => new OpcionFiltro(m.Id, $"Mesa {m.Numero}"))).ToList();
+            cbCliente.DataSource = new List<OpcionFiltro>
             {
-                if (!IsDisposed && !Disposing)
-                    MessageBox.Show(this, ex.Message, "Filtros de reportes", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                if (!IsDisposed)
-                    flpFiltros.Enabled = true;
-            }
-        };
+                new(null, "Todos los clientes"),
+                new(0, "Público general")
+            }.Concat(opciones.Clientes.Select(c => new OpcionFiltro(c.Id, c.Nombre))).ToList();
+            _listo = true;
+            await CargarAsync();
+        }
+        catch (Exception ex)
+        {
+            if (!IsDisposed && !Disposing)
+                MessageBox.Show(this, ex.Message, "Filtros de reportes", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            if (!IsDisposed)
+                flpFiltros.Enabled = true;
+        }
     }
 
     private void Pestana_Cambio(object? sender, EventArgs e)
@@ -90,9 +106,9 @@ public sealed partial class FormularioReportes : Form
                 dgvPlatos.Columns["Importe"].HeaderText = "Consumo bruto (Q), antes de ajustes";
             if (dgvPlatos.Columns.Contains("Total"))
                 dgvPlatos.Columns["Total"].HeaderText = "Consumo bruto (Q), antes de ajustes";
-            ((DataGridView)tabPestanas.TabPages[3].Controls["operaciones"]!).DataSource = datos.Operaciones.ToList();
+            dgvOperaciones.DataSource = datos.Operaciones.ToList();
             decimal Suma(string concepto, string estado) => datos.Operaciones.Where(x => x.Concepto == concepto && x.Estado == estado).Sum(x => x.Importe);
-            tabPestanas.TabPages[3].Controls["resumenOperaciones"]!.Text = $"Cobros confirmados: efectivo {FormatoPresentacion.Moneda(Suma("Pago Efectivo", "Confirmado"))} · tarjeta manual {FormatoPresentacion.Moneda(Suma("Pago Tarjeta", "Confirmado"))}\n" + $"Cancelado: {FormatoPresentacion.Moneda(Suma("Cancelar", "Cancelado"))} · Incidencias generadas: {FormatoPresentacion.Moneda(Suma("Incidencia", "Incidencia"))} · Legados sin pago registrado: {FormatoPresentacion.Moneda(Suma("Comprobante legado", "Pago no registrado"))}\n" + $"Descuentos vigentes: {FormatoPresentacion.Moneda(Suma("Descuento", "Vigente"))} · Cortesías vigentes: {FormatoPresentacion.Moneda(Suma("Cortesía", "Vigente"))}\n" + "No sumar todas las filas: comprobantes, cobros, ajustes e incidencias representan conceptos distintos. Tarjetas rechazadas o inciertas no son cobros confirmados.";
+            lblResumenOperaciones.Text = $"Cobros confirmados: efectivo {FormatoPresentacion.Moneda(Suma("Pago Efectivo", "Confirmado"))} · tarjeta manual {FormatoPresentacion.Moneda(Suma("Pago Tarjeta", "Confirmado"))}\n" + $"Cancelado: {FormatoPresentacion.Moneda(Suma("Cancelar", "Cancelado"))} · Incidencias generadas: {FormatoPresentacion.Moneda(Suma("Incidencia", "Incidencia"))} · Legados sin pago registrado: {FormatoPresentacion.Moneda(Suma("Comprobante legado", "Pago no registrado"))}\n" + $"Descuentos vigentes: {FormatoPresentacion.Moneda(Suma("Descuento", "Vigente"))} · Cortesías vigentes: {FormatoPresentacion.Moneda(Suma("Cortesía", "Vigente"))}\n" + "No sumar todas las filas: comprobantes, cobros, ajustes e incidencias representan conceptos distintos. Tarjetas rechazadas o inciertas no son cobros confirmados.";
             lblTotal.Text = $"Comprobantes emitidos (no equivale a efectivo cobrado): {FormatoPresentacion.Moneda(datos.Ventas.Sum(x => x.Total))} · {datos.Ventas.Sum(x => x.Facturas)} facturas. Semana: lunes a domingo.";
             FormatoPresentacion.Aplicar(this);
         }

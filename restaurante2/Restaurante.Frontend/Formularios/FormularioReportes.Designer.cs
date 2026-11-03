@@ -18,6 +18,8 @@ partial class FormularioReportes
     private TabPage tpPlatosTab = null!;
     private TabPage tpPedidosTab = null!;
     private Label lblTotal = null!;
+    private Label lblResumenOperaciones = null!;
+    private DataGridView dgvOperaciones = null!;
     private Label lblDesdeLabel = null!;
     private Label lblHastaLabel = null!;
     private Label lblMesaLabel = null!;

@@ -22,5 +22,5 @@ public abstract class ElementoMenu
         return Precio * cantidad;
     }
 
-    public override string ToString() => $"{Nombre} · {Restaurante.Backend.Servicios.MonedaGuatemala.Formatear(Precio)}";
+    public override string ToString() => $"{Nombre} · {Restaurante.Backend.Dominio.MonedaGuatemala.Formatear(Precio)}";
 }

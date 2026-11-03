@@ -1,5 +1,15 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using Microsoft.Data.SqlClient;
-using Restaurante.Backend.Servicios;
+
 using System.Security.Cryptography;
 using System.Text;
 
@@ -8,7 +18,7 @@ internal static class PruebasPrimeraInstalacion
     internal static int Ejecutar(string baseDatos)
     {
         if(!baseDatos.StartsWith("Restaurante_Pruebas_",StringComparison.Ordinal))throw new InvalidOperationException("Solo bases aisladas.");
-        var cadena=ConfiguracionConexion.CrearCadena("localhost",0,baseDatos,"","",true);
+        var cadena=ConfiguracionConexion.CrearCadena(Environment.GetEnvironmentVariable("SABORES_SERVIDOR_PRUEBAS") ?? "localhost",0,baseDatos,"","",true);
         var cfg=new ConfiguracionConexionTemporal(cadena);
         var servicio=new ServicioPreparacionInicial(cfg);
         var instalacion=new ServicioInstalacion(cfg);

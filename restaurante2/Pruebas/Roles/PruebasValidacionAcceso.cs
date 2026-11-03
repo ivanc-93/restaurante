@@ -1,12 +1,22 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Reflection;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Frontend.Formularios;
 namespace PruebasRoles;
 internal static class PruebasValidacionAcceso
 {
  public static void Ejecutar(string dir,Action<bool,string> ok)
  {
-    Directory.CreateDirectory(dir);ApplicationConfiguration.Initialize();
+    Directory.CreateDirectory(dir);global::ApplicationConfiguration.Initialize();
     ok(Contrasenas.ErrorValidacion(new string('a',12)) is null,"Mínimo 12 sin requisitos inventados");
     ok(Contrasenas.ErrorValidacion(new string('a',128)) is null,"Máximo 128 válido");
     ok(Contrasenas.ErrorValidacion(new string('a',129)) is not null,"Más de 128 rechazado");

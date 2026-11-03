@@ -1,9 +1,11 @@
 namespace Restaurante.Frontend.Formularios;
 partial class FormularioCodigoRecuperacion
 {
-    private TextBox ctContrasena = null!, ctCodigo = null!;
+    private TextBox ctContrasena = null!;
+    private TextBox ctCodigo = null!;
     private Label lblMensaje = null!;
-    private Button btnGenerar = null!, btnContinuar = null!;
+    private Button btnGenerar = null!;
+    private Button btnContinuar = null!;
     private CheckBox chkGuardado = null!;
     private void InitializeComponent()
     {

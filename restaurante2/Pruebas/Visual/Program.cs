@@ -1,8 +1,18 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Restaurante.Backend.Dominio;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Frontend.Formularios;
 using Restaurante.Frontend.Servicios;
 
@@ -43,9 +53,15 @@ internal static class Program
                 Ok(Controles(principal).OfType<Button>().Any(b=>b.Text=="Cambiar contraseña"),"Conserva cambio de contraseña");
                 Ejecutar(principal,"MostrarMesasPos");Capturar(principal,"mesas-1366");
                 Ok(Controles(principal).OfType<TarjetaMesa>().Count()==8,"Ocho tarjetas reales con datos SQL");
-                var buscar=Controles(principal).OfType<TextBox>().Single(c=>c.Name=="buscarMesa");buscar.Text="1";Application.DoEvents();
+                var tarjetas = Controles(principal).OfType<TarjetaMesa>().ToArray();
+                Ok(tarjetas.All(t => Controles(t).OfType<PictureBox>().Any(p => p.Visible && p.Image is not null)), "Cada mesa muestra su icono visible");
+                Ok(tarjetas.All(t => Controles(t).OfType<Label>().Where(l => l.Name == "lblEstado").All(l => l.Height >= l.GetPreferredSize(new Size(l.Width, 0)).Height)), "Los estados de mesa caben completos en su franja");
+                Ok(tarjetas.All(t => t.ClientRectangle.Contains(t.RectangleToClient(t.btnAccionMesa.RectangleToScreen(t.btnAccionMesa.ClientRectangle)))), "Las acciones caben dentro de las tarjetas");
+                Ok(Iconos.Obtener("clave-desconocida-de-prueba") is not null, "Un icono desconocido presenta alternativa visible");
+                Ok(ReferenceEquals(Iconos.Obtener("armchair",192),Iconos.Obtener("armchair",192)), "Los recursos de mesa se reutilizan sin recarga");
+                var buscar=Controles(principal).OfType<TextBox>().Single(c=>c.Name=="ctBuscarMesa");buscar.Text="1";Application.DoEvents();
                 Ok(Controles(principal).OfType<TarjetaMesa>().All(t=>t.Mesa.Numero.ToString().Contains("1")),"Búsqueda de mesa funcional");buscar.Clear();
-                var filtro=Controles(principal).OfType<ComboBox>().Single(c=>c.Name=="filtroEstadoMesa");filtro.SelectedItem="En limpieza";Application.DoEvents();
+                var filtro=Controles(principal).OfType<ComboBox>().Single(c=>c.Name=="cbFiltroEstadoMesa");filtro.SelectedItem="En limpieza";Application.DoEvents();
                 Ok(Controles(principal).OfType<TarjetaMesa>().Count()==1,"Filtro de limpieza funcional");filtro.SelectedIndex=0;
                 Modal<FormularioDetalleMesa>(()=>Tarjeta(principal,disponible.Id).btnAccionMesa.PerformClick(),f=>
                 {

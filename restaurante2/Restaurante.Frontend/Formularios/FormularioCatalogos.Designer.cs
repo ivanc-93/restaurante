@@ -27,7 +27,8 @@ partial class FormularioCatalogos
     private Label lblTipoLabel = null!;
     private Label lblPrecioLabel = null!;
     private TextBox ctBuscarCatalogo = null!;
-    private Label lblTituloCatalogo = null!, lblEstadoEdicion = null!;
+    private Label lblTituloCatalogo = null!;
+    private Label lblEstadoEdicion = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -253,7 +254,7 @@ partial class FormularioCatalogos
         flpCabecera.Controls.Add(cbModo);
         ctBuscarCatalogo = new TextBox
         {
-            Name = "buscarCatalogo",
+            Name = "ctBuscarCatalogo",
             Dock = DockStyle.Fill,
             PlaceholderText = "Buscar por nombre, teléfono o correo",
             AccessibleName = "Buscar en el catálogo",

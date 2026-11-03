@@ -1,6 +1,16 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Text.Json;
 using Microsoft.Data.SqlClient;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Backend.Dominio;
 using Restaurante.Frontend.Formularios;
 
@@ -144,7 +154,7 @@ internal static class Program
  static void Deniega(Action a,string t){try{a();}catch(Exception e)when(e is UnauthorizedAccessException or ArgumentException or InvalidOperationException){Ok(true,t);return;}throw new Exception("No rechazó: "+t);}
  static void Render(string dir)
  {
-  Directory.CreateDirectory(dir);ApplicationConfiguration.Initialize();
+  Directory.CreateDirectory(dir);global::ApplicationConfiguration.Initialize();
   foreach(var f in new Form[]{new FormularioConexion(),new FormularioUsuarios(),new FormularioCambiarClave(),new FormularioPrimerAdministrador(),new FormularioAutorizar(),new FormularioAjuste(),new FormularioAcceso()})
   {using(f){f.ShowInTaskbar=false;f.StartPosition=FormStartPosition.Manual;f.Location=new Point(-20000,-20000);f.Show();Application.DoEvents();f.PerformLayout();using var b=new Bitmap(f.Width,f.Height);f.DrawToBitmap(b,new Rectangle(0,0,b.Width,b.Height));b.Save(Path.Combine(dir,f.GetType().Name+".png"));f.Hide();Ok(true,"Constructor y render "+f.GetType().Name);}}
  }

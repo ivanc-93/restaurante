@@ -26,7 +26,7 @@ public sealed partial class FormularioPrincipal
         };
         var ctBuscar = new TextBox
         {
-            Name = "buscarMesa",
+            Name = "ctBuscarMesa",
             Width = 230,
             PlaceholderText = "Buscar mesa",
             Margin = new Padding(0, 10, 12, 10),
@@ -34,7 +34,7 @@ public sealed partial class FormularioPrincipal
         };
         var cbFiltro = new ComboBox
         {
-            Name = "filtroEstadoMesa",
+            Name = "cbFiltroEstadoMesa",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 190,
             Margin = new Padding(0, 10, 12, 10)
@@ -77,7 +77,7 @@ public sealed partial class FormularioPrincipal
         tlpPagina.Controls.Add(flpLeyenda);
         var flpTarjetas = new FlowLayoutPanel
         {
-            Name = "tarjetasMesas",
+            Name = "flpTarjetasMesas",
             Dock = DockStyle.Top,
             AutoSize = true,
             WrapContents = true,
@@ -94,7 +94,7 @@ public sealed partial class FormularioPrincipal
             var columnas = Math.Clamp((int)(disponible / (275 * escala)), 1, 4);
             var ancho = Math.Max((int)(240 * escala), disponible / columnas - (int)(18 * escala));
             foreach (var tarjeta in flpTarjetas.Controls.OfType<TarjetaMesa>())
-                tarjeta.Size = new Size(ancho, (int)(270 * escala));
+                tarjeta.Size = new Size(ancho, tarjeta.ObtenerAlturaPreferida(ancho));
         }
 
         void Dibujar()

@@ -1,8 +1,18 @@
+using Restaurante.Backend.Aplicacion;
+using Restaurante.Backend.Aplicacion.Contratos;
+using Restaurante.Backend.Configuration;
+using Restaurante.Backend.Data;
+using Restaurante.Backend.Data.Repositorios;
+using Restaurante.Backend.Dominio.Reglas;
+using Restaurante.Backend.Seguridad;
+using Restaurante.Frontend.Presentacion;
+using Restaurante.Frontend.Controles;
+using Restaurante.Frontend.Infraestructura.Recuperacion;
 using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
 using Microsoft.Data.SqlClient;
-using Restaurante.Backend.Servicios;
+
 using Restaurante.Backend.Dominio;
 using Restaurante.Frontend.Formularios;
 using Sabores.Mantenimiento;
@@ -13,15 +23,15 @@ internal static class PruebasRecuperacion
     public static void Ejecutar(string cadena,RepositorioRestaurante admin,string dir,Action<bool,string> ok)
     {
         if(!new SqlConnectionStringBuilder(cadena).InitialCatalog.StartsWith("Restaurante_Pruebas_"))throw new Exception("Solo base aislada.");
-        Directory.CreateDirectory(dir);ApplicationConfiguration.Initialize();
+        Directory.CreateDirectory(dir);global::ApplicationConfiguration.Initialize();
         object? Sql(string texto,params (string,object)[] datos){using var c=new SqlConnection(cadena);c.Open();using var q=new SqlCommand(texto,c){CommandTimeout=120};foreach(var (n,v) in datos)q.Parameters.AddWithValue(n,v);return q.ExecuteScalar();}
         RepositorioRestaurante Repo(string? u=null,string? p=null){var r=new RepositorioRestaurante(new ConfiguracionConexionTemporal(cadena));if(u is not null&&r.IniciarSesion(u,p!) is null)throw new Exception("No autenticó fixture");return r;}
         void Deniega(Action a,string texto){try{a();}catch(Exception e)when(e is UnauthorizedAccessException or InvalidOperationException){ok(true,texto);return;}throw new Exception(texto);}
         string Recibo()=>Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         string Codigo(RepositorioRestaurante r,string p){var k=r.GenerarCodigoRecuperacion(p);r.ConfirmarCodigoRecuperacion(k);return k;}
         var publico=Repo();Deniega(()=>publico.RecuperarConCodigo(Guid.NewGuid(),Recibo(),"admin","x",Nueva),"Esquema anterior informa migración sin reiniciar usuarios");
-        var respaldo=ActualizacionRecuperacion.Ejecutar(cadena,Path.GetFullPath(Path.Combine(dir,"../../BaseDatos/Migracion_006.sql")));ok(File.Exists(respaldo),"Respaldo con checksum restaurado y CHECKDB antes de migrar");
-        var migracion=File.ReadAllText(Path.GetFullPath(Path.Combine(dir,"../../BaseDatos/Migracion_006.sql")));
+        var respaldo=ActualizacionRecuperacion.Ejecutar(cadena,Path.Combine(Environment.GetEnvironmentVariable("SABORES_SCRIPTS_PRUEBAS") ?? Path.GetFullPath(Path.Combine(dir,"../../BaseDatos")), "Migracion_006.sql"));ok(File.Exists(respaldo),"Respaldo con checksum restaurado y CHECKDB antes de migrar");
+        var migracion=File.ReadAllText(Path.Combine(Environment.GetEnvironmentVariable("SABORES_SCRIPTS_PRUEBAS") ?? Path.GetFullPath(Path.Combine(dir,"../../BaseDatos")), "Migracion_006.sql"));
         Sql(migracion);Sql(migracion);admin.ValidarEsquema();ok(Convert.ToInt32(Sql("SELECT MAX(Version) FROM dbo.VersionEsquema"))==6,"Migración 006 idempotente y esquema compatible");
         var numero=800000+Random.Shared.Next(90000);admin.CrearMesa(numero,4);var mesa=admin.ListarMesas().Single(x=>x.Numero==numero);var producto=admin.ListarMenu().First(x=>x.Precio>0);
         var pedido=admin.CrearPedido(new SolicitudPedido{MesaId=mesa.Id,Detalles=[new(producto.Id,2)]});var cuenta=admin.RevisarCuenta(pedido.Id);
@@ -79,7 +89,7 @@ internal static class PruebasRecuperacion
             Campo<ComboBox>(f,"cbMetodo").SelectedIndex=1;Campo<TextBox>(f,"ctUsuario").Text="admin";Campo<TextBox>(f,"ctCodigo").Text="incorrecto";Campo<TextBox>(f,"ctNueva").Text=Inicial;Campo<TextBox>(f,"ctConfirmacion").Text="diferente";Campo<Button>(f,"btnRecuperar").PerformClick();ok(Campo<Label>(f,"lblMensaje").Text.Contains("coincid"),"Interfaz exige confirmación coincidente");
             Campo<TextBox>(f,"ctConfirmacion").Text=Inicial;Campo<Button>(f,"btnRecuperar").PerformClick();Esperar(()=>Campo<Button>(f,"btnRecuperar").Enabled);ok(Campo<TextBox>(f,"ctCodigo").Text.Length==0&&Campo<TextBox>(f,"ctUsuario").Text=="admin","Rechazo limpia secretos y conserva usuario");
             Capturar(f,dir,"RecuperacionRechazada");
-            foreach(var tamano in new[]{new Size(1280,720),new Size(1366,768)}){f.Size=tamano;f.PerformLayout();Application.DoEvents();foreach(var campo in new[]{"recuperar","consultar","cancelar","mensaje"}){var control=Campo<Control>(f,campo);ok(f.ClientRectangle.Contains(f.RectangleToClient(control.RectangleToScreen(control.ClientRectangle))),"Recuperación mantiene visible "+campo+" a "+tamano.Width);}Capturar(f,dir,"Recuperacion-"+tamano.Width);}
+            foreach(var tamano in new[]{new Size(1280,720),new Size(1366,768)}){f.Size=tamano;f.PerformLayout();Application.DoEvents();foreach(var campo in new[]{"btnRecuperar","btnConsultar","btnCancelar","lblMensaje"}){var control=Campo<Control>(f,campo);ok(f.ClientRectangle.Contains(f.RectangleToClient(control.RectangleToScreen(control.ClientRectangle))),"Recuperación mantiene visible "+campo+" a "+tamano.Width);}Capturar(f,dir,"Recuperacion-"+tamano.Width);}
             Campo<TextBox>(f,"ctCodigo").Text=k;Campo<TextBox>(f,"ctNueva").Text=Inicial;Campo<TextBox>(f,"ctConfirmacion").Text=Inicial;Campo<Button>(f,"btnRecuperar").PerformClick();Esperar(()=>Campo<Label>(f,"lblMensaje").Text.Contains("actualizada"));ok(!Campo<Button>(f,"btnRecuperar").Enabled,"Interfaz permite reintento correcto y evita repetir resultado");Capturar(f,dir,"RecuperacionCompletada");f.Close();
         }
         using(var f=new FormularioRecuperarClave(publico,carpeta)){Mostrar(f);Campo<ComboBox>(f,"cbMetodo").SelectedIndex=2;ok(!Campo<Button>(f,"btnRecuperar").Enabled,"Sin código muestra asistencia sin puerta pública de mantenimiento");Capturar(f,dir,"RecuperacionSinCodigo");f.Close();}

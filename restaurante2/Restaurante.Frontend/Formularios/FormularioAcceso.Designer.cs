@@ -3,9 +3,15 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioAcceso
 {
     private System.ComponentModel.IContainer? components;
-    private TextBox ctUsuario = null!, ctContrasena = null!;
-    private Label lblMensaje = null!, lblTitulo = null!, lblUsuarioEtiqueta = null!, lblClaveEtiqueta = null!, lblAyuda = null!;
-    private Button btnEntrarSistema = null!, btnConfigurarConexion = null!;
+    private TextBox ctUsuario = null!;
+    private TextBox ctContrasena = null!;
+    private Label lblMensaje = null!;
+    private Label lblTitulo = null!;
+    private Label lblUsuarioEtiqueta = null!;
+    private Label lblClaveEtiqueta = null!;
+    private Label lblAyuda = null!;
+    private Button btnEntrarSistema = null!;
+    private Button btnConfigurarConexion = null!;
     private CheckBox chkMostrarContrasena = null!;
     private TableLayoutPanel tlpEstructura = null!;
     protected override void Dispose(bool disposing)
