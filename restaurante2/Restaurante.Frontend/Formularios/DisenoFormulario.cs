@@ -41,30 +41,32 @@ internal static class DisenoFormulario
             form.Size = new Size(Math.Min(form.Width, area.Width), Math.Min(form.Height, area.Height));
             form.Location = new Point(Math.Clamp(form.Left, area.Left, Math.Max(area.Left, area.Right - form.Width)), Math.Clamp(form.Top, area.Top, Math.Max(area.Top, area.Bottom - form.Height)));
         };
-        var panel = new FlowLayoutPanel
+        var flpPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoScroll = true,
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
-            Padding = new Padding(20)
+            Padding = new Padding(20),
+            Name = "flpPanel"
         };
-        var pie = new FlowLayoutPanel
+        var flpPie = new FlowLayoutPanel
         {
             Dock = DockStyle.Bottom,
             AutoSize = true,
             WrapContents = true,
             Padding = new Padding(16, 8, 16, 8),
-            BackColor = Color.White
+            BackColor = Color.White,
+            Name = "flpPie"
         };
-        panel.Tag = pie;
-        form.Controls.Add(panel);
-        form.Controls.Add(pie);
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, MaximumSize = new Size(650, 0), Font = new Font("Segoe UI", 16, FontStyle.Bold) });
+        flpPanel.Tag = flpPie;
+        form.Controls.Add(flpPanel);
+        form.Controls.Add(flpPie);
+        flpPanel.Controls.Add(new Label { Text = titulo, AutoSize = true, MaximumSize = new Size(650, 0), Font = new Font("Segoe UI", 16, FontStyle.Bold) });
         void AjustarAnchos()
         {
-            var ancho = Math.Max(160, panel.ClientSize.Width - panel.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8);
-            foreach (Control c in panel.Controls)
+            var ancho = Math.Max(160, flpPanel.ClientSize.Width - flpPanel.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8);
+            foreach (Control c in flpPanel.Controls)
             {
                 if (c is TextBox or ComboBox or DataGridView)
                     c.Width = ancho;
@@ -79,50 +81,52 @@ internal static class DisenoFormulario
                 }
             }
 
-            var anchoPie = Math.Max(160, pie.ClientSize.Width - pie.Padding.Horizontal - 8);
-            foreach (Control c in pie.Controls)
+            var anchoPie = Math.Max(160, flpPie.ClientSize.Width - flpPie.Padding.Horizontal - 8);
+            foreach (Control c in flpPie.Controls)
                 if (c is Label)
                     c.MaximumSize = new Size(anchoPie, 0);
         }
 
-        panel.SizeChanged += (_, _) => AjustarAnchos();
-        panel.ControlAdded += (_, _) => AjustarAnchos();
-        pie.SizeChanged += (_, _) => AjustarAnchos();
+        flpPanel.SizeChanged += (_, _) => AjustarAnchos();
+        flpPanel.ControlAdded += (_, _) => AjustarAnchos();
+        flpPie.SizeChanged += (_, _) => AjustarAnchos();
         form.Shown += (_, _) => AjustarAnchos();
-        return panel;
+        return flpPanel;
     }
 
     public static TextBox Campo(FlowLayoutPanel panel, string etiqueta, bool secreto = false)
     {
         panel.Controls.Add(new Label { Text = etiqueta, AutoSize = true, Margin = new Padding(0, 10, 0, 3) });
-        var c = new TextBox
+        var ctC = new TextBox
         {
             Width = 490,
             UseSystemPasswordChar = secreto,
-            MaxLength = secreto ? 128 : 250
+            MaxLength = secreto ? 128 : 250,
+            Name = "ctC"
         };
-        panel.Controls.Add(c);
-        return c;
+        panel.Controls.Add(ctC);
+        return ctC;
     }
 
     public static ComboBox Opciones(FlowLayoutPanel panel, string etiqueta, params string[] opciones)
     {
         panel.Controls.Add(new Label { Text = etiqueta, AutoSize = true });
-        var c = new ComboBox
+        var cbC = new ComboBox
         {
             Width = 490,
-            DropDownStyle = ComboBoxStyle.DropDownList
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Name = "cbC"
         };
-        c.Items.AddRange(opciones);
-        if (c.Items.Count > 0)
-            c.SelectedIndex = 0;
-        panel.Controls.Add(c);
-        return c;
+        cbC.Items.AddRange(opciones);
+        if (cbC.Items.Count > 0)
+            cbC.SelectedIndex = 0;
+        panel.Controls.Add(cbC);
+        return cbC;
     }
 
     public static Button Boton(FlowLayoutPanel p, string texto, EventHandler accion)
     {
-        var b = new Button
+        var btnB = new Button
         {
             Text = texto,
             AutoSize = true,
@@ -130,24 +134,26 @@ internal static class DisenoFormulario
             Margin = new Padding(0, 4, 12, 4),
             BackColor = Color.FromArgb(49, 86, 62),
             ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat
+            FlatStyle = FlatStyle.Flat,
+            Name = "btnB"
         };
-        b.Click += accion;
-        (p.Tag as FlowLayoutPanel ?? p).Controls.Add(b);
-        return b;
+        btnB.Click += accion;
+        (p.Tag as FlowLayoutPanel ?? p).Controls.Add(btnB);
+        return btnB;
     }
 
     public static Label Mensaje(FlowLayoutPanel p)
     {
-        var l = new Label
+        var lblL = new Label
         {
             AutoSize = true,
             MaximumSize = new Size(650, 0),
-            ForeColor = Color.DarkRed
+            ForeColor = Color.DarkRed,
+            Name = "lblL"
         };
-        var pie = p.Tag as FlowLayoutPanel ?? p;
-        pie.SetFlowBreak(l, true);
-        pie.Controls.Add(l);
-        return l;
+        var flpPie = p.Tag as FlowLayoutPanel ?? p;
+        flpPie.SetFlowBreak(lblL, true);
+        flpPie.Controls.Add(lblL);
+        return lblL;
     }
 }

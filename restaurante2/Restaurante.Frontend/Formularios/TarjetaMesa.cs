@@ -4,7 +4,7 @@ namespace Restaurante.Frontend.Formularios;
 internal sealed class TarjetaMesa : UserControl
 {
     internal Mesa Mesa { get; }
-    internal Button Accion { get; }
+    internal Button btnAccionMesa { get; }
 
     internal TarjetaMesa(Mesa mesa, PedidoResumen? pedido)
     {
@@ -19,20 +19,21 @@ internal sealed class TarjetaMesa : UserControl
         Margin = new Padding(0, 0, 16, 16);
         BorderStyle = BorderStyle.FixedSingle;
         var estilo = EstadoVisualMesa.De(mesa.Estado);
-        var cuerpo = new TableLayoutPanel
+        var tlpCuerpo = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 5,
-            Padding = new Padding(14)
+            Padding = new Padding(14),
+            Name = "tlpCuerpo"
         };
-        cuerpo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        cuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
-        cuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        cuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
-        cuerpo.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        cuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
-        var estado = new Label
+        tlpCuerpo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tlpCuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        tlpCuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
+        tlpCuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        tlpCuerpo.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpCuerpo.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
+        var lblEstado = new Label
         {
             Text = "  " + mesa.Estado,
             Dock = DockStyle.Fill,
@@ -42,41 +43,46 @@ internal sealed class TarjetaMesa : UserControl
             Font = new Font("Segoe UI", 12, FontStyle.Bold),
             Image = Iconos.Obtener(estilo.Icono),
             ImageAlign = ContentAlignment.MiddleRight,
-            Padding = new Padding(4)
+            Padding = new Padding(4),
+            Name = "lblEstado"
         };
-        var numero = new Label
+        var lblNumero = new Label
         {
             Text = "Mesa " + mesa.Numero,
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Segoe UI", 25, FontStyle.Bold),
-            ForeColor = Componentes.Tinta
+            ForeColor = Componentes.Tinta,
+            Name = "lblNumero"
         };
-        var capacidad = new Label
+        var lblCapacidad = new Label
         {
             Text = $"Capacidad: {mesa.Capacidad} personas",
             Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleLeft
+            TextAlign = ContentAlignment.MiddleLeft,
+            Name = "lblCapacidad"
         };
-        var cuenta = new Label
+        var lblCuenta = new Label
         {
             Text = pedido is null ? "Sin pedido abierto" : $"Pedido #{pedido.Id} · {FormatoPresentacion.Moneda(pedido.Total)}",
             Dock = DockStyle.Fill,
             ForeColor = Componentes.Secundario,
-            AutoEllipsis = true
+            AutoEllipsis = true,
+            Name = "lblCuenta"
         };
-        Accion = Componentes.Boton(mesa.Estado == "Ocupada" && pedido is null ? "Gestionar estado" : estilo.Accion);
-        Accion.Name = "accionMesa";
-        Accion.Dock = DockStyle.Fill;
-        Accion.Margin = new Padding(0, 4, 0, 0);
-        Accion.BackColor = estilo.Tinta;
-        Accion.AccessibleName = $"{Accion.Text}, mesa {mesa.Numero}";
-        Iconos.Aplicar(Accion, estilo.Icono);
-        cuerpo.Controls.Add(estado, 0, 0);
-        cuerpo.Controls.Add(numero, 0, 1);
-        cuerpo.Controls.Add(capacidad, 0, 2);
-        cuerpo.Controls.Add(cuenta, 0, 3);
-        cuerpo.Controls.Add(Accion, 0, 4);
-        Controls.Add(cuerpo);
+        btnAccionMesa = Componentes.Boton(mesa.Estado == "Ocupada" && pedido is null ? "Gestionar estado" : estilo.Accion);
+        btnAccionMesa.Name = "btnAccionMesa";
+        btnAccionMesa.Name = "accionMesa";
+        btnAccionMesa.Dock = DockStyle.Fill;
+        btnAccionMesa.Margin = new Padding(0, 4, 0, 0);
+        btnAccionMesa.BackColor = estilo.Tinta;
+        btnAccionMesa.AccessibleName = $"{btnAccionMesa.Text}, mesa {mesa.Numero}";
+        Iconos.Aplicar(btnAccionMesa, estilo.Icono);
+        tlpCuerpo.Controls.Add(lblEstado, 0, 0);
+        tlpCuerpo.Controls.Add(lblNumero, 0, 1);
+        tlpCuerpo.Controls.Add(lblCapacidad, 0, 2);
+        tlpCuerpo.Controls.Add(lblCuenta, 0, 3);
+        tlpCuerpo.Controls.Add(btnAccionMesa, 0, 4);
+        Controls.Add(tlpCuerpo);
     }
 }

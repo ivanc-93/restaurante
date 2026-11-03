@@ -3,14 +3,14 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioMesa
 {
     private System.ComponentModel.IContainer? components;
-    private NumericUpDown _numero = null!;
-    private NumericUpDown _capacidad = null!;
-    private ComboBox _estado = null!;
-    private Button aceptar = null!;
-    private Button cancelar = null!;
-    private Label numeroEtiqueta = null!;
-    private Label capacidadEtiqueta = null!;
-    private Label estadoEtiqueta = null!;
+    private NumericUpDown nudNumero = null!;
+    private NumericUpDown nudCapacidad = null!;
+    private ComboBox cbEstado = null!;
+    private Button btnAceptar = null!;
+    private Button btnCancelar = null!;
+    private Label lblNumeroEtiqueta = null!;
+    private Label lblCapacidadEtiqueta = null!;
+    private Label lblEstadoEtiqueta = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -21,44 +21,68 @@ partial class FormularioMesa
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        _numero = new NumericUpDown();
-        _capacidad = new NumericUpDown();
-        _estado = new ComboBox();
-        aceptar = new Button();
-        cancelar = new Button();
-        numeroEtiqueta = new Label();
-        capacidadEtiqueta = new Label();
-        estadoEtiqueta = new Label();
-        ((System.ComponentModel.ISupportInitialize)_numero).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)_capacidad).BeginInit();
+        nudNumero = new NumericUpDown()
+        {
+            Name = "nudNumero"
+        };
+        nudCapacidad = new NumericUpDown()
+        {
+            Name = "nudCapacidad"
+        };
+        cbEstado = new ComboBox()
+        {
+            Name = "cbEstado"
+        };
+        btnAceptar = new Button()
+        {
+            Name = "btnAceptar"
+        };
+        btnCancelar = new Button()
+        {
+            Name = "btnCancelar"
+        };
+        lblNumeroEtiqueta = new Label()
+        {
+            Name = "lblNumeroEtiqueta"
+        };
+        lblCapacidadEtiqueta = new Label()
+        {
+            Name = "lblCapacidadEtiqueta"
+        };
+        lblEstadoEtiqueta = new Label()
+        {
+            Name = "lblEstadoEtiqueta"
+        };
+        ((System.ComponentModel.ISupportInitialize)nudNumero).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudCapacidad).BeginInit();
         SuspendLayout();
-        numeroEtiqueta.Text = "Número de mesa";
-        numeroEtiqueta.SetBounds(25, 22, 340, 24);
-        _numero.SetBounds(25, 50, 340, 30);
-        _numero.Minimum = 1;
-        _numero.Maximum = int.MaxValue;
-        _numero.Value = 1;
-        capacidadEtiqueta.Text = "Capacidad (personas)";
-        capacidadEtiqueta.SetBounds(25, 95, 340, 24);
-        _capacidad.SetBounds(25, 122, 340, 30);
-        _capacidad.Minimum = 1;
-        _capacidad.Maximum = 100;
-        _capacidad.Value = 4;
-        estadoEtiqueta.Text = "Estado";
-        estadoEtiqueta.SetBounds(25, 168, 340, 24);
-        _estado.SetBounds(25, 195, 340, 30);
-        _estado.DropDownStyle = ComboBoxStyle.DropDownList;
-        _estado.Items.AddRange(new object[] { "Disponible", "Ocupada", "Reservada", "En limpieza" });
-        _estado.SelectedIndex = 0;
-        aceptar.Text = "Guardar";
-        aceptar.SetBounds(215, 260, 150, 42);
-        aceptar.DialogResult = DialogResult.OK;
-        cancelar.Text = "Cancelar";
-        cancelar.SetBounds(25, 260, 150, 42);
-        cancelar.DialogResult = DialogResult.Cancel;
-        Controls.AddRange(new Control[] { numeroEtiqueta, _numero, capacidadEtiqueta, _capacidad, estadoEtiqueta, _estado, aceptar, cancelar });
-        AcceptButton = aceptar;
-        CancelButton = cancelar;
+        lblNumeroEtiqueta.Text = "Número de mesa";
+        lblNumeroEtiqueta.SetBounds(25, 22, 340, 24);
+        nudNumero.SetBounds(25, 50, 340, 30);
+        nudNumero.Minimum = 1;
+        nudNumero.Maximum = int.MaxValue;
+        nudNumero.Value = 1;
+        lblCapacidadEtiqueta.Text = "Capacidad (personas)";
+        lblCapacidadEtiqueta.SetBounds(25, 95, 340, 24);
+        nudCapacidad.SetBounds(25, 122, 340, 30);
+        nudCapacidad.Minimum = 1;
+        nudCapacidad.Maximum = 100;
+        nudCapacidad.Value = 4;
+        lblEstadoEtiqueta.Text = "Estado";
+        lblEstadoEtiqueta.SetBounds(25, 168, 340, 24);
+        cbEstado.SetBounds(25, 195, 340, 30);
+        cbEstado.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbEstado.Items.AddRange(new object[] { "Disponible", "Ocupada", "Reservada", "En limpieza" });
+        cbEstado.SelectedIndex = 0;
+        btnAceptar.Text = "Guardar";
+        btnAceptar.SetBounds(215, 260, 150, 42);
+        btnAceptar.DialogResult = DialogResult.OK;
+        btnCancelar.Text = "Cancelar";
+        btnCancelar.SetBounds(25, 260, 150, 42);
+        btnCancelar.DialogResult = DialogResult.Cancel;
+        Controls.AddRange(new Control[] { lblNumeroEtiqueta, nudNumero, lblCapacidadEtiqueta, nudCapacidad, lblEstadoEtiqueta, cbEstado, btnAceptar, btnCancelar });
+        AcceptButton = btnAceptar;
+        CancelButton = btnCancelar;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(400, 335);
@@ -67,8 +91,8 @@ partial class FormularioMesa
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterParent;
         Text = "Mesa";
-        ((System.ComponentModel.ISupportInitialize)_numero).EndInit();
-        ((System.ComponentModel.ISupportInitialize)_capacidad).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudNumero).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudCapacidad).EndInit();
         ResumeLayout(false);
         FormatoPresentacion.Aplicar(this);
     }

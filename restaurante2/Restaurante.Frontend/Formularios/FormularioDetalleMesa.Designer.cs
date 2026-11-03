@@ -3,24 +3,24 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioDetalleMesa
 {
     private System.ComponentModel.IContainer? components;
-    private Label _resumen = null!;
-    private Label _total = null!;
-    private Label _estado = null!;
-    private DataGridView _detalles = null!;
-    private ComboBox _productos = null!;
-    private ComboBox _clientes = null!;
-    private ComboBox _categoria = null!;
-    private ComboBox _tipo = null!;
-    private TextBox _buscar = null!;
-    private NumericUpDown _cantidad = null!;
-    private Button _agregar = null!;
-    private Button _gestionar = null!;
-    private Button _facturar = null!;
-    private FlowLayoutPanel _catalogo = null!;
-    private TableLayoutPanel layout = null!;
-    private TableLayoutPanel izquierda = null!;
-    private TableLayoutPanel derecha = null!;
-    private FlowLayoutPanel acciones = null!;
+    private Label lblResumen = null!;
+    private Label lblTotal = null!;
+    private Label lblEstado = null!;
+    private DataGridView dgvDetalles = null!;
+    private ComboBox cbProductos = null!;
+    private ComboBox cbClientes = null!;
+    private ComboBox cbCategoria = null!;
+    private ComboBox cbTipo = null!;
+    private TextBox ctBuscar = null!;
+    private NumericUpDown nudCantidad = null!;
+    private Button btnAgregarProducto = null!;
+    private Button btnGestionar = null!;
+    private Button btnRevisarCobro = null!;
+    private FlowLayoutPanel flpCatalogo = null!;
+    private TableLayoutPanel tlpLayout = null!;
+    private TableLayoutPanel tlpIzquierda = null!;
+    private TableLayoutPanel tlpDerecha = null!;
+    private FlowLayoutPanel flpAcciones = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -31,177 +31,236 @@ partial class FormularioDetalleMesa
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        _resumen = new Label();
-        _total = new Label();
-        _estado = new Label();
-        _detalles = new DataGridView();
-        _productos = new ComboBox();
-        _cantidad = new NumericUpDown();
-        _agregar = new Button();
-        _facturar = new Button();
-        _gestionar = new Button();
-        _clientes = new ComboBox();
-        _categoria = new ComboBox();
-        _tipo = new ComboBox();
-        _buscar = new TextBox();
-        _catalogo = new FlowLayoutPanel();
-        layout = new TableLayoutPanel();
-        izquierda = new TableLayoutPanel();
-        derecha = new TableLayoutPanel();
-        acciones = new FlowLayoutPanel();
-        ((System.ComponentModel.ISupportInitialize)_detalles).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)_cantidad).BeginInit();
+        lblResumen = new Label()
+        {
+            Name = "lblResumen"
+        };
+        lblTotal = new Label()
+        {
+            Name = "lblTotal"
+        };
+        lblEstado = new Label()
+        {
+            Name = "lblEstado"
+        };
+        dgvDetalles = new DataGridView()
+        {
+            Name = "dgvDetalles"
+        };
+        cbProductos = new ComboBox()
+        {
+            Name = "cbProductos"
+        };
+        nudCantidad = new NumericUpDown()
+        {
+            Name = "nudCantidad"
+        };
+        btnAgregarProducto = new Button()
+        {
+            Name = "btnAgregarProducto"
+        };
+        btnRevisarCobro = new Button()
+        {
+            Name = "btnRevisarCobro"
+        };
+        btnGestionar = new Button()
+        {
+            Name = "btnGestionar"
+        };
+        cbClientes = new ComboBox()
+        {
+            Name = "cbClientes"
+        };
+        cbCategoria = new ComboBox()
+        {
+            Name = "cbCategoria"
+        };
+        cbTipo = new ComboBox()
+        {
+            Name = "cbTipo"
+        };
+        ctBuscar = new TextBox()
+        {
+            Name = "ctBuscar"
+        };
+        flpCatalogo = new FlowLayoutPanel()
+        {
+            Name = "flpCatalogo"
+        };
+        tlpLayout = new TableLayoutPanel()
+        {
+            Name = "tlpLayout"
+        };
+        tlpIzquierda = new TableLayoutPanel()
+        {
+            Name = "tlpIzquierda"
+        };
+        tlpDerecha = new TableLayoutPanel()
+        {
+            Name = "tlpDerecha"
+        };
+        flpAcciones = new FlowLayoutPanel()
+        {
+            Name = "flpAcciones"
+        };
+        ((System.ComponentModel.ISupportInitialize)dgvDetalles).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudCantidad).BeginInit();
         SuspendLayout();
         Font = Componentes.Fuente;
         AutoScaleDimensions = new SizeF(96, 96);
         AutoScaleMode = AutoScaleMode.Dpi;
-        layout.Dock = DockStyle.Fill;
-        layout.Padding = new Padding(16);
-        layout.ColumnCount = 2;
-        layout.RowCount = 2;
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        _resumen.Text = "Cargando mesa…";
-        _resumen.AutoSize = true;
-        _resumen.Margin = new Padding(0, 0, 0, 16);
-        _resumen.Font = new Font("Segoe UI", 15, FontStyle.Bold);
-        layout.Controls.Add(_resumen, 0, 0);
-        layout.SetColumnSpan(_resumen, 2);
-        izquierda.Dock = DockStyle.Fill;
-        izquierda.ColumnCount = 1;
-        izquierda.RowCount = 3;
-        izquierda.Margin = new Padding(0, 0, 12, 0);
-        izquierda.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        izquierda.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        izquierda.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        izquierda.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        var filtros = new FlowLayoutPanel
+        tlpLayout.Dock = DockStyle.Fill;
+        tlpLayout.Padding = new Padding(16);
+        tlpLayout.ColumnCount = 2;
+        tlpLayout.RowCount = 2;
+        tlpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
+        tlpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+        tlpLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        lblResumen.Text = "Cargando mesa…";
+        lblResumen.AutoSize = true;
+        lblResumen.Margin = new Padding(0, 0, 0, 16);
+        lblResumen.Font = new Font("Segoe UI", 15, FontStyle.Bold);
+        tlpLayout.Controls.Add(lblResumen, 0, 0);
+        tlpLayout.SetColumnSpan(lblResumen, 2);
+        tlpIzquierda.Dock = DockStyle.Fill;
+        tlpIzquierda.ColumnCount = 1;
+        tlpIzquierda.RowCount = 3;
+        tlpIzquierda.Margin = new Padding(0, 0, 12, 0);
+        tlpIzquierda.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tlpIzquierda.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpIzquierda.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpIzquierda.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var flpFiltros = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
-            WrapContents = true
+            WrapContents = true,
+            Name = "flpFiltros"
         };
-        _buscar.PlaceholderText = "Buscar producto";
-        _buscar.Width = 180;
-        _categoria.DropDownStyle = ComboBoxStyle.DropDownList;
-        _categoria.Width = 150;
-        _tipo.DropDownStyle = ComboBoxStyle.DropDownList;
-        _tipo.Width = 110;
-        _tipo.Items.AddRange(new object[] { "Todos", "Plato", "Bebida" });
-        _tipo.SelectedIndex = 0;
-        filtros.Controls.AddRange(new Control[] { _buscar, _categoria, _tipo });
-        _buscar.TextChanged += Filtro_Cambio;
-        _categoria.SelectedIndexChanged += Filtro_Cambio;
-        _tipo.SelectedIndexChanged += Filtro_Cambio;
-        _catalogo.Dock = DockStyle.Fill;
-        _catalogo.AutoScroll = true;
-        _catalogo.WrapContents = true;
-        _catalogo.BackColor = Color.White;
-        acciones.Dock = DockStyle.Fill;
-        acciones.AutoSize = true;
-        acciones.WrapContents = true;
-        _productos.DropDownStyle = ComboBoxStyle.DropDownList;
-        _productos.DisplayMember = "Nombre";
-        _productos.Width = 220;
-        _cantidad.Minimum = 1;
-        _cantidad.Maximum = 50;
-        _cantidad.Value = 1;
-        _cantidad.Width = 70;
-        _cantidad.AccessibleName = "Cantidad a agregar";
-        _agregar.Text = "Agregar producto";
-        _agregar.AutoSize = true;
-        _agregar.Enabled = false;
-        _agregar.Click += Agregar_Click;
-        Iconos.Aplicar(_agregar, "plus");
-        acciones.Controls.AddRange(new Control[] { _productos, _cantidad, _agregar });
-        izquierda.Controls.Add(filtros, 0, 0);
-        izquierda.Controls.Add(_catalogo, 0, 1);
-        izquierda.Controls.Add(acciones, 0, 2);
-        derecha.Dock = DockStyle.Fill;
-        derecha.ColumnCount = 1;
-        derecha.RowCount = 7;
-        derecha.BackColor = Color.White;
-        derecha.Padding = new Padding(12);
-        derecha.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        derecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        derecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        derecha.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        derecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        derecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        derecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        derecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        var clienteLabel = new Label
+        ctBuscar.PlaceholderText = "Buscar producto";
+        ctBuscar.Width = 180;
+        cbCategoria.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbCategoria.Width = 150;
+        cbTipo.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbTipo.Width = 110;
+        cbTipo.Items.AddRange(new object[] { "Todos", "Plato", "Bebida" });
+        cbTipo.SelectedIndex = 0;
+        flpFiltros.Controls.AddRange(new Control[] { ctBuscar, cbCategoria, cbTipo });
+        ctBuscar.TextChanged += Filtro_Cambio;
+        cbCategoria.SelectedIndexChanged += Filtro_Cambio;
+        cbTipo.SelectedIndexChanged += Filtro_Cambio;
+        flpCatalogo.Dock = DockStyle.Fill;
+        flpCatalogo.AutoScroll = true;
+        flpCatalogo.WrapContents = true;
+        flpCatalogo.BackColor = Color.White;
+        flpAcciones.Dock = DockStyle.Fill;
+        flpAcciones.AutoSize = true;
+        flpAcciones.WrapContents = true;
+        cbProductos.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbProductos.DisplayMember = "Nombre";
+        cbProductos.Width = 220;
+        nudCantidad.Minimum = 1;
+        nudCantidad.Maximum = 50;
+        nudCantidad.Value = 1;
+        nudCantidad.Width = 70;
+        nudCantidad.AccessibleName = "Cantidad a agregar";
+        btnAgregarProducto.Text = "Agregar producto";
+        btnAgregarProducto.AutoSize = true;
+        btnAgregarProducto.Enabled = false;
+        btnAgregarProducto.Click += Agregar_Click;
+        Iconos.Aplicar(btnAgregarProducto, "plus");
+        flpAcciones.Controls.AddRange(new Control[] { cbProductos, nudCantidad, btnAgregarProducto });
+        tlpIzquierda.Controls.Add(flpFiltros, 0, 0);
+        tlpIzquierda.Controls.Add(flpCatalogo, 0, 1);
+        tlpIzquierda.Controls.Add(flpAcciones, 0, 2);
+        tlpDerecha.Dock = DockStyle.Fill;
+        tlpDerecha.ColumnCount = 1;
+        tlpDerecha.RowCount = 7;
+        tlpDerecha.BackColor = Color.White;
+        tlpDerecha.Padding = new Padding(12);
+        tlpDerecha.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpDerecha.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var lblClienteLabel = new Label
         {
             Text = "Cliente (antes del primer producto)",
-            AutoSize = true
+            AutoSize = true,
+            Name = "lblClienteLabel"
         };
-        _clientes.DropDownStyle = ComboBoxStyle.DropDownList;
-        _clientes.Dock = DockStyle.Fill;
-        _clientes.AccessibleName = "Cliente del pedido";
-        _detalles.Dock = DockStyle.Fill;
-        _detalles.AutoGenerateColumns = true;
-        _detalles.ReadOnly = true;
-        _detalles.AllowUserToAddRows = false;
-        _estado.Text = "Preparando catálogo…";
-        _estado.AutoSize = true;
-        _estado.MaximumSize = new Size(360, 0);
-        _estado.ForeColor = Componentes.Secundario;
-        _total.Text = "Sin pedido";
-        _total.AutoSize = true;
-        _total.Font = new Font("Segoe UI", 18, FontStyle.Bold);
-        _total.Margin = new Padding(0, 12, 0, 12);
-        _facturar.Text = "Revisar y cobrar";
-        _facturar.Dock = DockStyle.Fill;
-        _facturar.AutoSize = true;
-        _facturar.Enabled = false;
-        _facturar.Click += Facturar_Click;
-        _facturar.BackColor = Componentes.Verde;
-        _facturar.ForeColor = Color.White;
-        Iconos.Aplicar(_facturar, "receipt-text");
-        derecha.Controls.Add(clienteLabel, 0, 0);
-        derecha.Controls.Add(_clientes, 0, 1);
-        derecha.Controls.Add(_detalles, 0, 2);
-        _gestionar.Text = "Gestionar cierre de mesa";
-        _gestionar.AutoSize = true;
-        _gestionar.Dock = DockStyle.Fill;
-        _gestionar.Enabled = false;
-        _gestionar.Click += Gestionar_Click;
-        var gestionAcciones = new FlowLayoutPanel
+        cbClientes.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbClientes.Dock = DockStyle.Fill;
+        cbClientes.AccessibleName = "Cliente del pedido";
+        dgvDetalles.Dock = DockStyle.Fill;
+        dgvDetalles.AutoGenerateColumns = true;
+        dgvDetalles.ReadOnly = true;
+        dgvDetalles.AllowUserToAddRows = false;
+        lblEstado.Text = "Preparando catálogo…";
+        lblEstado.AutoSize = true;
+        lblEstado.MaximumSize = new Size(360, 0);
+        lblEstado.ForeColor = Componentes.Secundario;
+        lblTotal.Text = "Sin pedido";
+        lblTotal.AutoSize = true;
+        lblTotal.Font = new Font("Segoe UI", 18, FontStyle.Bold);
+        lblTotal.Margin = new Padding(0, 12, 0, 12);
+        btnRevisarCobro.Text = "Revisar y cobrar";
+        btnRevisarCobro.Dock = DockStyle.Fill;
+        btnRevisarCobro.AutoSize = true;
+        btnRevisarCobro.Enabled = false;
+        btnRevisarCobro.Click += Facturar_Click;
+        btnRevisarCobro.BackColor = Componentes.Verde;
+        btnRevisarCobro.ForeColor = Color.White;
+        Iconos.Aplicar(btnRevisarCobro, "receipt-text");
+        tlpDerecha.Controls.Add(lblClienteLabel, 0, 0);
+        tlpDerecha.Controls.Add(cbClientes, 0, 1);
+        tlpDerecha.Controls.Add(dgvDetalles, 0, 2);
+        btnGestionar.Text = "Gestionar cierre de mesa";
+        btnGestionar.AutoSize = true;
+        btnGestionar.Dock = DockStyle.Fill;
+        btnGestionar.Enabled = false;
+        btnGestionar.Click += Gestionar_Click;
+        var flpGestionAcciones = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
-            WrapContents = true
+            WrapContents = true,
+            Name = "flpGestionAcciones"
         };
-        var corregir = new Button
+        var btnCorregir = new Button
         {
             Text = "Corregir unidades",
-            AutoSize = true
+            AutoSize = true,
+            Name = "btnCorregir"
         };
-        corregir.Click += Corregir_Click;
-        var preparar = new Button
+        btnCorregir.Click += Corregir_Click;
+        var btnPreparar = new Button
         {
             Text = "Declarar preparación",
-            AutoSize = true
+            AutoSize = true,
+            Name = "btnPreparar"
         };
-        preparar.Click += Preparar_Click;
-        gestionAcciones.Controls.AddRange(new Control[] { _gestionar, corregir, preparar });
-        derecha.Controls.Add(gestionAcciones, 0, 6);
-        derecha.Controls.Add(_estado, 0, 3);
-        derecha.Controls.Add(_total, 0, 4);
-        derecha.Controls.Add(_facturar, 0, 5);
-        layout.Controls.Add(izquierda, 0, 1);
-        layout.Controls.Add(derecha, 1, 1);
-        Controls.Add(layout);
+        btnPreparar.Click += Preparar_Click;
+        flpGestionAcciones.Controls.AddRange(new Control[] { btnGestionar, btnCorregir, btnPreparar });
+        tlpDerecha.Controls.Add(flpGestionAcciones, 0, 6);
+        tlpDerecha.Controls.Add(lblEstado, 0, 3);
+        tlpDerecha.Controls.Add(lblTotal, 0, 4);
+        tlpDerecha.Controls.Add(btnRevisarCobro, 0, 5);
+        tlpLayout.Controls.Add(tlpIzquierda, 0, 1);
+        tlpLayout.Controls.Add(tlpDerecha, 1, 1);
+        Controls.Add(tlpLayout);
         AutoScaleDimensions = new SizeF(96, 96);
         AutoScaleMode = AutoScaleMode.Dpi;
         ClientSize = new Size(1220, 730);
         MinimumSize = new Size(850, 520);
         StartPosition = FormStartPosition.CenterParent;
         Text = "Sabores | Mesa y pedido";
-        ((System.ComponentModel.ISupportInitialize)_detalles).EndInit();
-        ((System.ComponentModel.ISupportInitialize)_cantidad).EndInit();
+        ((System.ComponentModel.ISupportInitialize)dgvDetalles).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudCantidad).EndInit();
         ResumeLayout(false);
         FormatoPresentacion.Aplicar(this);
     }

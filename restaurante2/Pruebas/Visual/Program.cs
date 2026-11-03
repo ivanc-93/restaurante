@@ -36,7 +36,7 @@ internal static class Program
             repo.ActualizarMesa(reservada.Id,reservada.Numero,reservada.Capacidad,"Reservada");
             using(var principal=new FormularioPrincipal(repo,cfg,repo.UsuarioActual!,dialogos))
             {
-                Mostrar(principal,new Size(1366,768));Esperar(()=>Campo<FlowLayoutPanel>(principal,"menu").Enabled);
+                Mostrar(principal,new Size(1366,768));Esperar(()=>Campo<FlowLayoutPanel>(principal,"flpNavegacion").Enabled);
                 Capturar(principal,"inicio-1366");
                 principal.Size=new Size(1920,1080);Application.DoEvents();Capturar(principal,"inicio-1920");principal.Size=new Size(1366,768);
                 Ok(Controles(principal).OfType<Button>().Any(b=>b.Text=="Usuarios"),"Conserva acceso administrativo de usuarios");
@@ -47,52 +47,52 @@ internal static class Program
                 Ok(Controles(principal).OfType<TarjetaMesa>().All(t=>t.Mesa.Numero.ToString().Contains("1")),"Búsqueda de mesa funcional");buscar.Clear();
                 var filtro=Controles(principal).OfType<ComboBox>().Single(c=>c.Name=="filtroEstadoMesa");filtro.SelectedItem="En limpieza";Application.DoEvents();
                 Ok(Controles(principal).OfType<TarjetaMesa>().Count()==1,"Filtro de limpieza funcional");filtro.SelectedIndex=0;
-                Modal<FormularioDetalleMesa>(()=>Tarjeta(principal,disponible.Id).Accion.PerformClick(),f=>
+                Modal<FormularioDetalleMesa>(()=>Tarjeta(principal,disponible.Id).btnAccionMesa.PerformClick(),f=>
                 {
-                    Esperar(()=>Campo<ComboBox>(f,"_productos").Items.Count>0&&Campo<Button>(f,"_agregar").Enabled);
-                    Campo<Button>(f,"_agregar").PerformClick();Esperar(()=>Campo<PedidoResumen?>(f,"_pedido") is not null&&!Campo<bool>(f,"_ocupado"));f.Close();
-                });Esperar(()=>Campo<FlowLayoutPanel>(principal,"menu").Enabled);
+                    Esperar(()=>Campo<ComboBox>(f,"cbProductos").Items.Count>0&&Campo<Button>(f,"btnAgregarProducto").Enabled);
+                    Campo<Button>(f,"btnAgregarProducto").PerformClick();Esperar(()=>Campo<PedidoResumen?>(f,"_pedido") is not null&&!Campo<bool>(f,"_ocupado"));f.Close();
+                });Esperar(()=>Campo<FlowLayoutPanel>(principal,"flpNavegacion").Enabled);
                 Ok(repo.ObtenerPedidoAbierto(disponible.Id) is not null,"Tarjeta abre y registra pedido mediante controles");
-                Modal<FormularioDetalleMesa>(()=>Tarjeta(principal,ocupada.Id).Accion.PerformClick(),f=>{Esperar(()=>Campo<PedidoResumen?>(f,"_pedido") is not null&&!Campo<bool>(f,"_cargando"));Ok(Campo<PedidoResumen>(f,"_pedido").Id==pedido.Id,"Continuar abre el pedido existente");f.Close();});Esperar(()=>Campo<FlowLayoutPanel>(principal,"menu").Enabled);
-                Modal<FormularioGestionMesa>(()=>Tarjeta(principal,limpieza.Id).Accion.PerformClick(),f=>{Esperar(()=>Campo<Button>(f,"aplicar").Enabled);Campo<Button>(f,"aplicar").PerformClick();});Esperar(()=>Campo<FlowLayoutPanel>(principal,"menu").Enabled);
+                Modal<FormularioDetalleMesa>(()=>Tarjeta(principal,ocupada.Id).btnAccionMesa.PerformClick(),f=>{Esperar(()=>Campo<PedidoResumen?>(f,"_pedido") is not null&&!Campo<bool>(f,"_cargando"));Ok(Campo<PedidoResumen>(f,"_pedido").Id==pedido.Id,"Continuar abre el pedido existente");f.Close();});Esperar(()=>Campo<FlowLayoutPanel>(principal,"flpNavegacion").Enabled);
+                Modal<FormularioGestionMesa>(()=>Tarjeta(principal,limpieza.Id).btnAccionMesa.PerformClick(),f=>{Esperar(()=>Campo<Button>(f,"btnAplicar").Enabled);Campo<Button>(f,"btnAplicar").PerformClick();});Esperar(()=>Campo<FlowLayoutPanel>(principal,"flpNavegacion").Enabled);
                 Ok(repo.ListarMesas().Single(m=>m.Id==limpieza.Id).Estado=="Disponible","Limpieza usa la operación existente y libera mesa");
                 principal.Size=new Size(1920,1080);Application.DoEvents();Capturar(principal,"mesas-1920");
                 principal.Close();
             }
             using(var catalogo=new FormularioCatalogos(repo,true,false,dialogos))
             {
-                Mostrar(catalogo,new Size(1366,768));Esperar(()=>Campo<DataGridView>(catalogo,"tabla").DataSource is not null&&catalogo.Enabled);
-                Campo<TextBox>(catalogo,"buscarCatalogo").Text="Cliente ejemplo 01";Application.DoEvents();
-                Ok(Campo<DataGridView>(catalogo,"tabla").Rows.Count==1,"Búsqueda de clientes funcional");
-                Campo<Button>(catalogo,"editar").PerformClick();Campo<TextBox>(catalogo,"telefono").Text="5550-0999";Campo<Button>(catalogo,"guardar").PerformClick();Esperar(()=>catalogo.Enabled&&!Campo<bool>(catalogo,"_sucio")&&Campo<DataGridView>(catalogo,"tabla").Rows.Cast<DataGridViewRow>().Any(r=>r.DataBoundItem is Cliente{Telefono:"5550-0999"}));
+                Mostrar(catalogo,new Size(1366,768));Esperar(()=>Campo<DataGridView>(catalogo,"dgvRegistros").DataSource is not null&&catalogo.Enabled);
+                Campo<TextBox>(catalogo,"ctBuscarCatalogo").Text="Cliente ejemplo 01";Application.DoEvents();
+                Ok(Campo<DataGridView>(catalogo,"dgvRegistros").Rows.Count==1,"Búsqueda de clientes funcional");
+                Campo<Button>(catalogo,"btnEditar").PerformClick();Campo<TextBox>(catalogo,"ctTelefono").Text="5550-0999";Campo<Button>(catalogo,"btnGuardar").PerformClick();Esperar(()=>catalogo.Enabled&&!Campo<bool>(catalogo,"_sucio")&&Campo<DataGridView>(catalogo,"dgvRegistros").Rows.Cast<DataGridViewRow>().Any(r=>r.DataBoundItem is Cliente{Telefono:"5550-0999"}));
                 Ok(repo.ListarClientes().Single(c=>c.Nombre=="Cliente ejemplo 01").Telefono=="5550-0999","Guardar catálogo modifica únicamente cliente de prueba");
-                Campo<Button>(catalogo,"editar").PerformClick();Capturar(catalogo,"catalogos-1366");catalogo.Size=new Size(1920,1080);Application.DoEvents();Capturar(catalogo,"catalogos-1920");
+                Campo<Button>(catalogo,"btnEditar").PerformClick();Capturar(catalogo,"catalogos-1366");catalogo.Size=new Size(1920,1080);Application.DoEvents();Capturar(catalogo,"catalogos-1920");
                 var clienteDesactivar=repo.ListarClientes().Single(c=>c.Nombre=="Cliente ejemplo 01").Id;
-                Campo<Button>(catalogo,"desactivar").PerformClick();Esperar(()=>catalogo.Enabled&&Campo<DataGridView>(catalogo,"tabla").Rows.Count==0);
+                Campo<Button>(catalogo,"btnDesactivar").PerformClick();Esperar(()=>catalogo.Enabled&&Campo<DataGridView>(catalogo,"dgvRegistros").Rows.Count==0);
                 Ok(!repo.ListarClientes().Any(c=>c.Id==clienteDesactivar)&&repo.ListarClientesHistoricos().Any(c=>c.Id==clienteDesactivar),"Desactivar conserva historial del cliente de prueba");
                 catalogo.Close();
             }
             var cuenta=repo.RevisarCuenta(pedido.Id);
             using(var cobro=new FormularioCobro(repo,cuenta,dialogos))
             {
-                Mostrar(cobro,new Size(1366,768));Esperar(()=>Campo<ComboBox>(cobro,"cliente").DataSource is not null);
-                Campo<ComboBox>(cobro,"metodo").SelectedItem="Tarjeta";Campo<ComboBox>(cobro,"resultadoTarjeta").SelectedItem="Incierto";Campo<CheckBox>(cobro,"datosConfirmados").Checked=true;
-                Ok(Campo<Button>(cobro,"confirmar").Enabled,"Tarjeta incierta puede registrarse sin inventar confirmación de pago");
-                Campo<CheckBox>(cobro,"datosConfirmados").Checked=false;
-                Campo<ComboBox>(cobro,"metodo").SelectedItem="Efectivo";Campo<NumericUpDown>(cobro,"entregado").Value=cuenta.Total+10;
-                Ok(!Campo<Button>(cobro,"confirmar").Enabled,"Cobro exige confirmaciones");
-                Campo<CheckBox>(cobro,"datosConfirmados").Checked=true;Campo<CheckBox>(cobro,"pagoConfirmado").Checked=true;
+                Mostrar(cobro,new Size(1366,768));Esperar(()=>Campo<ComboBox>(cobro,"cbCliente").DataSource is not null);
+                Campo<ComboBox>(cobro,"cbMetodo").SelectedItem="Tarjeta";Campo<ComboBox>(cobro,"cbResultadoTarjeta").SelectedItem="Incierto";Campo<CheckBox>(cobro,"chkDatosConfirmados").Checked=true;
+                Ok(Campo<Button>(cobro,"btnConfirmar").Enabled,"Tarjeta incierta puede registrarse sin inventar confirmación de pago");
+                Campo<CheckBox>(cobro,"chkDatosConfirmados").Checked=false;
+                Campo<ComboBox>(cobro,"cbMetodo").SelectedItem="Efectivo";Campo<NumericUpDown>(cobro,"nudEntregado").Value=cuenta.Total+10;
+                Ok(!Campo<Button>(cobro,"btnConfirmar").Enabled,"Cobro exige confirmaciones");
+                Campo<CheckBox>(cobro,"chkDatosConfirmados").Checked=true;Campo<CheckBox>(cobro,"chkPagoConfirmado").Checked=true;
                 Capturar(cobro,"cobro-1366");cobro.Size=new Size(1920,1080);Application.DoEvents();Capturar(cobro,"cobro-1920");
-                Campo<Button>(cobro,"confirmar").PerformClick();Esperar(()=>cobro.Resultado is not null);
+                Campo<Button>(cobro,"btnConfirmar").PerformClick();Esperar(()=>cobro.Resultado is not null);
                 Ok(cobro.Resultado!.Estado=="Confirmado"&&cobro.Resultado.Cambio==10,"Cobro real de prueba confirma y calcula cambio");
             }
             Ok(repo.ListarMesas().Single(m=>m.Id==ocupada.Id).Estado=="En limpieza","Cobro conserva paso a limpieza");
             repo.GuardarUsuario(null,"Mesero de prueba","mesero_visual","Mesero",true,"Temporal ficticia visual 2026");
             var mesero=new RepositorioRestaurante(cfg);mesero.IniciarSesion("mesero_visual","Temporal ficticia visual 2026");mesero.CambiarMiContrasena("Temporal ficticia visual 2026","Personal ficticia visual 2026");mesero.IniciarSesion("mesero_visual","Personal ficticia visual 2026");
             using(var f=new FormularioPrincipal(mesero,cfg,mesero.UsuarioActual!,dialogos))
-            {Mostrar(f,new Size(1366,768));Esperar(()=>Campo<FlowLayoutPanel>(f,"menu").Enabled);Ejecutar(f,"MostrarMesasPos");Ok(!Controles(f).OfType<Button>().Any(b=>b.Text=="Administrar mesas"&&b.Visible),"Mesero no ve administrar mesas");f.Close();}
+            {Mostrar(f,new Size(1366,768));Esperar(()=>Campo<FlowLayoutPanel>(f,"flpNavegacion").Enabled);Ejecutar(f,"MostrarMesasPos");Ok(!Controles(f).OfType<Button>().Any(b=>b.Text=="Administrar mesas"&&b.Visible),"Mesero no ve administrar mesas");f.Close();}
             using(var f=new FormularioCatalogos(mesero,false,false,dialogos))
-            {Mostrar(f,new Size(1366,768));Esperar(()=>f.Enabled&&Campo<DataGridView>(f,"tabla").DataSource is not null);Ok(!Campo<Button>(f,"editar").Visible&&!Campo<Button>(f,"desactivar").Visible,"Catálogo conserva restricciones de Mesero");f.Close();}
+            {Mostrar(f,new Size(1366,768));Esperar(()=>f.Enabled&&Campo<DataGridView>(f,"dgvRegistros").DataSource is not null);Ok(!Campo<Button>(f,"btnEditar").Visible&&!Campo<Button>(f,"btnDesactivar").Visible,"Catálogo conserva restricciones de Mesero");f.Close();}
             Console.WriteLine($"TOTAL {aprobadas} comprobaciones visuales y funcionales correctas; DPI nativo {SystemDpi()}.");return 0;
         }
         catch(Exception e){Console.Error.WriteLine(e);return 1;}

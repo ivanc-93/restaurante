@@ -219,8 +219,8 @@ internal static class Verificar
             using var form=new FormularioPrincipal(repo,new ConexionPrueba(cadena),new UsuarioAutenticado("Prueba","Administrador"));
             bool mostrada=false; form.Shown+=(_,_)=>mostrada=true;
             form.Opacity=0; form.ShowInTaskbar=false; form.Show();
-            Esperar(()=>mostrada && Campo<FlowLayoutPanel>(form,"menu").Enabled);
-            Verdad(Campo<FlowLayoutPanel>(form,"menu").Controls.OfType<Button>().All(b=>b.Image is not null),"Hay iconos de navegación sin recurso incrustado.");
+            Esperar(()=>mostrada && Campo<FlowLayoutPanel>(form,"flpNavegacion").Enabled);
+            Verdad(Campo<FlowLayoutPanel>(form,"flpNavegacion").Controls.OfType<Button>().All(b=>b.Image is not null),"Hay iconos de navegación sin recurso incrustado.");
             Capturar(form,"InicioPos");
             SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
             foreach(var pagina in new[]{"MostrarPedidosPos","MostrarMesasPos","MostrarMenuMesas"})
@@ -230,28 +230,28 @@ internal static class Verificar
                 using var bmp=new Bitmap(form.Width,form.Height); form.DrawToBitmap(bmp,new Rectangle(0,0,bmp.Width,bmp.Height));
                 bmp.Save(Path.Combine(salida,pagina+".png"));
             }
-            Campo<Button>(form,"salir").PerformClick(); Igual(true,form.SesionCerrada);
+            Campo<Button>(form,"btnCerrarSesion").PerformClick(); Igual(true,form.SesionCerrada);
         });
         Caso("Catálogos y reportes cargan datos en la interfaz",()=>
         {
             using(var catalogos=new FormularioCatalogos(repo,true))
             {
                 catalogos.Opacity=0; catalogos.ShowInTaskbar=false; catalogos.Show();
-                Esperar(()=>catalogos.Enabled && Campo<DataGridView>(catalogos,"tabla").DataSource is not null);
+                Esperar(()=>catalogos.Enabled && Campo<DataGridView>(catalogos,"dgvRegistros").DataSource is not null);
                 Capturar(catalogos,"CatalogosClientes");
-                Campo<ComboBox>(catalogos,"modo").SelectedItem="Productos";
-                Esperar(()=>catalogos.Enabled && Campo<TextBox>(catalogos,"categoria").Visible);
+                Campo<ComboBox>(catalogos,"cbModo").SelectedItem="Productos";
+                Esperar(()=>catalogos.Enabled && Campo<TextBox>(catalogos,"ctCategoria").Visible);
                 Capturar(catalogos,"CatalogosProductos");
-                Campo<ComboBox>(catalogos,"modo").SelectedItem="Restaurante";
-                Esperar(()=>catalogos.Enabled && Campo<TextBox>(catalogos,"ubicacion").Text=="Guatemala");
+                Campo<ComboBox>(catalogos,"cbModo").SelectedItem="Restaurante";
+                Esperar(()=>catalogos.Enabled && Campo<TextBox>(catalogos,"ctUbicacion").Text=="Guatemala");
                 Capturar(catalogos,"CatalogosRestaurante"); catalogos.Close();
             }
             using var reportes=new FormularioReportes(repo);
             reportes.Opacity=0; reportes.ShowInTaskbar=false; reportes.Show();
             Esperar(()=>Campo<bool>(reportes,"_listo") && !Campo<bool>(reportes,"_cargando"));
-            Verdad(!Campo<ComboBox>(reportes,"mesa").Visible,"Ventas muestra filtros que solo afectan pedidos.");
-            Campo<TabControl>(reportes,"pestanas").SelectedIndex=2;
-            Verdad(Campo<ComboBox>(reportes,"mesa").Visible && !Campo<ComboBox>(reportes,"agrupacion").Visible,"Filtros de pedidos incorrectos.");
+            Verdad(!Campo<ComboBox>(reportes,"cbMesa").Visible,"Ventas muestra filtros que solo afectan pedidos.");
+            Campo<TabControl>(reportes,"tabPestanas").SelectedIndex=2;
+            Verdad(Campo<ComboBox>(reportes,"cbMesa").Visible && !Campo<ComboBox>(reportes,"cbAgrupacion").Visible,"Filtros de pedidos incorrectos.");
             Capturar(reportes,"ReportesConDatos"); reportes.Close();
         });
         Caso("Desactivación conserva detalles e historial",()=>

@@ -15,11 +15,11 @@ public sealed partial class FormularioComprobante : Form
         {
             try
             {
-                contenido.Text = await Task.Run(() => repo.ConsultarComprobante(pedidoId));
+                ctContenido.Text = await Task.Run(() => repo.ConsultarComprobante(pedidoId));
             }
             catch (Exception ex)
             {
-                contenido.Text = ex.Message;
+                ctContenido.Text = ex.Message;
             }
         };
     }

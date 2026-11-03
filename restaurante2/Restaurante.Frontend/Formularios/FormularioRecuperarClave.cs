@@ -23,7 +23,7 @@ public sealed partial class FormularioRecuperarClave : Form
                 operacion = pendiente.Id;
                 recibo = pendiente.Recibo;
                 incierto = true;
-                mensaje.Text = "Existe una recuperación pendiente en este perfil. Comprueba su resultado antes de repetir.";
+                lblMensaje.Text = "Existe una recuperación pendiente en este perfil. Comprueba su resultado antes de repetir.";
                 Estado(false);
             }
         }
@@ -31,8 +31,8 @@ public sealed partial class FormularioRecuperarClave : Form
         {
             incierto = true;
             Estado(false);
-            consultar.Enabled = false;
-            mensaje.Text = "No se pudo leer el comprobante protegido de recuperación. Solicita asistencia antes de repetir.";
+            btnConsultar.Enabled = false;
+            lblMensaje.Text = "No se pudo leer el comprobante protegido de recuperación. Solicita asistencia antes de repetir.";
         }
 
         FormClosing += (_, e) => e.Cancel = ocupado;
@@ -47,15 +47,15 @@ public sealed partial class FormularioRecuperarClave : Form
     {
         foreach (var campo in new[]
         {
-            claveAdministrador,
-            codigo,
-            nueva,
-            confirmacion
+            ctClaveAdministrador,
+            ctCodigo,
+            ctNueva,
+            ctConfirmacion
         }
 
         )
             campo.Clear();
-        mostrar.Checked = false;
+        chkMostrar.Checked = false;
     }
 
     private void Estado(bool valor)
@@ -63,27 +63,27 @@ public sealed partial class FormularioRecuperarClave : Form
         ocupado = valor;
         foreach (var c in new Control[]
         {
-            metodo,
-            usuario,
-            administrador,
-            claveAdministrador,
-            codigo,
-            nueva,
-            confirmacion,
-            mostrar,
-            cancelar
+            cbMetodo,
+            ctUsuario,
+            ctAdministrador,
+            ctClaveAdministrador,
+            ctCodigo,
+            ctNueva,
+            ctConfirmacion,
+            chkMostrar,
+            btnCancelar
         }
 
         )
             c.Enabled = !valor && !terminado && !incierto;
-        recuperar.Enabled = !valor && !incierto && !terminado && metodo.SelectedIndex < 2;
-        consultar.Enabled = !valor && incierto;
+        btnRecuperar.Enabled = !valor && !incierto && !terminado && cbMetodo.SelectedIndex < 2;
+        btnConsultar.Enabled = !valor && incierto;
         UseWaitCursor = valor;
         if (!valor)
         {
-            cancelar.Enabled = true;
-            administrador.Enabled = claveAdministrador.Enabled = metodo.SelectedIndex == 0 && !incierto && !terminado;
-            codigo.Enabled = metodo.SelectedIndex == 1 && !incierto && !terminado;
+            btnCancelar.Enabled = true;
+            ctAdministrador.Enabled = ctClaveAdministrador.Enabled = cbMetodo.SelectedIndex == 0 && !incierto && !terminado;
+            ctCodigo.Enabled = cbMetodo.SelectedIndex == 1 && !incierto && !terminado;
         }
     }
 
@@ -91,20 +91,20 @@ public sealed partial class FormularioRecuperarClave : Form
     {
         if (ocupado || incierto || terminado)
             return;
-        if (!ValidacionCredenciales.Campo(usuario, mensaje, "el usuario") || !ValidacionCredenciales.Nueva(nueva, mensaje, confirmacion))
+        if (!ValidacionCredenciales.Campo(ctUsuario, lblMensaje, "el usuario") || !ValidacionCredenciales.Nueva(ctNueva, lblMensaje, ctConfirmacion))
             return;
-        var modo = metodo.SelectedIndex;
-        if (modo == 0 && (!ValidacionCredenciales.Campo(administrador, mensaje, "el usuario del Administrador") || !ValidacionCredenciales.Campo(claveAdministrador, mensaje, "la contraseña vigente del Administrador")))
+        var modo = cbMetodo.SelectedIndex;
+        if (modo == 0 && (!ValidacionCredenciales.Campo(ctAdministrador, lblMensaje, "el usuario del Administrador") || !ValidacionCredenciales.Campo(ctClaveAdministrador, lblMensaje, "la contraseña vigente del Administrador")))
             return;
-        if (modo == 1 && !ValidacionCredenciales.Campo(codigo, mensaje, "el código de emergencia"))
+        if (modo == 1 && !ValidacionCredenciales.Campo(ctCodigo, lblMensaje, "el código de emergencia"))
             return;
-        var u = usuario.Text;
-        var a = administrador.Text;
-        var c = claveAdministrador.Text;
-        var k = codigo.Text;
-        var n = nueva.Text;
+        var u = ctUsuario.Text;
+        var a = ctAdministrador.Text;
+        var c = ctClaveAdministrador.Text;
+        var k = ctCodigo.Text;
+        var n = ctNueva.Text;
         Estado(true);
-        mensaje.Text = "Verificando recuperación…";
+        lblMensaje.Text = "Verificando recuperación…";
         string texto;
         bool correcto = false, dudoso = false;
         try
@@ -135,7 +135,7 @@ public sealed partial class FormularioRecuperarClave : Form
         {
             terminado = correcto;
             incierto = dudoso;
-            mensaje.Text = texto;
+            lblMensaje.Text = texto;
             LimpiarSecretos();
             Estado(false);
         });
@@ -169,7 +169,7 @@ public sealed partial class FormularioRecuperarClave : Form
         {
             terminado = correcto;
             incierto = dudoso;
-            mensaje.Text = texto;
+            lblMensaje.Text = texto;
             Estado(false);
         });
     }

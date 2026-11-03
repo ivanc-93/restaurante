@@ -25,21 +25,21 @@ public sealed partial class FormularioCobro : Form
         _repo = repo;
         _cuenta = cuenta;
         _dialogos = dialogos ?? new DialogosUsuario();
-        tablaCuenta.DataSource = cuenta.Detalles.ToList();
-        totalCuenta.Text = "Total  " + FormatoPresentacion.Moneda(cuenta.Total);
-        detalle.Text = $"Mesa {cuenta.NumeroMesa} · Pedido #{cuenta.PedidoId}\r\n\r\n" + string.Join("\r\n", cuenta.Detalles.Select(d => $"{d.Cantidad} × {d.Producto}\r\n{FormatoPresentacion.Moneda(d.PrecioUnitario)} = {FormatoPresentacion.Moneda(d.Importe)}\r\n")) + $"\r\nOriginal: {FormatoPresentacion.Moneda(cuenta.ImporteOriginal)}\r\nDescuento: {FormatoPresentacion.Moneda(cuenta.Descuento)}\r\nTOTAL: {FormatoPresentacion.Moneda(cuenta.Total)}";
-        receptor.Text = cuenta.Cliente;
-        publico.Checked = cuenta.ClienteId is null;
+        dgvTablaCuenta.DataSource = cuenta.Detalles.ToList();
+        lblTotalCuenta.Text = "Total  " + FormatoPresentacion.Moneda(cuenta.Total);
+        ctDetalle.Text = $"Mesa {cuenta.NumeroMesa} · Pedido #{cuenta.PedidoId}\r\n\r\n" + string.Join("\r\n", cuenta.Detalles.Select(d => $"{d.Cantidad} × {d.Producto}\r\n{FormatoPresentacion.Moneda(d.PrecioUnitario)} = {FormatoPresentacion.Moneda(d.Importe)}\r\n")) + $"\r\nOriginal: {FormatoPresentacion.Moneda(cuenta.ImporteOriginal)}\r\nDescuento: {FormatoPresentacion.Moneda(cuenta.Descuento)}\r\nTOTAL: {FormatoPresentacion.Moneda(cuenta.Total)}";
+        ctReceptor.Text = cuenta.Cliente;
+        chkPublico.Checked = cuenta.ClienteId is null;
         if (cuenta.Total == 0)
-            metodo.Items.Add("Cortesía");
-        cliente.SelectedIndexChanged += (_, _) =>
+            cbMetodo.Items.Add("Cortesía");
+        cbCliente.SelectedIndexChanged += (_, _) =>
         {
-            if (cliente.SelectedItem is Cliente c && c.Id > 0)
+            if (cbCliente.SelectedItem is Cliente c && c.Id > 0)
             {
-                publico.Checked = false;
-                receptor.Text = c.Nombre;
-                correo.Text = c.Correo;
-                opcionales.Checked = !string.IsNullOrWhiteSpace(c.Correo);
+                chkPublico.Checked = false;
+                ctReceptor.Text = c.Nombre;
+                ctCorreo.Text = c.Correo;
+                chkOpcionales.Checked = !string.IsNullOrWhiteSpace(c.Correo);
             }
         };
         Shown += async (_, _) =>
@@ -49,17 +49,17 @@ public sealed partial class FormularioCobro : Form
                 var clientes = await Task.Run(repo.ListarClientes);
                 if (IsDisposed)
                     return;
-                cliente.DataSource = new List<Cliente>
+                cbCliente.DataSource = new List<Cliente>
                 {
                     new(0, "No copiar: introducir receptor", null, null)
                 }.Concat(clientes).ToList();
                 _ultimoAncho = 0;
                 AjustarCampos();
-                detalle.SelectionLength = 0;
+                ctDetalle.SelectionLength = 0;
             }
             catch (Exception ex)
             {
-                mensaje.Text = ex.Message;
+                lblMensaje.Text = ex.Message;
             }
         };
         FormClosing += (_, e) =>
@@ -67,14 +67,14 @@ public sealed partial class FormularioCobro : Form
             if (_ocupado)
                 e.Cancel = true;
         };
-        campos.SizeChanged += (_, _) => AjustarCampos();
-        pie.SizeChanged += (_, _) =>
+        flpCampos.SizeChanged += (_, _) => AjustarCampos();
+        tlpPie.SizeChanged += (_, _) =>
         {
-            var ancho = Math.Max(120, ClientSize.Width - estructura.Padding.Horizontal - 16);
-            if (mensaje.MaximumSize.Width != ancho)
+            var ancho = Math.Max(120, ClientSize.Width - tlpEstructura.Padding.Horizontal - 16);
+            if (lblMensaje.MaximumSize.Width != ancho)
             {
-                mensaje.MaximumSize = new Size(ancho, (int)(40 * DeviceDpi / 96f));
-                saldo.MaximumSize = new Size(ancho, 0);
+                lblMensaje.MaximumSize = new Size(ancho, (int)(40 * DeviceDpi / 96f));
+                lblSaldo.MaximumSize = new Size(ancho, 0);
             }
         };
         Datos_Cambio(this, EventArgs.Empty);
@@ -84,42 +84,42 @@ public sealed partial class FormularioCobro : Form
     {
         if (_cuenta is null)
             return;
-        receptor.Enabled = identificacion.Enabled = !publico.Checked;
-        receptor.Visible = identificacion.Visible = campos.Controls["lblReceptor"]!.Visible = campos.Controls["lblIdentificacion"]!.Visible = !publico.Checked;
-        direccion.Visible = correo.Visible = campos.Controls["lblDireccion"]!.Visible = campos.Controls["lblCorreo"]!.Visible = opcionales.Checked;
-        observacion.Visible = campos.Controls["lblObservacion"]!.Visible = opcionales.Checked || metodo.Text == "Tarjeta";
-        resultadoTarjeta.Visible = referencia.Visible = campos.Controls["lblResultado"]!.Visible = campos.Controls["lblReferencia"]!.Visible = metodo.Text == "Tarjeta";
-        if (publico.Checked)
+        ctReceptor.Enabled = ctIdentificacion.Enabled = !chkPublico.Checked;
+        ctReceptor.Visible = ctIdentificacion.Visible = flpCampos.Controls["lblReceptor"]!.Visible = flpCampos.Controls["lblIdentificacion"]!.Visible = !chkPublico.Checked;
+        ctDireccion.Visible = ctCorreo.Visible = flpCampos.Controls["lblDireccion"]!.Visible = flpCampos.Controls["lblCorreo"]!.Visible = chkOpcionales.Checked;
+        ctObservacion.Visible = flpCampos.Controls["lblObservacion"]!.Visible = chkOpcionales.Checked || cbMetodo.Text == "Tarjeta";
+        cbResultadoTarjeta.Visible = ctReferencia.Visible = flpCampos.Controls["lblResultado"]!.Visible = flpCampos.Controls["lblReferencia"]!.Visible = cbMetodo.Text == "Tarjeta";
+        if (chkPublico.Checked)
         {
-            receptor.Text = "Público general";
-            identificacion.Clear();
+            ctReceptor.Text = "Público general";
+            ctIdentificacion.Clear();
         }
 
-        resultadoTarjeta.Enabled = referencia.Enabled = metodo.Text == "Tarjeta";
-        entregado.Enabled = metodo.Text == "Efectivo";
-        if (metodo.Text == "Tarjeta")
-            entregado.Value = _cuenta.Total;
-        if (metodo.Text == "Cortesía")
-            entregado.Value = 0;
-        var diferencia = entregado.Value - _cuenta.Total;
-        saldo.Text = $"Total: {FormatoPresentacion.Moneda(_cuenta.Total)} · " + (diferencia >= 0 ? $"Cambio: {FormatoPresentacion.Moneda(diferencia)}" : $"Falta: {FormatoPresentacion.Moneda(-diferencia)}");
+        cbResultadoTarjeta.Enabled = ctReferencia.Enabled = cbMetodo.Text == "Tarjeta";
+        nudEntregado.Enabled = cbMetodo.Text == "Efectivo";
+        if (cbMetodo.Text == "Tarjeta")
+            nudEntregado.Value = _cuenta.Total;
+        if (cbMetodo.Text == "Cortesía")
+            nudEntregado.Value = 0;
+        var diferencia = nudEntregado.Value - _cuenta.Total;
+        lblSaldo.Text = $"Total: {FormatoPresentacion.Moneda(_cuenta.Total)} · " + (diferencia >= 0 ? $"Cambio: {FormatoPresentacion.Moneda(diferencia)}" : $"Falta: {FormatoPresentacion.Moneda(-diferencia)}");
         _ultimoAncho = 0;
         AjustarCampos();
         if (!_ocupado)
-            confirmar.Enabled = _solicitud is not null || datosConfirmados.Checked && metodo.SelectedIndex >= 0 && (metodo.Text == "Tarjeta" && resultadoTarjeta.Text is "Rechazado" or "Incierto" || pagoConfirmado.Checked);
+            btnConfirmar.Enabled = _solicitud is not null || chkDatosConfirmados.Checked && cbMetodo.SelectedIndex >= 0 && (cbMetodo.Text == "Tarjeta" && cbResultadoTarjeta.Text is "Rechazado" or "Incierto" || chkPagoConfirmado.Checked);
     }
 
     private void AjustarCampos()
     {
-        var ancho = Math.Max(120, campos.ClientSize.Width - campos.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 12);
+        var ancho = Math.Max(120, flpCampos.ClientSize.Width - flpCampos.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 12);
         if (_ajustandoCampos || ancho == _ultimoAncho)
             return;
         _ajustandoCampos = true;
         _ultimoAncho = ancho;
-        campos.SuspendLayout();
+        flpCampos.SuspendLayout();
         try
         {
-            foreach (Control campo in campos.Controls)
+            foreach (Control campo in flpCampos.Controls)
                 if (campo is Label or CheckBox)
                 {
                     campo.MaximumSize = new Size(ancho, 0);
@@ -133,7 +133,7 @@ public sealed partial class FormularioCobro : Form
         }
         finally
         {
-            campos.ResumeLayout(true);
+            flpCampos.ResumeLayout(true);
             _ajustandoCampos = false;
         }
     }
@@ -144,26 +144,26 @@ public sealed partial class FormularioCobro : Form
         {
             if (valido)
                 return;
-            campos.ScrollControlIntoView(campo);
+            flpCampos.ScrollControlIntoView(campo);
             campo.Focus();
             throw new ArgumentException(error);
         }
 
-        Exigir(metodo.SelectedIndex >= 0, metodo, "Seleccione el método de pago.");
-        Exigir(publico.Checked || !string.IsNullOrWhiteSpace(receptor.Text), receptor, "Ingrese el nombre del receptor.");
-        Exigir(datosConfirmados.Checked, datosConfirmados, "Confirme que revisó los productos, el importe y el receptor.");
-        if (metodo.Text == "Tarjeta")
+        Exigir(cbMetodo.SelectedIndex >= 0, cbMetodo, "Seleccione el método de pago.");
+        Exigir(chkPublico.Checked || !string.IsNullOrWhiteSpace(ctReceptor.Text), ctReceptor, "Ingrese el nombre del receptor.");
+        Exigir(chkDatosConfirmados.Checked, chkDatosConfirmados, "Confirme que revisó los productos, el importe y el receptor.");
+        if (cbMetodo.Text == "Tarjeta")
         {
-            Exigir(resultadoTarjeta.SelectedIndex >= 0, resultadoTarjeta, "Seleccione el resultado real del terminal externo.");
-            if (resultadoTarjeta.Text is "Confirmado" or "Incierto")
-                Exigir(!string.IsNullOrWhiteSpace(referencia.Text), referencia, "Ingrese una referencia externa, sin datos de tarjeta.");
-            if (resultadoTarjeta.Text == "Confirmado")
-                Exigir(pagoConfirmado.Checked, pagoConfirmado, "Confirme que comprobó manualmente el pago externo.");
+            Exigir(cbResultadoTarjeta.SelectedIndex >= 0, cbResultadoTarjeta, "Seleccione el resultado real del terminal externo.");
+            if (cbResultadoTarjeta.Text is "Confirmado" or "Incierto")
+                Exigir(!string.IsNullOrWhiteSpace(ctReferencia.Text), ctReferencia, "Ingrese una referencia externa, sin datos de tarjeta.");
+            if (cbResultadoTarjeta.Text == "Confirmado")
+                Exigir(chkPagoConfirmado.Checked, chkPagoConfirmado, "Confirme que comprobó manualmente el pago externo.");
         }
         else
         {
-            Exigir(entregado.Value >= _cuenta.Total, entregado, "El efectivo es insuficiente.");
-            Exigir(pagoConfirmado.Checked, pagoConfirmado, "Confirme el efectivo recibido o la cortesía autorizada.");
+            Exigir(nudEntregado.Value >= _cuenta.Total, nudEntregado, "El efectivo es insuficiente.");
+            Exigir(chkPagoConfirmado.Checked, chkPagoConfirmado, "Confirme el efectivo recibido o la cortesía autorizada.");
         }
     }
 
@@ -179,15 +179,15 @@ public sealed partial class FormularioCobro : Form
             }
             catch (ArgumentException ex)
             {
-                mensaje.Text = ex.Message;
+                lblMensaje.Text = ex.Message;
                 return;
             }
         }
 
-        _solicitud ??= new(Guid.NewGuid(), _cuenta.PedidoId, _cuenta.Version, _cuenta.Total, publico.Checked, receptor.Text, identificacion.Text, direccion.Text, correo.Text, metodo.Text, entregado.Value, resultadoTarjeta.Text, referencia.Text, observacion.Text, datosConfirmados.Checked, pagoConfirmado.Checked, metodo.Text == "Cortesía" && pagoConfirmado.Checked);
+        _solicitud ??= new(Guid.NewGuid(), _cuenta.PedidoId, _cuenta.Version, _cuenta.Total, chkPublico.Checked, ctReceptor.Text, ctIdentificacion.Text, ctDireccion.Text, ctCorreo.Text, cbMetodo.Text, nudEntregado.Value, cbResultadoTarjeta.Text, ctReferencia.Text, ctObservacion.Text, chkDatosConfirmados.Checked, chkPagoConfirmado.Checked, cbMetodo.Text == "Cortesía" && chkPagoConfirmado.Checked);
         _ocupado = true;
-        confirmar.Enabled = false;
-        campos.Enabled = false;
+        btnConfirmar.Enabled = false;
+        flpCampos.Enabled = false;
         try
         {
             Resultado = await DiarioOperaciones.Ejecutar(_repo, "Cobro", _solicitud.OperacionId, _solicitud, () => _repo.RegistrarCobro(_solicitud));
@@ -198,21 +198,21 @@ public sealed partial class FormularioCobro : Form
         }
         catch (Exception ex)
         {
-            mensaje.Text = ex.Message;
+            lblMensaje.Text = ex.Message;
             _dialogos.Mostrar(this, ex.Message, "No se pudo completar el cobro", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             if (_solicitud is not null && !DiarioOperaciones.TienePendiente(_repo, _solicitud.OperacionId))
             {
                 _solicitud = null;
-                campos.Enabled = true;
-                confirmar.Text = "Confirmar operación";
+                flpCampos.Enabled = true;
+                btnConfirmar.Text = "Confirmar operación";
             }
             else
-                confirmar.Text = "Recuperar la misma operación";
+                btnConfirmar.Text = "Recuperar la misma operación";
         }
         finally
         {
             _ocupado = false;
-            confirmar.Enabled = true;
+            btnConfirmar.Enabled = true;
         }
     }
 }

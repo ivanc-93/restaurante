@@ -3,29 +3,29 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioCobro
 {
     private System.ComponentModel.IContainer? components;
-    private TextBox detalle = null!;
-    private ComboBox cliente = null!;
-    private CheckBox publico = null!;
-    private CheckBox opcionales = null!;
-    private TextBox receptor = null!;
-    private TextBox identificacion = null!;
-    private TextBox direccion = null!;
-    private TextBox correo = null!;
-    private ComboBox metodo = null!;
-    private ComboBox resultadoTarjeta = null!;
-    private NumericUpDown entregado = null!;
-    private TextBox referencia = null!;
-    private TextBox observacion = null!;
-    private CheckBox datosConfirmados = null!;
-    private CheckBox pagoConfirmado = null!;
-    private Label saldo = null!;
-    private Label mensaje = null!;
-    private Button confirmar = null!;
-    private TableLayoutPanel estructura = null!;
-    private FlowLayoutPanel campos = null!;
-    private TableLayoutPanel pie = null!;
-    private DataGridView tablaCuenta = null!;
-    private Label totalCuenta = null!;
+    private TextBox ctDetalle = null!;
+    private ComboBox cbCliente = null!;
+    private CheckBox chkPublico = null!;
+    private CheckBox chkOpcionales = null!;
+    private TextBox ctReceptor = null!;
+    private TextBox ctIdentificacion = null!;
+    private TextBox ctDireccion = null!;
+    private TextBox ctCorreo = null!;
+    private ComboBox cbMetodo = null!;
+    private ComboBox cbResultadoTarjeta = null!;
+    private NumericUpDown nudEntregado = null!;
+    private TextBox ctReferencia = null!;
+    private TextBox ctObservacion = null!;
+    private CheckBox chkDatosConfirmados = null!;
+    private CheckBox chkPagoConfirmado = null!;
+    private Label lblSaldo = null!;
+    private Label lblMensaje = null!;
+    private Button btnConfirmar = null!;
+    private TableLayoutPanel tlpEstructura = null!;
+    private FlowLayoutPanel flpCampos = null!;
+    private TableLayoutPanel tlpPie = null!;
+    private DataGridView dgvTablaCuenta = null!;
+    private Label lblTotalCuenta = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -36,197 +36,262 @@ partial class FormularioCobro
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        detalle = new TextBox();
-        cliente = new ComboBox();
-        publico = new CheckBox();
-        opcionales = new CheckBox();
-        receptor = new TextBox();
-        identificacion = new TextBox();
-        direccion = new TextBox();
-        correo = new TextBox();
-        metodo = new ComboBox();
-        resultadoTarjeta = new ComboBox();
-        entregado = new NumericUpDown();
-        referencia = new TextBox();
-        observacion = new TextBox();
-        datosConfirmados = new CheckBox();
-        pagoConfirmado = new CheckBox();
-        saldo = new Label();
-        mensaje = new Label();
-        confirmar = new Button();
-        estructura = new TableLayoutPanel();
-        campos = new FlowLayoutPanel();
-        pie = new TableLayoutPanel();
-        ((System.ComponentModel.ISupportInitialize)entregado).BeginInit();
+        ctDetalle = new TextBox()
+        {
+            Name = "ctDetalle"
+        };
+        cbCliente = new ComboBox()
+        {
+            Name = "cbCliente"
+        };
+        chkPublico = new CheckBox()
+        {
+            Name = "chkPublico"
+        };
+        chkOpcionales = new CheckBox()
+        {
+            Name = "chkOpcionales"
+        };
+        ctReceptor = new TextBox()
+        {
+            Name = "ctReceptor"
+        };
+        ctIdentificacion = new TextBox()
+        {
+            Name = "ctIdentificacion"
+        };
+        ctDireccion = new TextBox()
+        {
+            Name = "ctDireccion"
+        };
+        ctCorreo = new TextBox()
+        {
+            Name = "ctCorreo"
+        };
+        cbMetodo = new ComboBox()
+        {
+            Name = "cbMetodo"
+        };
+        cbResultadoTarjeta = new ComboBox()
+        {
+            Name = "cbResultadoTarjeta"
+        };
+        nudEntregado = new NumericUpDown()
+        {
+            Name = "nudEntregado"
+        };
+        ctReferencia = new TextBox()
+        {
+            Name = "ctReferencia"
+        };
+        ctObservacion = new TextBox()
+        {
+            Name = "ctObservacion"
+        };
+        chkDatosConfirmados = new CheckBox()
+        {
+            Name = "chkDatosConfirmados"
+        };
+        chkPagoConfirmado = new CheckBox()
+        {
+            Name = "chkPagoConfirmado"
+        };
+        lblSaldo = new Label()
+        {
+            Name = "lblSaldo"
+        };
+        lblMensaje = new Label()
+        {
+            Name = "lblMensaje"
+        };
+        btnConfirmar = new Button()
+        {
+            Name = "btnConfirmar"
+        };
+        tlpEstructura = new TableLayoutPanel()
+        {
+            Name = "tlpEstructura"
+        };
+        flpCampos = new FlowLayoutPanel()
+        {
+            Name = "flpCampos"
+        };
+        tlpPie = new TableLayoutPanel()
+        {
+            Name = "tlpPie"
+        };
+        ((System.ComponentModel.ISupportInitialize)nudEntregado).BeginInit();
         SuspendLayout();
         Font = Componentes.Fuente;
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96, 96);
-        estructura.Dock = DockStyle.Fill;
-        estructura.ColumnCount = 2;
-        estructura.RowCount = 2;
-        estructura.Padding = new Padding(16);
-        estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));
-        estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
-        estructura.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        estructura.RowStyles.Add(new RowStyle(SizeType.Absolute, 145));
-        detalle.Dock = DockStyle.Fill;
-        detalle.Multiline = true;
-        detalle.ReadOnly = true;
-        detalle.ScrollBars = ScrollBars.Vertical;
-        detalle.BackColor = Color.White;
-        detalle.AccessibleName = "Detalle y total de la cuenta";
-        detalle.TabStop = false;
-        campos.Dock = DockStyle.Fill;
-        campos.FlowDirection = FlowDirection.TopDown;
-        campos.WrapContents = false;
-        campos.AutoScroll = true;
-        campos.Padding = new Padding(12);
-        campos.BackColor = Color.White;
-        campos.Margin = new Padding(14, 0, 0, 0);
-        tablaCuenta = new DataGridView
+        tlpEstructura.Dock = DockStyle.Fill;
+        tlpEstructura.ColumnCount = 2;
+        tlpEstructura.RowCount = 2;
+        tlpEstructura.Padding = new Padding(16);
+        tlpEstructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48));
+        tlpEstructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
+        tlpEstructura.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpEstructura.RowStyles.Add(new RowStyle(SizeType.Absolute, 145));
+        ctDetalle.Dock = DockStyle.Fill;
+        ctDetalle.Multiline = true;
+        ctDetalle.ReadOnly = true;
+        ctDetalle.ScrollBars = ScrollBars.Vertical;
+        ctDetalle.BackColor = Color.White;
+        ctDetalle.AccessibleName = "Detalle y total de la cuenta";
+        ctDetalle.TabStop = false;
+        flpCampos.Dock = DockStyle.Fill;
+        flpCampos.FlowDirection = FlowDirection.TopDown;
+        flpCampos.WrapContents = false;
+        flpCampos.AutoScroll = true;
+        flpCampos.Padding = new Padding(12);
+        flpCampos.BackColor = Color.White;
+        flpCampos.Margin = new Padding(14, 0, 0, 0);
+        dgvTablaCuenta = new DataGridView
         {
             Name = "tablaCuenta",
             Dock = DockStyle.Fill,
             AutoGenerateColumns = false,
             TabStop = false
         };
-        Componentes.EstilizarTabla(tablaCuenta);
-        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Producto", DataPropertyName = "Producto", HeaderText = "Producto", FillWeight = 200 });
-        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cantidad", DataPropertyName = "Cantidad", HeaderText = "Cant.", FillWeight = 55 });
-        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unitario", DataPropertyName = "PrecioUnitario", HeaderText = "Unitario", FillWeight = 90, DefaultCellStyle = new DataGridViewCellStyle { Format = "'Q '#,##0.00" } });
-        tablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Importe", DataPropertyName = "Importe", HeaderText = "Total", FillWeight = 90 });
-        totalCuenta = new Label
+        Componentes.EstilizarTabla(dgvTablaCuenta);
+        dgvTablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Producto", DataPropertyName = "Producto", HeaderText = "Producto", FillWeight = 200 });
+        dgvTablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Cantidad", DataPropertyName = "Cantidad", HeaderText = "Cant.", FillWeight = 55 });
+        dgvTablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Unitario", DataPropertyName = "PrecioUnitario", HeaderText = "Unitario", FillWeight = 90, DefaultCellStyle = new DataGridViewCellStyle { Format = "'Q '#,##0.00" } });
+        dgvTablaCuenta.Columns.Add(new DataGridViewTextBoxColumn { Name = "Importe", DataPropertyName = "Importe", HeaderText = "Total", FillWeight = 90 });
+        lblTotalCuenta = new Label
         {
             Text = "Total",
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleRight,
             Font = new Font("Segoe UI", 24, FontStyle.Bold),
-            ForeColor = Componentes.Verde
+            ForeColor = Componentes.Verde,
+            Name = "lblTotalCuenta"
         };
-        var cuentaPanel = new TableLayoutPanel
+        var tlpCuentaPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             BackColor = Color.White,
             Padding = new Padding(16),
             ColumnCount = 1,
-            RowCount = 3
+            RowCount = 3,
+            Name = "tlpCuentaPanel"
         };
-        cuentaPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        cuentaPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
-        cuentaPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        cuentaPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));
-        cuentaPanel.Controls.Add(new Label { Text = "Detalle del pedido", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 22, FontStyle.Bold) }, 0, 0);
-        cuentaPanel.Controls.Add(tablaCuenta, 0, 1);
-        cuentaPanel.Controls.Add(totalCuenta, 0, 2);
-        detalle.Visible = false;
-        components.Add(detalle);
-        campos.Controls.Add(new Label { Text = "Cobro manual", Font = new Font("Segoe UI", 22, FontStyle.Bold), AutoSize = true, Margin = new Padding(0, 0, 0, 14) });
-        cliente.DropDownStyle = ComboBoxStyle.DropDownList;
-        cliente.Width = 330;
-        cliente.AccessibleName = "Copiar datos de cliente del catálogo";
-        publico.Text = "Público general / sin identificación";
-        publico.AutoSize = true;
-        publico.CheckedChanged += Datos_Cambio;
-        opcionales.Text = "Agregar dirección, correo u observación (opcional)";
-        opcionales.AutoSize = true;
-        opcionales.CheckedChanged += Datos_Cambio;
-        receptor.Width = 330;
-        receptor.MaxLength = 120;
-        receptor.AccessibleName = "Nombre o razón social del receptor";
-        identificacion.Width = 330;
-        identificacion.MaxLength = 40;
-        identificacion.AccessibleName = "NIT u otra identificación opcional";
-        direccion.Width = 330;
-        direccion.MaxLength = 250;
-        direccion.AccessibleName = "Dirección opcional";
-        correo.Width = 330;
-        correo.MaxLength = 150;
-        correo.AccessibleName = "Correo opcional";
-        metodo.DropDownStyle = ComboBoxStyle.DropDownList;
-        metodo.Width = 330;
-        metodo.Items.AddRange(new object[] { "Efectivo", "Tarjeta" });
-        metodo.SelectedIndexChanged += Datos_Cambio;
-        resultadoTarjeta.DropDownStyle = ComboBoxStyle.DropDownList;
-        resultadoTarjeta.Width = 330;
-        resultadoTarjeta.Items.AddRange(new object[] { "Confirmado", "Rechazado", "Incierto" });
-        resultadoTarjeta.AccessibleName = "Resultado declarado del pago externo";
-        resultadoTarjeta.SelectedIndexChanged += Datos_Cambio;
-        entregado.DecimalPlaces = 2;
-        entregado.Maximum = 9999999999.99M;
-        entregado.Width = 330;
-        entregado.ValueChanged += Datos_Cambio;
-        entregado.AccessibleName = "Importe entregado o pagado externamente";
-        referencia.Width = 330;
-        referencia.MaxLength = 100;
-        referencia.AccessibleName = "Referencia externa sin datos de tarjeta";
-        observacion.Width = 330;
-        observacion.MaxLength = 250;
-        observacion.AccessibleName = "Observación del pago";
-        datosConfirmados.Text = "Revisé productos, importe y datos del receptor";
-        datosConfirmados.AutoSize = true;
-        pagoConfirmado.Text = "Confirmo recepción del efectivo o comprobación manual del pago";
-        pagoConfirmado.AutoSize = true;
-        campos.Controls.Add(new Label { Text = "Copiar cliente existente (opcional)", AutoSize = true });
-        campos.Controls.Add(cliente);
-        campos.Controls.Add(publico);
-        campos.Controls.Add(new Label { Name = "lblReceptor", Text = "Nombre del receptor", AutoSize = true });
-        campos.Controls.Add(receptor);
-        campos.Controls.Add(new Label { Name = "lblIdentificacion", Text = "NIT / identificación (opcional, sin validación SAT)", AutoSize = true });
-        campos.Controls.Add(identificacion);
-        campos.Controls.Add(opcionales);
-        campos.Controls.Add(new Label { Name = "lblDireccion", Text = "Dirección (opcional)", AutoSize = true });
-        campos.Controls.Add(direccion);
-        campos.Controls.Add(new Label { Name = "lblCorreo", Text = "Correo (opcional)", AutoSize = true });
-        campos.Controls.Add(correo);
-        campos.Controls.Add(new Label { Text = "Método de pago manual", AutoSize = true });
-        campos.Controls.Add(metodo);
-        campos.Controls.Add(new Label { Name = "lblResultado", Text = "Resultado del terminal externo (solo tarjeta)", AutoSize = true });
-        campos.Controls.Add(resultadoTarjeta);
-        campos.Controls.Add(new Label { Text = "Entregado en efectivo / importe externo", AutoSize = true });
-        campos.Controls.Add(entregado);
-        campos.Controls.Add(new Label { Name = "lblReferencia", Text = "Referencia externa (sin número de tarjeta)", AutoSize = true });
-        campos.Controls.Add(referencia);
-        campos.Controls.Add(new Label { Name = "lblObservacion", Text = "Observación", AutoSize = true });
-        campos.Controls.Add(observacion);
-        campos.Controls.Add(datosConfirmados);
-        campos.Controls.Add(pagoConfirmado);
-        datosConfirmados.CheckedChanged += Datos_Cambio;
-        pagoConfirmado.CheckedChanged += Datos_Cambio;
-        pie.Dock = DockStyle.Fill;
-        pie.ColumnCount = 1;
-        pie.RowCount = 3;
-        pie.AutoSize = false;
-        pie.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        pie.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        pie.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        pie.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        saldo.AutoSize = true;
-        saldo.Font = new Font("Segoe UI", 13, FontStyle.Bold);
-        mensaje.AutoSize = true;
-        mensaje.AutoEllipsis = true;
-        mensaje.MaximumSize = new Size(850, 70);
-        mensaje.Text = "Comprobante interno académico — no válido como documento tributario. Sin conexión SAT ni bancaria.";
-        confirmar.Text = "Confirmar cobro";
-        confirmar.AutoSize = false;
-        confirmar.Height = 50;
-        confirmar.Dock = DockStyle.Top;
-        confirmar.Click += Confirmar_Click;
-        Componentes.EstilizarBoton(confirmar, true);
-        Iconos.Aplicar(confirmar, "check");
-        pie.Controls.Add(saldo, 0, 0);
-        pie.Controls.Add(mensaje, 0, 1);
-        pie.Controls.Add(confirmar, 0, 2);
-        estructura.Controls.Add(cuentaPanel, 0, 0);
-        estructura.Controls.Add(campos, 1, 0);
-        estructura.Controls.Add(pie, 0, 1);
-        estructura.SetColumnSpan(pie, 2);
-        Controls.Add(estructura);
+        tlpCuentaPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tlpCuentaPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
+        tlpCuentaPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpCuentaPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 80));
+        tlpCuentaPanel.Controls.Add(new Label { Text = "Detalle del pedido", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 22, FontStyle.Bold) }, 0, 0);
+        tlpCuentaPanel.Controls.Add(dgvTablaCuenta, 0, 1);
+        tlpCuentaPanel.Controls.Add(lblTotalCuenta, 0, 2);
+        ctDetalle.Visible = false;
+        components.Add(ctDetalle);
+        flpCampos.Controls.Add(new Label { Text = "Cobro manual", Font = new Font("Segoe UI", 22, FontStyle.Bold), AutoSize = true, Margin = new Padding(0, 0, 0, 14) });
+        cbCliente.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbCliente.Width = 330;
+        cbCliente.AccessibleName = "Copiar datos de cliente del catálogo";
+        chkPublico.Text = "Público general / sin identificación";
+        chkPublico.AutoSize = true;
+        chkPublico.CheckedChanged += Datos_Cambio;
+        chkOpcionales.Text = "Agregar dirección, correo u observación (opcional)";
+        chkOpcionales.AutoSize = true;
+        chkOpcionales.CheckedChanged += Datos_Cambio;
+        ctReceptor.Width = 330;
+        ctReceptor.MaxLength = 120;
+        ctReceptor.AccessibleName = "Nombre o razón social del receptor";
+        ctIdentificacion.Width = 330;
+        ctIdentificacion.MaxLength = 40;
+        ctIdentificacion.AccessibleName = "NIT u otra identificación opcional";
+        ctDireccion.Width = 330;
+        ctDireccion.MaxLength = 250;
+        ctDireccion.AccessibleName = "Dirección opcional";
+        ctCorreo.Width = 330;
+        ctCorreo.MaxLength = 150;
+        ctCorreo.AccessibleName = "Correo opcional";
+        cbMetodo.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbMetodo.Width = 330;
+        cbMetodo.Items.AddRange(new object[] { "Efectivo", "Tarjeta" });
+        cbMetodo.SelectedIndexChanged += Datos_Cambio;
+        cbResultadoTarjeta.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbResultadoTarjeta.Width = 330;
+        cbResultadoTarjeta.Items.AddRange(new object[] { "Confirmado", "Rechazado", "Incierto" });
+        cbResultadoTarjeta.AccessibleName = "Resultado declarado del pago externo";
+        cbResultadoTarjeta.SelectedIndexChanged += Datos_Cambio;
+        nudEntregado.DecimalPlaces = 2;
+        nudEntregado.Maximum = 9999999999.99M;
+        nudEntregado.Width = 330;
+        nudEntregado.ValueChanged += Datos_Cambio;
+        nudEntregado.AccessibleName = "Importe entregado o pagado externamente";
+        ctReferencia.Width = 330;
+        ctReferencia.MaxLength = 100;
+        ctReferencia.AccessibleName = "Referencia externa sin datos de tarjeta";
+        ctObservacion.Width = 330;
+        ctObservacion.MaxLength = 250;
+        ctObservacion.AccessibleName = "Observación del pago";
+        chkDatosConfirmados.Text = "Revisé productos, importe y datos del receptor";
+        chkDatosConfirmados.AutoSize = true;
+        chkPagoConfirmado.Text = "Confirmo recepción del efectivo o comprobación manual del pago";
+        chkPagoConfirmado.AutoSize = true;
+        flpCampos.Controls.Add(new Label { Text = "Copiar cliente existente (opcional)", AutoSize = true });
+        flpCampos.Controls.Add(cbCliente);
+        flpCampos.Controls.Add(chkPublico);
+        flpCampos.Controls.Add(new Label { Name = "lblReceptor", Text = "Nombre del receptor", AutoSize = true });
+        flpCampos.Controls.Add(ctReceptor);
+        flpCampos.Controls.Add(new Label { Name = "lblIdentificacion", Text = "NIT / identificación (opcional, sin validación SAT)", AutoSize = true });
+        flpCampos.Controls.Add(ctIdentificacion);
+        flpCampos.Controls.Add(chkOpcionales);
+        flpCampos.Controls.Add(new Label { Name = "lblDireccion", Text = "Dirección (opcional)", AutoSize = true });
+        flpCampos.Controls.Add(ctDireccion);
+        flpCampos.Controls.Add(new Label { Name = "lblCorreo", Text = "Correo (opcional)", AutoSize = true });
+        flpCampos.Controls.Add(ctCorreo);
+        flpCampos.Controls.Add(new Label { Text = "Método de pago manual", AutoSize = true });
+        flpCampos.Controls.Add(cbMetodo);
+        flpCampos.Controls.Add(new Label { Name = "lblResultado", Text = "Resultado del terminal externo (solo tarjeta)", AutoSize = true });
+        flpCampos.Controls.Add(cbResultadoTarjeta);
+        flpCampos.Controls.Add(new Label { Text = "Entregado en efectivo / importe externo", AutoSize = true });
+        flpCampos.Controls.Add(nudEntregado);
+        flpCampos.Controls.Add(new Label { Name = "lblReferencia", Text = "Referencia externa (sin número de tarjeta)", AutoSize = true });
+        flpCampos.Controls.Add(ctReferencia);
+        flpCampos.Controls.Add(new Label { Name = "lblObservacion", Text = "Observación", AutoSize = true });
+        flpCampos.Controls.Add(ctObservacion);
+        flpCampos.Controls.Add(chkDatosConfirmados);
+        flpCampos.Controls.Add(chkPagoConfirmado);
+        chkDatosConfirmados.CheckedChanged += Datos_Cambio;
+        chkPagoConfirmado.CheckedChanged += Datos_Cambio;
+        tlpPie.Dock = DockStyle.Fill;
+        tlpPie.ColumnCount = 1;
+        tlpPie.RowCount = 3;
+        tlpPie.AutoSize = false;
+        tlpPie.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tlpPie.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpPie.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpPie.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        lblSaldo.AutoSize = true;
+        lblSaldo.Font = new Font("Segoe UI", 13, FontStyle.Bold);
+        lblMensaje.AutoSize = true;
+        lblMensaje.AutoEllipsis = true;
+        lblMensaje.MaximumSize = new Size(850, 70);
+        lblMensaje.Text = "Comprobante interno académico — no válido como documento tributario. Sin conexión SAT ni bancaria.";
+        btnConfirmar.Text = "Confirmar cobro";
+        btnConfirmar.AutoSize = false;
+        btnConfirmar.Height = 50;
+        btnConfirmar.Dock = DockStyle.Top;
+        btnConfirmar.Click += Confirmar_Click;
+        Componentes.EstilizarBoton(btnConfirmar, true);
+        Iconos.Aplicar(btnConfirmar, "check");
+        tlpPie.Controls.Add(lblSaldo, 0, 0);
+        tlpPie.Controls.Add(lblMensaje, 0, 1);
+        tlpPie.Controls.Add(btnConfirmar, 0, 2);
+        tlpEstructura.Controls.Add(tlpCuentaPanel, 0, 0);
+        tlpEstructura.Controls.Add(flpCampos, 1, 0);
+        tlpEstructura.Controls.Add(tlpPie, 0, 1);
+        tlpEstructura.SetColumnSpan(tlpPie, 2);
+        Controls.Add(tlpEstructura);
         ClientSize = new Size(1220, 730);
         MinimumSize = new Size(800, 520);
         StartPosition = FormStartPosition.CenterParent;
         Text = "Sabores | Revisar y cobrar · GTQ";
-        ((System.ComponentModel.ISupportInitialize)entregado).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudEntregado).EndInit();
         ResumeLayout(false);
     }
 }

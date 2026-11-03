@@ -1,16 +1,16 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioIncidencias
 {
-    private DataGridView tabla = null!;
-    private Button resolver = null!;
-    private Label mensaje = null!;
-    private ComboBox filtro = null!;
+    private DataGridView dgvRegistros = null!;
+    private Button btnResolver = null!;
+    private Label lblMensaje = null!;
+    private ComboBox cbFiltro = null!;
     private void InitializeComponent()
     {
-        var p = DisenoFormulario.Preparar(this, "Incidencias de consumo");
-        filtro = DisenoFormulario.Opciones(p, "Mostrar", "Pendientes", "Todas");
-        filtro.SelectedIndexChanged += async (_, _) => await Cargar();
-        tabla = new DataGridView
+        var flpP = DisenoFormulario.Preparar(this, "Incidencias de consumo");
+        cbFiltro = DisenoFormulario.Opciones(flpP, "Mostrar", "Pendientes", "Todas");
+        cbFiltro.SelectedIndexChanged += async (_, _) => await Cargar();
+        dgvRegistros = new DataGridView
         {
             Width = 650,
             Height = 280,
@@ -18,14 +18,15 @@ public sealed partial class FormularioIncidencias
             AutoGenerateColumns = true,
             AllowUserToAddRows = false,
             MultiSelect = false,
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+            Name = "dgvRegistros"
         };
-        p.Controls.Add(tabla);
-        Componentes.EstilizarTabla(tabla);
-        resolver = DisenoFormulario.Boton(p, "Resolver incidencia seleccionada", Resolver_Click);
-        DisenoFormulario.Boton(p, "Actualizar", async (_, _) => await Cargar());
-        var cerrar = DisenoFormulario.Boton(p, "Cerrar", (_, _) => Close());
-        CancelButton = cerrar;
-        mensaje = DisenoFormulario.Mensaje(p);
+        flpP.Controls.Add(dgvRegistros);
+        Componentes.EstilizarTabla(dgvRegistros);
+        btnResolver = DisenoFormulario.Boton(flpP, "Resolver incidencia seleccionada", Resolver_Click);
+        DisenoFormulario.Boton(flpP, "Actualizar", async (_, _) => await Cargar());
+        var btnCerrar = DisenoFormulario.Boton(flpP, "Cerrar", (_, _) => Close());
+        CancelButton = btnCerrar;
+        lblMensaje = DisenoFormulario.Mensaje(flpP);
     }
 }

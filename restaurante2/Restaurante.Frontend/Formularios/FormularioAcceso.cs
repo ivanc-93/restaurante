@@ -22,12 +22,12 @@ public sealed partial class FormularioAcceso : Form
         if (ocupado)
             return;
         ocupado = true;
-        entrar.Enabled = conexion.Enabled = false;
+        btnEntrarSistema.Enabled = btnConfigurarConexion.Enabled = false;
         try
         {
             if (!await Task.Run(_repositorio.RecuperacionDisponible))
             {
-                _mensaje.Text = "La recuperación todavía no está habilitada en esta base. Solicita al responsable técnico la actualización respaldada; tus usuarios se conservan.";
+                lblMensaje.Text = "La recuperación todavía no está habilitada en esta base. Solicita al responsable técnico la actualización respaldada; tus usuarios se conservan.";
                 return;
             }
 
@@ -36,13 +36,13 @@ public sealed partial class FormularioAcceso : Form
         }
         catch (Exception)
         {
-            _mensaje.Text = "No se pudo comprobar la recuperación. Revisa la conexión SQL; no se cambió ninguna contraseña.";
+            lblMensaje.Text = "No se pudo comprobar la recuperación. Revisa la conexión SQL; no se cambió ninguna contraseña.";
         }
         finally
         {
             ocupado = false;
-            entrar.Enabled = conexion.Enabled = true;
-            _contrasena.Clear();
+            btnEntrarSistema.Enabled = btnConfigurarConexion.Enabled = true;
+            ctContrasena.Clear();
         }
     }
 
@@ -59,28 +59,28 @@ public sealed partial class FormularioAcceso : Form
     {
         if (ocupado)
             return;
-        _mensaje.ForeColor = Color.Firebrick;
-        if (string.IsNullOrWhiteSpace(_usuario.Text))
+        lblMensaje.ForeColor = Color.Firebrick;
+        if (string.IsNullOrWhiteSpace(ctUsuario.Text))
         {
-            _mensaje.Text = "Escribe tu usuario de Sabores.";
-            _usuario.Focus();
+            lblMensaje.Text = "Escribe tu usuario de Sabores.";
+            ctUsuario.Focus();
             return;
         }
 
-        if (string.IsNullOrEmpty(_contrasena.Text))
+        if (string.IsNullOrEmpty(ctContrasena.Text))
         {
-            _mensaje.Text = "Escribe tu contraseña actual.";
-            _contrasena.Focus();
+            lblMensaje.Text = "Escribe tu contraseña actual.";
+            ctContrasena.Focus();
             return;
         }
 
-        var usuario = _usuario.Text;
-        var contrasena = _contrasena.Text;
+        var usuario = ctUsuario.Text;
+        var contrasena = ctContrasena.Text;
         ocupado = true;
-        _mensaje.ForeColor = Color.Firebrick;
-        _mensaje.Text = "Comprobando acceso…";
-        entrar.Enabled = conexion.Enabled = false;
-        entrar.Text = "Comprobando…";
+        lblMensaje.ForeColor = Color.Firebrick;
+        lblMensaje.Text = "Comprobando acceso…";
+        btnEntrarSistema.Enabled = btnConfigurarConexion.Enabled = false;
+        btnEntrarSistema.Text = "Comprobando…";
         UseWaitCursor = true;
         UsuarioAutenticado? verificado = null;
         string? error = null;
@@ -104,13 +104,13 @@ public sealed partial class FormularioAcceso : Form
                 UsuarioActual = verificado;
                 if (error is not null)
                 {
-                    _mensaje.Text = error;
+                    lblMensaje.Text = error;
                     return;
                 }
 
                 if (UsuarioActual is null)
                 {
-                    _mensaje.Text = "Usuario o contraseña incorrectos, inactivo o temporalmente bloqueado.";
+                    lblMensaje.Text = "Usuario o contraseña incorrectos, inactivo o temporalmente bloqueado.";
                     return;
                 }
 
@@ -120,7 +120,7 @@ public sealed partial class FormularioAcceso : Form
                     cambio.ShowDialog(this);
                     _repositorio.CerrarSesion();
                     UsuarioActual = null;
-                    _mensaje.Text = "Vuelva a entrar con su contraseña personal actualizada.";
+                    lblMensaje.Text = "Vuelva a entrar con su contraseña personal actualizada.";
                     return;
                 }
 
@@ -133,11 +133,11 @@ public sealed partial class FormularioAcceso : Form
                 ocupado = false;
                 if (!IsDisposed)
                 {
-                    entrar.Enabled = conexion.Enabled = true;
-                    entrar.Text = "Entrar al sistema";
+                    btnEntrarSistema.Enabled = btnConfigurarConexion.Enabled = true;
+                    btnEntrarSistema.Text = "Entrar al sistema";
                     UseWaitCursor = false;
-                    _contrasena.Clear();
-                    mostrarClave.Checked = false;
+                    ctContrasena.Clear();
+                    chkMostrarContrasena.Checked = false;
                 }
             }
         });

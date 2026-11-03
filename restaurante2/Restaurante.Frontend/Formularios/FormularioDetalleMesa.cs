@@ -26,16 +26,16 @@ public sealed partial class FormularioDetalleMesa : Form
             if (_ocupado || _cargando)
             {
                 e.Cancel = true;
-                _estado.Text = "Espera a que termine la operación.";
+                lblEstado.Text = "Espera a que termine la operación.";
             }
         };
     }
 
     private async Task RecargarSeguroAsync()
     {
-        _agregar.Enabled = _facturar.Enabled = false;
-        _catalogo.Enabled = false;
-        _clientes.Enabled = false;
+        btnAgregarProducto.Enabled = btnRevisarCobro.Enabled = false;
+        flpCatalogo.Enabled = false;
+        cbClientes.Enabled = false;
         _cargando = true;
         try
         {
@@ -50,12 +50,12 @@ public sealed partial class FormularioDetalleMesa : Form
                 var detalles = pedido is null ? new List<DetallePedidoResumen>() : _repositorio.ListarDetallesPedido(pedido.Id).ToList();
                 return (actual, pedido, productos, clientes, detalles, revision, incierta);
             });
-            var clienteId = (_clientes.SelectedItem as Cliente)?.Id ?? 0;
-            var productoId = (_productos.SelectedItem as ElementoMenu)?.Id;
-            var categoria = _categoria.Text;
+            var clienteId = (cbClientes.SelectedItem as Cliente)?.Id ?? 0;
+            var productoId = (cbProductos.SelectedItem as ElementoMenu)?.Id;
+            var categoria = cbCategoria.Text;
             _pedido = datos.pedido;
             _menu = datos.productos;
-            _clientes.DataSource = datos.revision is null ? new List<Cliente>
+            cbClientes.DataSource = datos.revision is null ? new List<Cliente>
             {
                 new(0, "Público general", null, null)
             }.Concat(datos.clientes).ToList() : new List<Cliente>
@@ -63,37 +63,37 @@ public sealed partial class FormularioDetalleMesa : Form
                 new(datos.revision.ClienteId ?? 0, datos.revision.Cliente, null, null)
             };
             if (_pedido is null)
-                _clientes.SelectedItem = _clientes.Items.Cast<Cliente>().FirstOrDefault(c => c.Id == clienteId) ?? _clientes.Items[0];
-            _clientes.Enabled = _pedido is null && datos.actual.Estado == "Disponible";
-            _categoria.Items.Clear();
-            _categoria.Items.Add("Todas las categorías");
-            _categoria.Items.AddRange(_menu.Select(p => p.Categoria).Distinct().Order().Cast<object>().ToArray());
-            _categoria.SelectedItem = _categoria.Items.Contains(categoria) ? categoria : _categoria.Items[0];
-            _detalles.DataSource = datos.detalles;
-            _resumen.Text = $"Mesa {_mesa.Numero} · " + (_pedido is null ? datos.actual.Estado : $"Pedido #{_pedido.Id} · {_pedido.Estado} · {_pedido.Cliente}");
-            _total.Text = _pedido is null ? "Sin pedido registrado" : $"Total: {FormatoPresentacion.Moneda(_pedido.Total)}";
-            _estado.Text = _pedido is null ? "El primer producto abre y guarda el pedido." : "Productos guardados. Cada incorporación se registra al agregar.";
+                cbClientes.SelectedItem = cbClientes.Items.Cast<Cliente>().FirstOrDefault(c => c.Id == clienteId) ?? cbClientes.Items[0];
+            cbClientes.Enabled = _pedido is null && datos.actual.Estado == "Disponible";
+            cbCategoria.Items.Clear();
+            cbCategoria.Items.Add("Todas las categorías");
+            cbCategoria.Items.AddRange(_menu.Select(p => p.Categoria).Distinct().Order().Cast<object>().ToArray());
+            cbCategoria.SelectedItem = cbCategoria.Items.Contains(categoria) ? categoria : cbCategoria.Items[0];
+            dgvDetalles.DataSource = datos.detalles;
+            lblResumen.Text = $"Mesa {_mesa.Numero} · " + (_pedido is null ? datos.actual.Estado : $"Pedido #{_pedido.Id} · {_pedido.Estado} · {_pedido.Cliente}");
+            lblTotal.Text = _pedido is null ? "Sin pedido registrado" : $"Total: {FormatoPresentacion.Moneda(_pedido.Total)}";
+            lblEstado.Text = _pedido is null ? "El primer producto abre y guarda el pedido." : "Productos guardados. Cada incorporación se registra al agregar.";
             _recuperacionPendiente = DiarioOperaciones.Listar(_repositorio).Count > 0;
-            _agregar.Enabled = _menu.Count > 0 && (_pedido is not null || datos.actual.Estado == "Disponible") && datos.incierta is null;
-            _catalogo.Enabled = _agregar.Enabled;
+            btnAgregarProducto.Enabled = _menu.Count > 0 && (_pedido is not null || datos.actual.Estado == "Disponible") && datos.incierta is null;
+            flpCatalogo.Enabled = btnAgregarProducto.Enabled;
             if (_recuperacionPendiente)
-                _agregar.Enabled = _catalogo.Enabled = false;
-            _facturar.Enabled = _pedido is not null && datos.detalles.Count > 0 && datos.incierta is null && !_recuperacionPendiente;
-            _gestionar.Enabled = !_recuperacionPendiente;
+                btnAgregarProducto.Enabled = flpCatalogo.Enabled = false;
+            btnRevisarCobro.Enabled = _pedido is not null && datos.detalles.Count > 0 && datos.incierta is null && !_recuperacionPendiente;
+            btnGestionar.Enabled = !_recuperacionPendiente;
             if (_recuperacionPendiente)
-                _estado.Text = "Hay operaciones pendientes. Cierre la mesa y use Recuperar operaciones desde Inicio.";
+                lblEstado.Text = "Hay operaciones pendientes. Cierre la mesa y use Recuperar operaciones desde Inicio.";
             if (datos.incierta is not null)
-                _estado.Text = "Tarjeta incierta: no repita el cobro. Utilice Gestionar cierre para conciliar.";
+                lblEstado.Text = "Tarjeta incierta: no repita el cobro. Utilice Gestionar cierre para conciliar.";
             _cargando = false;
             DibujarCatalogo();
             if (productoId is not null)
-                _productos.SelectedItem = _productos.Items.Cast<ElementoMenu>().FirstOrDefault(p => p.Id == productoId) ?? _productos.SelectedItem;
+                cbProductos.SelectedItem = cbProductos.Items.Cast<ElementoMenu>().FirstOrDefault(p => p.Id == productoId) ?? cbProductos.SelectedItem;
             FormatoPresentacion.Aplicar(this);
         }
         catch (Exception ex)
         {
             _recuperacionPendiente = true;
-            _estado.Text = "No se pudo confirmar el estado. Cierra y vuelve a abrir la mesa para actualizar; no repitas la operación.";
+            lblEstado.Text = "No se pudo confirmar el estado. Cierra y vuelve a abrir la mesa para actualizar; no repitas la operación.";
             _dialogos.Mostrar(this, ex.Message, "No se pudo cargar la mesa", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
@@ -110,50 +110,51 @@ public sealed partial class FormularioDetalleMesa : Form
 
     private void DibujarCatalogo()
     {
-        var seleccion = (_productos.SelectedItem as ElementoMenu)?.Id;
-        var lista = _menu.Where(p => p.Nombre.Contains(_buscar.Text.Trim(), StringComparison.CurrentCultureIgnoreCase) && (_categoria.SelectedIndex <= 0 || p.Categoria == _categoria.Text) && (_tipo.SelectedIndex <= 0 || p.Tipo == _tipo.Text)).ToList();
-        _productos.DataSource = lista;
+        var seleccion = (cbProductos.SelectedItem as ElementoMenu)?.Id;
+        var lista = _menu.Where(p => p.Nombre.Contains(ctBuscar.Text.Trim(), StringComparison.CurrentCultureIgnoreCase) && (cbCategoria.SelectedIndex <= 0 || p.Categoria == cbCategoria.Text) && (cbTipo.SelectedIndex <= 0 || p.Tipo == cbTipo.Text)).ToList();
+        cbProductos.DataSource = lista;
         if (seleccion is not null)
-            _productos.SelectedItem = lista.FirstOrDefault(p => p.Id == seleccion) ?? _productos.SelectedItem;
-        _catalogo.SuspendLayout();
-        while (_catalogo.Controls.Count > 0)
-            _catalogo.Controls[0].Dispose();
+            cbProductos.SelectedItem = lista.FirstOrDefault(p => p.Id == seleccion) ?? cbProductos.SelectedItem;
+        flpCatalogo.SuspendLayout();
+        while (flpCatalogo.Controls.Count > 0)
+            flpCatalogo.Controls[0].Dispose();
         foreach (var producto in lista)
         {
-            var tarjeta = Componentes.Boton($"{producto.Nombre}\n{producto.Categoria} · {producto.Tipo}\n{FormatoPresentacion.Moneda(producto.Precio)}\nSeleccionar", false);
-            tarjeta.Size = new Size((int)(180 * DeviceDpi / 96f), (int)(135 * DeviceDpi / 96f));
-            tarjeta.AutoSize = false;
-            tarjeta.Margin = new Padding(8);
-            tarjeta.TextAlign = ContentAlignment.MiddleLeft;
-            Iconos.Aplicar(tarjeta, "utensils-crossed");
-            tarjeta.Click += (_, _) =>
+            var btnTarjeta = Componentes.Boton($"{producto.Nombre}\n{producto.Categoria} · {producto.Tipo}\n{FormatoPresentacion.Moneda(producto.Precio)}\nSeleccionar", false);
+            btnTarjeta.Name = "btnTarjeta";
+            btnTarjeta.Size = new Size((int)(180 * DeviceDpi / 96f), (int)(135 * DeviceDpi / 96f));
+            btnTarjeta.AutoSize = false;
+            btnTarjeta.Margin = new Padding(8);
+            btnTarjeta.TextAlign = ContentAlignment.MiddleLeft;
+            Iconos.Aplicar(btnTarjeta, "utensils-crossed");
+            btnTarjeta.Click += (_, _) =>
             {
-                _productos.SelectedItem = producto;
-                _estado.Text = $"Seleccionado: {producto.Nombre}. Elige cantidad y pulsa Agregar.";
-                _cantidad.Focus();
+                cbProductos.SelectedItem = producto;
+                lblEstado.Text = $"Seleccionado: {producto.Nombre}. Elige cantidad y pulsa Agregar.";
+                nudCantidad.Focus();
             };
-            _catalogo.Controls.Add(tarjeta);
+            flpCatalogo.Controls.Add(btnTarjeta);
         }
 
         if (lista.Count == 0)
-            _catalogo.Controls.Add(Componentes.Etiqueta("No hay productos para esta búsqueda."));
-        _catalogo.ResumeLayout(true);
+            flpCatalogo.Controls.Add(Componentes.Etiqueta("No hay productos para esta búsqueda."));
+        flpCatalogo.ResumeLayout(true);
     }
 
     private async void Agregar_Click(object? sender, EventArgs e)
     {
         if (_ocupado || _recuperacionPendiente)
             return;
-        if (_productos.SelectedItem is not ElementoMenu producto)
+        if (cbProductos.SelectedItem is not ElementoMenu producto)
         {
-            _estado.Text = "Selecciona un producto.";
+            lblEstado.Text = "Selecciona un producto.";
             return;
         }
 
-        var cantidad = (int)_cantidad.Value;
-        var cliente = (_clientes.SelectedItem as Cliente)?.Id;
+        var cantidad = (int)nudCantidad.Value;
+        var cliente = (cbClientes.SelectedItem as Cliente)?.Id;
         _ocupado = true;
-        _agregar.Enabled = _facturar.Enabled = _catalogo.Enabled = _clientes.Enabled = false;
+        btnAgregarProducto.Enabled = btnRevisarCobro.Enabled = flpCatalogo.Enabled = cbClientes.Enabled = false;
         try
         {
             if (_pedido is null)
@@ -172,7 +173,7 @@ public sealed partial class FormularioDetalleMesa : Form
                 await DiarioOperaciones.Ejecutar(_repositorio, "Agregar", solicitud.OperacionId, solicitud, () => _repositorio.AgregarProductoAPedido(solicitud.PedidoId, solicitud.MenuId, solicitud.Cantidad, solicitud.OperacionId));
             }
 
-            _cantidad.Value = 1;
+            nudCantidad.Value = 1;
         }
         catch (Exception ex)
         {
@@ -190,7 +191,7 @@ public sealed partial class FormularioDetalleMesa : Form
         if (_ocupado || _recuperacionPendiente || _pedido is null)
             return;
         _ocupado = true;
-        _facturar.Enabled = false;
+        btnRevisarCobro.Enabled = false;
         try
         {
             var revision = await Task.Run(() => _repositorio.RevisarCuenta(_pedido.Id));

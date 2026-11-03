@@ -74,20 +74,20 @@ internal static class Program
     {
         using var f = new FormularioConexion(cfg);
         f.Show();
-        Campo<TextBox>(f, "servidor").Text = servidor;
-        Campo<TextBox>(f, "baseDatos").Text = baseDatos;
-        Campo<NumericUpDown>(f, "puerto").Value = puerto;
-        Campo<Button>(f, "probar").PerformClick();
+        Campo<TextBox>(f, "ctServidor").Text = servidor;
+        Campo<TextBox>(f, "ctBaseDatos").Text = baseDatos;
+        Campo<NumericUpDown>(f, "nudPuerto").Value = puerto;
+        Campo<Button>(f, "btnProbar").PerformClick();
         var limite = DateTime.UtcNow.AddSeconds(35);
         var vueltas = 0;
         while (Campo<bool>(f, "ocupado") && DateTime.UtcNow < limite)
         {
             Application.DoEvents(); Thread.Sleep(10); vueltas++;
         }
-        var mensaje = Campo<Label>(f, "mensaje").Text;
+        var mensaje = Campo<Label>(f, "lblMensaje").Text;
         Console.WriteLine("RESULTADO REAL: " + mensaje);
         Ok(!Campo<bool>(f, "ocupado"), "La operación termina");
-        Ok(Campo<Button>(f, "probar").Enabled && Campo<Button>(f, "guardar").Enabled, "Botones restaurados");
+        Ok(Campo<Button>(f, "btnProbar").Enabled && Campo<Button>(f, "btnGuardar").Enabled, "Botones restaurados");
         Ok(vueltas > 0, "La interfaz procesa eventos durante la conexión");
         Ok(esperado.Length > 0 ? mensaje.Contains(esperado) : mensaje.StartsWith("No se pudo conectar con el servidor") || mensaje.StartsWith("Se agotó el tiempo de espera"), "Mensaje apropiado para " + servidor + " / " + baseDatos);
         f.Close();

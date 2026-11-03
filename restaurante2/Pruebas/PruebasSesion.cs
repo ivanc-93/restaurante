@@ -86,12 +86,12 @@ internal static class PruebasSesion
                 foreach(Form ventana in Application.OpenForms){ventana.Opacity=0;ventana.ShowInTaskbar=false;}
                 if(acceso is not null && (estado==0||estado==6))
                 {
-                    Campo<TextBox>(acceso,"_usuario").Text=estado==0?"admin":"segundo";
-                    Campo<TextBox>(acceso,"_contrasena").Text=estado==0?"PruebaAdmin_2026!":"ClavePrueba123!";
+                    Campo<TextBox>(acceso,"ctUsuario").Text=estado==0?"admin":"segundo";
+                    Campo<TextBox>(acceso,"ctContrasena").Text=estado==0?"PruebaAdmin_2026!":"ClavePrueba123!";
                     cantidadLogin++; estado=estado==0?1:7;
                     ((Button)acceso.AcceptButton!).PerformClick();
                 }
-                else if(principal is not null && Campo<FlowLayoutPanel>(principal,"menu").Enabled)
+                else if(principal is not null && Campo<FlowLayoutPanel>(principal,"flpNavegacion").Enabled)
                 {
                     dpi=principal.DeviceDpi;
                     if(modo=="verificar"&&estado==1)
@@ -112,7 +112,7 @@ internal static class PruebasSesion
                     {
                         var factura=repo.ListarPedidos().Single(p=>p.Id==pedidoId);
                         if(factura.Estado!="Facturado"||factura.Total!=14m)throw new Exception("No se facturó desde la interfaz.");
-                        estado=6;Campo<Button>(principal,"salir").PerformClick();
+                        estado=6;Campo<Button>(principal,"btnCerrarSesion").PerformClick();
                     }
                     else if(estado==7)
                     {
@@ -124,18 +124,18 @@ internal static class PruebasSesion
                 if(cobro is not null && estado==5)
                 {
                     File.AppendAllText(archivo+".pasos.txt","Configurar cobro\n");
-                    Campo<ComboBox>(cobro,"metodo").SelectedItem="Efectivo";
+                    Campo<ComboBox>(cobro,"cbMetodo").SelectedItem="Efectivo";
                     File.AppendAllText(archivo+".pasos.txt","Método seleccionado\n");
-                    Campo<NumericUpDown>(cobro,"entregado").Value=14;
-                    Campo<CheckBox>(cobro,"datosConfirmados").Checked=true;
-                    Campo<CheckBox>(cobro,"pagoConfirmado").Checked=true;
+                    Campo<NumericUpDown>(cobro,"nudEntregado").Value=14;
+                    Campo<CheckBox>(cobro,"chkDatosConfirmados").Checked=true;
+                    Campo<CheckBox>(cobro,"chkPagoConfirmado").Checked=true;
                     var previo=cobro.Size;
                     foreach(var tamano in new[]{new System.Drawing.Size(1280,720),new System.Drawing.Size(1366,768)})
                     {
                         File.AppendAllText(archivo+".pasos.txt","Redimensionar "+tamano+"\n");
                         cobro.Size=tamano;cobro.PerformLayout();Application.DoEvents();
                         File.AppendAllText(archivo+".pasos.txt","Capturar "+tamano+"\n");
-                        var confirmar=Campo<Button>(cobro,"confirmar");
+                        var confirmar=Campo<Button>(cobro,"btnConfirmar");
                         using var captura=new System.Drawing.Bitmap(cobro.Width,cobro.Height);
                         cobro.DrawToBitmap(captura,new System.Drawing.Rectangle(0,0,captura.Width,captura.Height));
                         captura.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"cobro-"+tamano.Width+".png"));
@@ -143,10 +143,10 @@ internal static class PruebasSesion
                             throw new Exception($"Confirmar cobro queda fuera del área visible: ventana {cobro.ClientRectangle}, acción {cobro.RectangleToClient(confirmar.RectangleToScreen(confirmar.ClientRectangle))}.");
                     }
                     cobro.Size=previo;
-                    Campo<Button>(cobro,"confirmar").PerformClick();estado=10;
+                    Campo<Button>(cobro,"btnConfirmar").PerformClick();estado=10;
                 }
                 var documento=Application.OpenForms.OfType<FormularioComprobante>().FirstOrDefault();
-                if(documento is not null && Campo<TextBox>(documento,"contenido").Text.Contains("no válido como documento tributario"))
+                if(documento is not null && Campo<TextBox>(documento,"ctContenido").Text.Contains("no válido como documento tributario"))
                 {
                     using var captura=new System.Drawing.Bitmap(documento.Width,documento.Height);
                     documento.DrawToBitmap(captura,new System.Drawing.Rectangle(0,0,captura.Width,captura.Height));
@@ -155,25 +155,25 @@ internal static class PruebasSesion
                 }
                 if(detalle is not null&&!detalle.IsDisposed)
                 {
-                    if(estado==2&&Campo<Button>(detalle,"_agregar").Enabled)
+                    if(estado==2&&Campo<Button>(detalle,"btnAgregarProducto").Enabled)
                     {
                         if(repo.ObtenerPedidoAbierto(repo.ListarMesas().Single(m=>m.Numero==9100).Id) is not null)
                             throw new Exception("Se creó un pedido vacío antes de agregar un producto.");
-                        var productos=Campo<ComboBox>(detalle,"_productos");
+                        var productos=Campo<ComboBox>(detalle,"cbProductos");
                         productos.SelectedItem=productos.Items.Cast<ElementoMenu>().Single(p=>p.Nombre=="Sesión plato");
-                        Campo<Button>(detalle,"_agregar").PerformClick();estado=9;
+                        Campo<Button>(detalle,"btnAgregarProducto").PerformClick();estado=9;
                     }
-                    else if(estado==9&&Campo<Button>(detalle,"_agregar").Enabled)
+                    else if(estado==9&&Campo<Button>(detalle,"btnAgregarProducto").Enabled)
                     {
                         pedidoId=repo.ObtenerPedidoAbierto(repo.ListarMesas().Single(m=>m.Numero==9100).Id)!.Id;
-                        var buscar=Campo<TextBox>(detalle,"_buscar"); buscar.Text="Sesión";
-                        if(Campo<ComboBox>(detalle,"_productos").Items.Count!=2)throw new Exception("La búsqueda no filtra productos.");
+                        var buscar=Campo<TextBox>(detalle,"ctBuscar"); buscar.Text="Sesión";
+                        if(Campo<ComboBox>(detalle,"cbProductos").Items.Count!=2)throw new Exception("La búsqueda no filtra productos.");
                         buscar.Clear();
                         var previo=detalle.Size;
                         foreach(var tamano in new[]{new System.Drawing.Size(1280,720),new System.Drawing.Size(1366,768)})
                         {
                             detalle.Size=tamano; detalle.PerformLayout();
-                            var accion=Campo<Button>(detalle,"_facturar");
+                            var accion=Campo<Button>(detalle,"btnRevisarCobro");
                             if(!detalle.ClientRectangle.Contains(detalle.RectangleToClient(accion.RectangleToScreen(accion.ClientRectangle))))
                                 throw new Exception("La facturación queda fuera del área visible en "+tamano);
                             using var imagen=new System.Drawing.Bitmap(detalle.Width,detalle.Height);
@@ -181,7 +181,7 @@ internal static class PruebasSesion
                             imagen.Save(Path.Combine(Path.GetDirectoryName(archivo)!,"pedido-"+tamano.Width+".png"));
                         }
                         detalle.Size=previo;
-                        var facturar=Campo<Button>(detalle,"_facturar");
+                        var facturar=Campo<Button>(detalle,"btnRevisarCobro");
                         if(!detalle.RectangleToScreen(detalle.ClientRectangle).Contains(facturar.RectangleToScreen(facturar.ClientRectangle)))
                             throw new Exception("Facturar no es accesible.");
                         using(var captura=new System.Drawing.Bitmap(detalle.Width,detalle.Height))
@@ -191,17 +191,17 @@ internal static class PruebasSesion
                         }
                         estado=3;
                     }
-                    else if(estado==3&&Campo<Button>(detalle,"_agregar").Enabled&&Campo<ComboBox>(detalle,"_productos").Items.Count>0)
+                    else if(estado==3&&Campo<Button>(detalle,"btnAgregarProducto").Enabled&&Campo<ComboBox>(detalle,"cbProductos").Items.Count>0)
                     {
-                        var productos=Campo<ComboBox>(detalle,"_productos");
+                        var productos=Campo<ComboBox>(detalle,"cbProductos");
                         productos.SelectedItem=productos.Items.Cast<ElementoMenu>().Single(p=>p.Nombre=="Sesión bebida");
-                        Campo<NumericUpDown>(detalle,"_cantidad").Value=2;
-                        Campo<Button>(detalle,"_agregar").PerformClick();estado=4;
+                        Campo<NumericUpDown>(detalle,"nudCantidad").Value=2;
+                        Campo<Button>(detalle,"btnAgregarProducto").PerformClick();estado=4;
                     }
-                    else if(estado==4&&Campo<Button>(detalle,"_agregar").Enabled)
+                    else if(estado==4&&Campo<Button>(detalle,"btnAgregarProducto").Enabled)
                     {
                         if(repo.ListarDetallesPedido(pedidoId).Count!=2)throw new Exception("No se agregaron ambos productos.");
-                        Campo<Button>(detalle,"_facturar").PerformClick();estado=5;
+                        Campo<Button>(detalle,"btnRevisarCobro").PerformClick();estado=5;
                     }
                 }
             }

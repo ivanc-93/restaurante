@@ -30,13 +30,13 @@ public sealed partial class FormularioPrimerAdministrador : Form
             puedePreparar = estado.Pendiente && estado.AutorizadoWindows;
             if (!estado.Pendiente)
             {
-                estadoInicial.Text = "Esta base ya tiene usuarios o completó su instalación. Usa el acceso existente. No se reinicializará.";
-                guardar.Enabled = false;
+                lblEstadoInicial.Text = "Esta base ya tiene usuarios o completó su instalación. Usa el acceso existente. No se reinicializará.";
+                btnGuardar.Enabled = false;
                 return;
             }
 
-            estadoInicial.Text = estado.AutorizadoWindows ? "Tu cuenta Windows tiene autorización administrativa SQL. Pulsa Preparar instalación con Windows; se verificará un respaldo y podrás elegir tu cuenta de Sabores sin introducir un token." : "Necesitas al responsable con autenticación Windows y permiso sysadmin de SQL Server para preparar esta instalación. También puedes usar un token vigente entregado por él. Tu usuario de Sabores se crea después.";
-            prepararWindows.Enabled = estado.AutorizadoWindows;
+            lblEstadoInicial.Text = estado.AutorizadoWindows ? "Tu cuenta Windows tiene autorización administrativa SQL. Pulsa Preparar instalación con Windows; se verificará un respaldo y podrás elegir tu cuenta de Sabores sin introducir un token." : "Necesitas al responsable con autenticación Windows y permiso sysadmin de SQL Server para preparar esta instalación. También puedes usar un token vigente entregado por él. Tu usuario de Sabores se crea después.";
+            btnPrepararWindows.Enabled = estado.AutorizadoWindows;
         }
         catch (Exception ex)
         {
@@ -71,10 +71,10 @@ public sealed partial class FormularioPrimerAdministrador : Form
             var nueva = await Task.Run(() => preparador.Preparar(reemplazar));
             preparada?.Dispose();
             preparada = nueva;
-            token.Clear();
-            token.Visible = etiquetaToken.Visible = false;
-            estadoInicial.Text = "Instalación preparada con Windows y respaldo verificado. Elige tu nombre, usuario y contraseña de Sabores. La autorización se conserva solo durante esta ventana.";
-            mensaje.Text = "Ya puedes completar la instalación. Si cierras esta ventana antes, necesitarás preparar de nuevo.";
+            ctToken.Clear();
+            ctToken.Visible = lblEtiquetaToken.Visible = false;
+            lblEstadoInicial.Text = "Instalación preparada con Windows y respaldo verificado. Elige tu nombre, usuario y contraseña de Sabores. La autorización se conserva solo durante esta ventana.";
+            lblMensaje.Text = "Ya puedes completar la instalación. Si cierras esta ventana antes, necesitarás preparar de nuevo.";
         }
         catch (Exception ex)
         {
@@ -90,30 +90,30 @@ public sealed partial class FormularioPrimerAdministrador : Form
     {
         if (valor)
             ocupado = true;
-        guardar.Enabled = !valor && admiteInstalacion;
-        prepararWindows.Enabled = !valor && puedePreparar && preparada is null;
+        btnGuardar.Enabled = !valor && admiteInstalacion;
+        btnPrepararWindows.Enabled = !valor && puedePreparar && preparada is null;
         if (!valor)
             ocupado = false;
     }
 
     private void MostrarError(Exception ex)
     {
-        mensaje.Text = (ex is UnauthorizedAccessException or InvalidOperationException or ArgumentException ? ex.Message : ErroresConexion.Describir(ex)) + ErroresConexion.Registrar(ex);
+        lblMensaje.Text = (ex is UnauthorizedAccessException or InvalidOperationException or ArgumentException ? ex.Message : ErroresConexion.Describir(ex)) + ErroresConexion.Registrar(ex);
     }
 
     private async void Guardar_Click(object? sender, EventArgs e)
     {
         if (ocupado)
             return;
-        if ((preparada is null && !ValidacionCredenciales.Campo(token, mensaje, "el token o usa Preparar instalación con Windows")) || !ValidacionCredenciales.Campo(nombre, mensaje, "el nombre") || !ValidacionCredenciales.Campo(usuario, mensaje, "el usuario") || !ValidacionCredenciales.Nueva(clave, mensaje, repetir))
+        if ((preparada is null && !ValidacionCredenciales.Campo(ctToken, lblMensaje, "el token o usa Preparar instalación con Windows")) || !ValidacionCredenciales.Campo(ctNombre, lblMensaje, "el nombre") || !ValidacionCredenciales.Campo(ctUsuario, lblMensaje, "el usuario") || !ValidacionCredenciales.Nueva(ctContrasena, lblMensaje, ctRepetir))
             return;
-        var t = token.Text;
-        var n = nombre.Text;
-        var u = usuario.Text;
-        var c = clave.Text;
+        var t = ctToken.Text;
+        var n = ctNombre.Text;
+        var u = ctUsuario.Text;
+        var c = ctContrasena.Text;
         ocupado = true;
-        guardar.Enabled = false;
-        prepararWindows.Enabled = false;
+        btnGuardar.Enabled = false;
+        btnPrepararWindows.Enabled = false;
         try
         {
             await Task.Run(() =>
@@ -132,9 +132,9 @@ public sealed partial class FormularioPrimerAdministrador : Form
         }
         finally
         {
-            token.Clear();
-            clave.Clear();
-            repetir.Clear();
+            ctToken.Clear();
+            ctContrasena.Clear();
+            ctRepetir.Clear();
             Ocupado(false);
             if (DialogResult == DialogResult.OK)
                 Close();

@@ -11,19 +11,20 @@ public sealed partial class FormularioPrincipal
             return;
         }
 
-        _titulo.Text = "Servicio / Mesas";
+        lblTitulo.Text = "Servicio / Mesas";
         SeleccionarNavegacion("Mesas");
         LimpiarContenido();
-        var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Cada mesa, en su momento", "Elige una mesa. Su disponibilidad física no cancela los saldos pendientes."));
-        var herramientas = new FlowLayoutPanel
+        var tlpPagina = CrearPagina();
+        tlpPagina.Controls.Add(Encabezado("Cada mesa, en su momento", "Elige una mesa. Su disponibilidad física no cancela los saldos pendientes."));
+        var flpHerramientas = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 8, 0, 12)
+            Margin = new Padding(0, 8, 0, 12),
+            Name = "flpHerramientas"
         };
-        var buscar = new TextBox
+        var ctBuscar = new TextBox
         {
             Name = "buscarMesa",
             Width = 230,
@@ -31,30 +32,33 @@ public sealed partial class FormularioPrincipal
             Margin = new Padding(0, 10, 12, 10),
             AccessibleName = "Buscar mesa por número"
         };
-        var filtro = new ComboBox
+        var cbFiltro = new ComboBox
         {
             Name = "filtroEstadoMesa",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Width = 190,
             Margin = new Padding(0, 10, 12, 10)
         };
-        filtro.Items.AddRange(["Todas", "Disponible", "Ocupada", "En limpieza", "Reservada"]);
-        filtro.SelectedIndex = 0;
-        var actualizar = Componentes.Boton("Actualizar", false);
-        Iconos.Aplicar(actualizar, "refresh");
-        actualizar.Margin = new Padding(0, 0, 12, 6);
-        var administrar = Componentes.Boton("Administrar mesas", false);
-        Iconos.Aplicar(administrar, "settings");
-        administrar.Visible = _usuario.Rol is "Administrador" or "Gerente";
-        administrar.Click += async (_, _) => await EjecutarSeguro(MostrarMenuMesas);
-        herramientas.Controls.AddRange([buscar, filtro, actualizar, administrar]);
-        pagina.Controls.Add(herramientas);
-        var leyenda = new FlowLayoutPanel
+        cbFiltro.Items.AddRange(["Todas", "Disponible", "Ocupada", "En limpieza", "Reservada"]);
+        cbFiltro.SelectedIndex = 0;
+        var btnActualizar = Componentes.Boton("Actualizar", false);
+        btnActualizar.Name = "btnActualizar";
+        Iconos.Aplicar(btnActualizar, "refresh");
+        btnActualizar.Margin = new Padding(0, 0, 12, 6);
+        var btnAdministrar = Componentes.Boton("Administrar mesas", false);
+        btnAdministrar.Name = "btnAdministrar";
+        Iconos.Aplicar(btnAdministrar, "settings");
+        btnAdministrar.Visible = _usuario.Rol is "Administrador" or "Gerente";
+        btnAdministrar.Click += async (_, _) => await EjecutarSeguro(MostrarMenuMesas);
+        flpHerramientas.Controls.AddRange([ctBuscar, cbFiltro, btnActualizar, btnAdministrar]);
+        tlpPagina.Controls.Add(flpHerramientas);
+        var flpLeyenda = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 0, 0, 12)
+            Margin = new Padding(0, 0, 0, 12),
+            Name = "flpLeyenda"
         };
         foreach (var estado in new[]
         {
@@ -67,11 +71,11 @@ public sealed partial class FormularioPrincipal
         )
         {
             var estilo = EstadoVisualMesa.De(estado);
-            leyenda.Controls.Add(new Label { Text = "  " + estado + "  ", AutoSize = true, BackColor = estilo.Fondo, ForeColor = estilo.Tinta, Margin = new Padding(0, 0, 12, 4), Padding = new Padding(4) });
+            flpLeyenda.Controls.Add(new Label { Text = "  " + estado + "  ", AutoSize = true, BackColor = estilo.Fondo, ForeColor = estilo.Tinta, Margin = new Padding(0, 0, 12, 4), Padding = new Padding(4) });
         }
 
-        pagina.Controls.Add(leyenda);
-        var tarjetas = new FlowLayoutPanel
+        tlpPagina.Controls.Add(flpLeyenda);
+        var flpTarjetas = new FlowLayoutPanel
         {
             Name = "tarjetasMesas",
             Dock = DockStyle.Top,
@@ -80,29 +84,29 @@ public sealed partial class FormularioPrincipal
             Margin = Padding.Empty,
             Padding = Padding.Empty
         };
-        pagina.Controls.Add(tarjetas);
+        tlpPagina.Controls.Add(flpTarjetas);
         var mesas = await Task.Run(_repositorio.ListarMesas);
         var pedidos = await Task.Run(_repositorio.ListarPedidos);
         void Ajustar()
         {
             var escala = DeviceDpi / 96f;
-            var disponible = Math.Max(1, tarjetas.ClientSize.Width);
+            var disponible = Math.Max(1, flpTarjetas.ClientSize.Width);
             var columnas = Math.Clamp((int)(disponible / (275 * escala)), 1, 4);
             var ancho = Math.Max((int)(240 * escala), disponible / columnas - (int)(18 * escala));
-            foreach (var tarjeta in tarjetas.Controls.OfType<TarjetaMesa>())
+            foreach (var tarjeta in flpTarjetas.Controls.OfType<TarjetaMesa>())
                 tarjeta.Size = new Size(ancho, (int)(270 * escala));
         }
 
         void Dibujar()
         {
-            tarjetas.SuspendLayout();
-            while (tarjetas.Controls.Count > 0)
-                tarjetas.Controls[0].Dispose();
-            foreach (var mesa in mesas.Where(m => (filtro.SelectedIndex == 0 || m.Estado == filtro.Text) && m.Numero.ToString().Contains(buscar.Text.Trim())))
+            flpTarjetas.SuspendLayout();
+            while (flpTarjetas.Controls.Count > 0)
+                flpTarjetas.Controls[0].Dispose();
+            foreach (var mesa in mesas.Where(m => (cbFiltro.SelectedIndex == 0 || m.Estado == cbFiltro.Text) && m.Numero.ToString().Contains(ctBuscar.Text.Trim())))
             {
                 var pedido = pedidos.FirstOrDefault(p => p.NumeroMesa == mesa.Numero && p.Estado is "Abierto" or "En preparación");
                 var tarjeta = new TarjetaMesa(mesa, pedido);
-                tarjeta.Accion.Click += async (_, _) => await EjecutarSeguro(async () =>
+                tarjeta.btnAccionMesa.Click += async (_, _) => await EjecutarSeguro(async () =>
                 {
                     var actual = (await Task.Run(_repositorio.ListarMesas)).Single(m => m.Id == mesa.Id);
                     var abierto = await Task.Run(() => _repositorio.ObtenerPedidoAbierto(actual.Id));
@@ -120,19 +124,19 @@ public sealed partial class FormularioPrincipal
                         await AbrirMesa(actual);
                     await MostrarMesasPos();
                 });
-                tarjetas.Controls.Add(tarjeta);
+                flpTarjetas.Controls.Add(tarjeta);
             }
 
-            if (tarjetas.Controls.Count == 0)
-                tarjetas.Controls.Add(Componentes.Etiqueta("No hay mesas para este filtro."));
+            if (flpTarjetas.Controls.Count == 0)
+                flpTarjetas.Controls.Add(Componentes.Etiqueta("No hay mesas para este filtro."));
             Ajustar();
-            tarjetas.ResumeLayout(true);
+            flpTarjetas.ResumeLayout(true);
         }
 
-        buscar.TextChanged += (_, _) => Dibujar();
-        filtro.SelectedIndexChanged += (_, _) => Dibujar();
-        tarjetas.SizeChanged += (_, _) => Ajustar();
-        actualizar.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
+        ctBuscar.TextChanged += (_, _) => Dibujar();
+        cbFiltro.SelectedIndexChanged += (_, _) => Dibujar();
+        flpTarjetas.SizeChanged += (_, _) => Ajustar();
+        btnActualizar.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
         if (InvokeRequired)
             Invoke(Dibujar);
         else
@@ -149,36 +153,39 @@ public sealed partial class FormularioPrincipal
 
     private async Task MostrarPedidosPos()
     {
-        _titulo.Text = "Servicio / Pedidos";
+        lblTitulo.Text = "Servicio / Pedidos";
         LimpiarContenido();
-        var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Pedidos", "Continúa un pedido abierto o selecciona una mesa para uno nuevo."));
-        var nuevo = Componentes.Boton("Nuevo pedido · elegir mesa");
-        nuevo.AutoSize = true;
-        Iconos.Aplicar(nuevo, "plus");
-        nuevo.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
-        pagina.Controls.Add(nuevo);
-        var tabla = NuevaTabla();
-        tabla.Height = 380;
-        tabla.Dock = DockStyle.Top;
+        var tlpPagina = CrearPagina();
+        tlpPagina.Controls.Add(Encabezado("Pedidos", "Continúa un pedido abierto o selecciona una mesa para uno nuevo."));
+        var btnNuevo = Componentes.Boton("Nuevo pedido · elegir mesa");
+        btnNuevo.Name = "btnNuevo";
+        btnNuevo.AutoSize = true;
+        Iconos.Aplicar(btnNuevo, "plus");
+        btnNuevo.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
+        tlpPagina.Controls.Add(btnNuevo);
+        var dgvRegistros = NuevaTabla();
+        dgvRegistros.Height = 380;
+        dgvRegistros.Dock = DockStyle.Top;
         var datos = await Task.Run(_repositorio.ListarPedidos);
-        tabla.DataSource = datos.OrderByDescending(p => p.Fecha).ToList();
-        pagina.Controls.Add(tabla);
-        var abrir = Componentes.Boton("Continuar pedido seleccionado", false);
-        abrir.AutoSize = true;
-        abrir.Click += async (_, _) => await EjecutarSeguro(async () =>
+        dgvRegistros.DataSource = datos.OrderByDescending(p => p.Fecha).ToList();
+        tlpPagina.Controls.Add(dgvRegistros);
+        var btnAbrir = Componentes.Boton("Continuar pedido seleccionado", false);
+        btnAbrir.Name = "btnAbrir";
+        btnAbrir.AutoSize = true;
+        btnAbrir.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
-            if (tabla.CurrentRow?.DataBoundItem is not PedidoResumen p || p.Estado is not ("Abierto" or "En preparación"))
+            if (dgvRegistros.CurrentRow?.DataBoundItem is not PedidoResumen p || p.Estado is not ("Abierto" or "En preparación"))
                 throw new InvalidOperationException("Selecciona un pedido abierto. Las facturas cerradas se consultan en Reportes.");
             var mesas = await Task.Run(_repositorio.ListarMesas);
             await AbrirMesa(mesas.Single(m => m.Numero == p.NumeroMesa));
             await MostrarPedidosPos();
         });
-        pagina.Controls.Add(abrir);
-        var consultar = Componentes.Boton("Consultar comprobante seleccionado", false);
-        consultar.Click += (_, _) =>
+        tlpPagina.Controls.Add(btnAbrir);
+        var btnConsultar = Componentes.Boton("Consultar comprobante seleccionado", false);
+        btnConsultar.Name = "btnConsultar";
+        btnConsultar.Click += (_, _) =>
         {
-            if (tabla.CurrentRow?.DataBoundItem is PedidoResumen p && p.NumeroFactura is not null)
+            if (dgvRegistros.CurrentRow?.DataBoundItem is PedidoResumen p && p.NumeroFactura is not null)
             {
                 using var documento = new FormularioComprobante(_repositorio, p.Id);
                 documento.ShowDialog(this);
@@ -186,9 +193,9 @@ public sealed partial class FormularioPrincipal
             else
                 _dialogos.Mostrar(this, "Seleccione un pedido con comprobante emitido.", "Consultar comprobante");
         };
-        pagina.Controls.Add(consultar);
+        tlpPagina.Controls.Add(btnConsultar);
         if (datos.Count == 0)
-            pagina.Controls.Add(Componentes.Etiqueta("Todavía no hay pedidos. Comienza seleccionando una mesa."));
+            tlpPagina.Controls.Add(Componentes.Etiqueta("Todavía no hay pedidos. Comienza seleccionando una mesa."));
         FormatoPresentacion.Aplicar(this);
     }
 
@@ -196,24 +203,26 @@ public sealed partial class FormularioPrincipal
     {
         if (_usuario.Rol is not ("Administrador" or "Gerente"))
             throw new InvalidOperationException("Solo gerente o administrador.");
-        _titulo.Text = "Administración / Configuración";
+        lblTitulo.Text = "Administración / Configuración";
         LimpiarContenido();
-        var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Configuración", "Información del restaurante y opciones avanzadas."));
-        var restaurante = Componentes.Boton("Información del restaurante", false);
-        restaurante.AutoSize = true;
-        restaurante.Click += (_, _) =>
+        var tlpPagina = CrearPagina();
+        tlpPagina.Controls.Add(Encabezado("Configuración", "Información del restaurante y opciones avanzadas."));
+        var btnRestaurante = Componentes.Boton("Información del restaurante", false);
+        btnRestaurante.Name = "btnRestaurante";
+        btnRestaurante.AutoSize = true;
+        btnRestaurante.Click += (_, _) =>
         {
             using var formulario = new FormularioCatalogos(_repositorio, true, true);
             formulario.ShowDialog(this);
         };
-        var sql = Componentes.Boton("Avanzado · Conexión SQL", false);
-        sql.AutoSize = true;
-        Iconos.Aplicar(sql, "database");
-        sql.Click += async (_, _) => await EjecutarSeguro(MostrarConexion);
-        pagina.Controls.Add(restaurante);
+        var btnSql = Componentes.Boton("Avanzado · Conexión SQL", false);
+        btnSql.Name = "btnSql";
+        btnSql.AutoSize = true;
+        Iconos.Aplicar(btnSql, "database");
+        btnSql.Click += async (_, _) => await EjecutarSeguro(MostrarConexion);
+        tlpPagina.Controls.Add(btnRestaurante);
         if (_usuario.Rol == "Administrador")
-            pagina.Controls.Add(sql);
+            tlpPagina.Controls.Add(btnSql);
         return Task.CompletedTask;
     }
 }

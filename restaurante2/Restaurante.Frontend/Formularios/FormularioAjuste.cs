@@ -13,7 +13,7 @@ public sealed partial class FormularioAjuste : Form
     {
         this.repo = repo;
         this.cuenta = cuenta;
-        resumen.Text = $"Mesa {cuenta.NumeroMesa} · Pedido {cuenta.PedidoId}\nOriginal {MonedaGuatemala.Formatear(cuenta.ImporteOriginal)} · total actual {MonedaGuatemala.Formatear(cuenta.Total)}\nAgregar otro producto invalida el ajuste y exige nueva revisión.";
+        lblResumen.Text = $"Mesa {cuenta.NumeroMesa} · Pedido {cuenta.PedidoId}\nOriginal {MonedaGuatemala.Formatear(cuenta.ImporteOriginal)} · total actual {MonedaGuatemala.Formatear(cuenta.Total)}\nAgregar otro producto invalida el ajuste y exige nueva revisión.";
         FormClosing += (_, e) => e.Cancel = ocupado;
     }
 
@@ -23,21 +23,21 @@ public sealed partial class FormularioAjuste : Form
             return;
         try
         {
-            ReglasRestaurante.Texto(motivo.Text, "Motivo", 500);
-            var s = new SolicitudAjuste(Guid.NewGuid(), cuenta.PedidoId, cuenta.Version, cuenta.Total, tipo.Text, tipo.Text == "Cortesía" ? cuenta.ImporteOriginal : descuento.Value, motivo.Text);
+            ReglasRestaurante.Texto(ctMotivo.Text, "Motivo", 500);
+            var s = new SolicitudAjuste(Guid.NewGuid(), cuenta.PedidoId, cuenta.Version, cuenta.Total, cbTipo.Text, cbTipo.Text == "Cortesía" ? cuenta.ImporteOriginal : nudDescuento.Value, ctMotivo.Text);
             ValidacionAjuste.Comprobar(s.Tipo, s.Descuento, cuenta.ImporteOriginal);
-            if (!FormularioAutorizar.Solicitar(this, repo, s.OperacionId, "Ajuste", s, resumen.Text + $"\n{s.Tipo}: {MonedaGuatemala.Formatear(s.Descuento)}\nMotivo: {s.Motivo}"))
+            if (!FormularioAutorizar.Solicitar(this, repo, s.OperacionId, "Ajuste", s, lblResumen.Text + $"\n{s.Tipo}: {MonedaGuatemala.Formatear(s.Descuento)}\nMotivo: {s.Motivo}"))
                 return;
             ocupado = true;
-            aplicar.Enabled = false;
+            btnAplicar.Enabled = false;
             await DiarioOperaciones.Ejecutar(repo, "Ajuste", s.OperacionId, s, () => repo.AplicarAjuste(s));
             ocupado = false;
             DialogResult = DialogResult.OK;
         }
         catch (Exception ex)
         {
-            mensaje.Text = ex.Message + " Si hay una solicitud pendiente, recupérela desde Inicio antes de repetir.";
-            aplicar.Enabled = DiarioOperaciones.Listar(repo).Count == 0;
+            lblMensaje.Text = ex.Message + " Si hay una solicitud pendiente, recupérela desde Inicio antes de repetir.";
+            btnAplicar.Enabled = DiarioOperaciones.Listar(repo).Count == 0;
         }
         finally
         {

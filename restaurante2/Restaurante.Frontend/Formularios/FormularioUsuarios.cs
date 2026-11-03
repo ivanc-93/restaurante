@@ -18,7 +18,7 @@ public sealed partial class FormularioUsuarios : Form
             if (ocupado)
                 e.Cancel = true;
         };
-        AcceptButton = guardar;
+        AcceptButton = btnGuardar;
     }
 
     private void Ocupado(bool valor)
@@ -28,7 +28,7 @@ public sealed partial class FormularioUsuarios : Form
         foreach (Control c in Controls)
             c.Enabled = !valor;
         if (!valor)
-            guardar.Enabled = !resultadoIncierto;
+            btnGuardar.Enabled = !resultadoIncierto;
     }
 
     private async Task Recargar()
@@ -40,12 +40,12 @@ public sealed partial class FormularioUsuarios : Form
         {
             var datos = await Task.Run(repo.ListarUsuarios);
             if (!IsDisposed)
-                lista.DataSource = datos.ToList();
+                dgvRegistros.DataSource = datos.ToList();
         }
         catch (Exception ex)
         {
             if (!IsDisposed)
-                mensaje.Text = MensajeError(ex);
+                lblMensaje.Text = MensajeError(ex);
         }
         finally
         {
@@ -59,12 +59,12 @@ public sealed partial class FormularioUsuarios : Form
         if (ocupado || resultadoIncierto)
             return;
         id = null;
-        nombre.Clear();
-        usuario.Clear();
-        clave.Clear();
-        confirmarClave.Clear();
-        rol.SelectedIndex = 0;
-        activo.Checked = true;
+        ctNombre.Clear();
+        ctUsuario.Clear();
+        ctContrasena.Clear();
+        ctConfirmarClave.Clear();
+        cbRol.SelectedIndex = 0;
+        chkActivo.Checked = true;
     }
 
     private async void Auditoria_Click(object? sender, EventArgs e)
@@ -77,14 +77,14 @@ public sealed partial class FormularioUsuarios : Form
             var datos = await Task.Run(repo.ConsultarAuditoriaSeguridad);
             if (!IsDisposed)
             {
-                lista.DataSource = datos.ToList();
-                mensaje.Text = "Últimas 200 acciones de seguridad, hora de Guatemala.";
+                dgvRegistros.DataSource = datos.ToList();
+                lblMensaje.Text = "Últimas 200 acciones de seguridad, hora de Guatemala.";
             }
         }
         catch (Exception ex)
         {
             if (!IsDisposed)
-                mensaje.Text = MensajeError(ex);
+                lblMensaje.Text = MensajeError(ex);
         }
         finally
         {
@@ -95,15 +95,15 @@ public sealed partial class FormularioUsuarios : Form
 
     private void Editar_Click(object? sender, EventArgs e)
     {
-        if (ocupado || resultadoIncierto || lista.CurrentRow?.DataBoundItem is not UsuarioGestion u)
+        if (ocupado || resultadoIncierto || dgvRegistros.CurrentRow?.DataBoundItem is not UsuarioGestion u)
             return;
         id = u.Id;
-        nombre.Text = u.Nombre;
-        usuario.Text = u.Usuario;
-        rol.Text = u.Rol == "Empleado" ? "Mesero" : u.Rol;
-        activo.Checked = u.Activo;
-        clave.Clear();
-        confirmarClave.Clear();
+        ctNombre.Text = u.Nombre;
+        ctUsuario.Text = u.Usuario;
+        cbRol.Text = u.Rol == "Empleado" ? "Mesero" : u.Rol;
+        chkActivo.Checked = u.Activo;
+        ctContrasena.Clear();
+        ctConfirmarClave.Clear();
     }
 
     private static string MensajeError(Exception ex) => ex is SqlException sql ? sql.Number switch
@@ -118,15 +118,15 @@ public sealed partial class FormularioUsuarios : Form
     {
         if (ocupado || resultadoIncierto)
             return;
-        if (!ValidacionCredenciales.Campo(nombre, mensaje, "el nombre") || !ValidacionCredenciales.Campo(usuario, mensaje, "el usuario"))
+        if (!ValidacionCredenciales.Campo(ctNombre, lblMensaje, "el nombre") || !ValidacionCredenciales.Campo(ctUsuario, lblMensaje, "el usuario"))
             return;
-        if ((id is null || clave.Text.Length > 0) && !ValidacionCredenciales.Nueva(clave, mensaje, confirmarClave))
+        if ((id is null || ctContrasena.Text.Length > 0) && !ValidacionCredenciales.Nueva(ctContrasena, lblMensaje, ctConfirmarClave))
             return;
-        var n = nombre.Text;
-        var u = usuario.Text;
-        var r = rol.Text;
-        var a = activo.Checked;
-        var c = clave.Text;
+        var n = ctNombre.Text;
+        var u = ctUsuario.Text;
+        var r = cbRol.Text;
+        var a = chkActivo.Checked;
+        var c = ctContrasena.Text;
         var destino = id;
         Ocupado(true);
         try
@@ -134,40 +134,40 @@ public sealed partial class FormularioUsuarios : Form
             await Task.Run(() => repo.GuardarUsuario(destino, n, u, r, a, c));
             if (IsDisposed)
                 return;
-            lista.DataSource = (await Task.Run(repo.ListarUsuarios)).ToList();
-            mensaje.Text = $"Usuario guardado: {u}. Una contraseña temporal exige cambio al entrar.";
+            dgvRegistros.DataSource = (await Task.Run(repo.ListarUsuarios)).ToList();
+            lblMensaje.Text = $"Usuario guardado: {u}. Una contraseña temporal exige cambio al entrar.";
             id = null;
-            nombre.Clear();
-            usuario.Clear();
+            ctNombre.Clear();
+            ctUsuario.Clear();
         }
         catch (SqlException ex)
         {
-            mensaje.Text = MensajeError(ex);
+            lblMensaje.Text = MensajeError(ex);
             if (ex.Number is not (2601 or 2627 or 229 or 230 or 18456 or 4060 or 53 or 2 or 40))
             {
                 resultadoIncierto = true;
-                mensaje.Text += " El resultado del guardado puede ser incierto; no se repetirá desde esta ventana. Comprueba la cuenta y su auditoría antes de otra intervención. La lectura de campos no confirma un cambio de contraseña.";
+                lblMensaje.Text += " El resultado del guardado puede ser incierto; no se repetirá desde esta ventana. Comprueba la cuenta y su auditoría antes de otra intervención. La lectura de campos no confirma un cambio de contraseña.";
                 try
                 {
-                    lista.DataSource = (await Task.Run(repo.ListarUsuarios)).ToList();
+                    dgvRegistros.DataSource = (await Task.Run(repo.ListarUsuarios)).ToList();
                 }
                 catch
                 {
-                    mensaje.Text += " La comprobación de la lista tampoco pudo completarse.";
+                    lblMensaje.Text += " La comprobación de la lista tampoco pudo completarse.";
                 }
             }
         }
         catch (Exception ex)
         {
-            mensaje.Text = MensajeError(ex);
+            lblMensaje.Text = MensajeError(ex);
         }
         finally
         {
             c = "";
             if (!IsDisposed)
             {
-                clave.Clear();
-                confirmarClave.Clear();
+                ctContrasena.Clear();
+                ctConfirmarClave.Clear();
                 Ocupado(false);
             }
         }

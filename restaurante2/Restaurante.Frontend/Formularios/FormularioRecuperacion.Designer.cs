@@ -3,11 +3,11 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioRecuperacion
 {
     private System.ComponentModel.IContainer? components;
-    private ListBox lista = null!;
-    private TextBox detalle = null!;
-    private Button recuperar = null!;
-    private Button descartar = null!;
-    private TableLayoutPanel estructura = null!;
+    private ListBox lstLista = null!;
+    private TextBox ctDetalle = null!;
+    private Button btnRecuperar = null!;
+    private Button btnDescartar = null!;
+    private TableLayoutPanel tlpEstructura = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -18,40 +18,55 @@ partial class FormularioRecuperacion
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        lista = new ListBox();
-        detalle = new TextBox();
-        recuperar = new Button();
-        descartar = new Button();
-        estructura = new TableLayoutPanel();
+        lstLista = new ListBox()
+        {
+            Name = "lstLista"
+        };
+        ctDetalle = new TextBox()
+        {
+            Name = "ctDetalle"
+        };
+        btnRecuperar = new Button()
+        {
+            Name = "btnRecuperar"
+        };
+        btnDescartar = new Button()
+        {
+            Name = "btnDescartar"
+        };
+        tlpEstructura = new TableLayoutPanel()
+        {
+            Name = "tlpEstructura"
+        };
         SuspendLayout();
-        estructura.Dock = DockStyle.Fill;
-        estructura.Padding = new Padding(16);
-        estructura.ColumnCount = 1;
-        estructura.RowCount = 4;
-        estructura.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
-        estructura.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
-        estructura.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        estructura.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        lista.Dock = DockStyle.Fill;
-        lista.DisplayMember = "Tipo";
-        lista.SelectedIndexChanged += Seleccion_Cambio;
-        detalle.Dock = DockStyle.Fill;
-        detalle.Multiline = true;
-        detalle.ReadOnly = true;
-        detalle.ScrollBars = ScrollBars.Vertical;
-        recuperar.Text = "Recuperar la misma operación";
-        recuperar.AutoSize = true;
-        recuperar.Dock = DockStyle.Fill;
-        recuperar.Click += Recuperar_Click;
-        descartar.Text = "Abandonar solicitud sin aplicar (queda registrada en SQL)";
-        descartar.AutoSize = true;
-        descartar.Dock = DockStyle.Fill;
-        descartar.Click += Descartar_Click;
-        estructura.Controls.Add(lista, 0, 0);
-        estructura.Controls.Add(detalle, 0, 1);
-        estructura.Controls.Add(recuperar, 0, 2);
-        estructura.Controls.Add(descartar, 0, 3);
-        Controls.Add(estructura);
+        tlpEstructura.Dock = DockStyle.Fill;
+        tlpEstructura.Padding = new Padding(16);
+        tlpEstructura.ColumnCount = 1;
+        tlpEstructura.RowCount = 4;
+        tlpEstructura.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
+        tlpEstructura.RowStyles.Add(new RowStyle(SizeType.Percent, 70));
+        tlpEstructura.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tlpEstructura.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        lstLista.Dock = DockStyle.Fill;
+        lstLista.DisplayMember = "Tipo";
+        lstLista.SelectedIndexChanged += Seleccion_Cambio;
+        ctDetalle.Dock = DockStyle.Fill;
+        ctDetalle.Multiline = true;
+        ctDetalle.ReadOnly = true;
+        ctDetalle.ScrollBars = ScrollBars.Vertical;
+        btnRecuperar.Text = "Recuperar la misma operación";
+        btnRecuperar.AutoSize = true;
+        btnRecuperar.Dock = DockStyle.Fill;
+        btnRecuperar.Click += Recuperar_Click;
+        btnDescartar.Text = "Abandonar solicitud sin aplicar (queda registrada en SQL)";
+        btnDescartar.AutoSize = true;
+        btnDescartar.Dock = DockStyle.Fill;
+        btnDescartar.Click += Descartar_Click;
+        tlpEstructura.Controls.Add(lstLista, 0, 0);
+        tlpEstructura.Controls.Add(ctDetalle, 0, 1);
+        tlpEstructura.Controls.Add(btnRecuperar, 0, 2);
+        tlpEstructura.Controls.Add(btnDescartar, 0, 3);
+        Controls.Add(tlpEstructura);
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(760, 580);

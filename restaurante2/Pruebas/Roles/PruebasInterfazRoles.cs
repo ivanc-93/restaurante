@@ -13,41 +13,41 @@ internal static class PruebasInterfazRoles
     var cb=new SqlConnectionStringBuilder(cadena);if(!cb.InitialCatalog.StartsWith("Restaurante_Pruebas_"))throw new Exception("Solo interfaz aislada.");
     using(var conexion=new FormularioConexion(new ConfiguracionConexion(Path.Combine(Path.GetTempPath(),Guid.NewGuid()+".bin"))))
     {
-        Mostrar(conexion);Campo<TextBox>(conexion,"servidor").Text=cb.DataSource;Campo<NumericUpDown>(conexion,"puerto").Value=0;Campo<TextBox>(conexion,"baseDatos").Text=cb.InitialCatalog;Campo<Button>(conexion,"probar").PerformClick();
-        Esperar(()=>Campo<Label>(conexion,"mensaje").Text.Contains("compatible"));Capturar(conexion,dir,"ConexionValidada");ok(true,"Interfaz prueba conexión y esquema sin guardar perfil habitual");conexion.Close();
+        Mostrar(conexion);Campo<TextBox>(conexion,"ctServidor").Text=cb.DataSource;Campo<NumericUpDown>(conexion,"nudPuerto").Value=0;Campo<TextBox>(conexion,"ctBaseDatos").Text=cb.InitialCatalog;Campo<Button>(conexion,"btnProbar").PerformClick();
+        Esperar(()=>Campo<Label>(conexion,"lblMensaje").Text.Contains("compatible"));Capturar(conexion,dir,"ConexionValidada");ok(true,"Interfaz prueba conexión y esquema sin guardar perfil habitual");conexion.Close();
     }
     var usuario="ui"+Guid.NewGuid().ToString("N")[..8];
     using(var gestion=new FormularioUsuarios(admin))
     {
-        Mostrar(gestion);Esperar(()=>Campo<DataGridView>(gestion,"lista").DataSource is not null);
-        Campo<TextBox>(gestion,"nombre").Text="Mesero de interfaz";Campo<TextBox>(gestion,"usuario").Text=usuario;Campo<TextBox>(gestion,"clave").Text="PruebaTemporal_2026!";Campo<ComboBox>(gestion,"rol").SelectedItem="Mesero";
-        Campo<TextBox>(gestion,"confirmarClave").Text="PruebaTemporal_2026!";
-        Campo<Button>(gestion,"guardar").PerformClick();Esperar(()=>Campo<Label>(gestion,"mensaje").Text.StartsWith("Usuario guardado"));Capturar(gestion,dir,"UsuariosConDatos");ok(admin.ListarUsuarios().Any(x=>x.Usuario==usuario),"Interfaz crea mesero con cambio obligatorio");gestion.Close();
+        Mostrar(gestion);Esperar(()=>Campo<DataGridView>(gestion,"dgvRegistros").DataSource is not null);
+        Campo<TextBox>(gestion,"ctNombre").Text="Mesero de interfaz";Campo<TextBox>(gestion,"ctUsuario").Text=usuario;Campo<TextBox>(gestion,"ctContrasena").Text="PruebaTemporal_2026!";Campo<ComboBox>(gestion,"cbRol").SelectedItem="Mesero";
+        Campo<TextBox>(gestion,"ctConfirmarClave").Text="PruebaTemporal_2026!";
+        Campo<Button>(gestion,"btnGuardar").PerformClick();Esperar(()=>Campo<Label>(gestion,"lblMensaje").Text.StartsWith("Usuario guardado"));Capturar(gestion,dir,"UsuariosConDatos");ok(admin.ListarUsuarios().Any(x=>x.Usuario==usuario),"Interfaz crea mesero con cambio obligatorio");gestion.Close();
     }
     var repo=new RepositorioRestaurante(new ConfiguracionConexionTemporal(cadena));
     using(var acceso=new FormularioAcceso(repo,new ConfiguracionConexionTemporal(cadena)))
     {
-        Mostrar(acceso);Campo<TextBox>(acceso,"_usuario").Text=usuario;Campo<TextBox>(acceso,"_contrasena").Text="PruebaTemporal_2026!";
-        Modal<FormularioCambiarClave>(()=>Campo<Button>(acceso,"entrar").PerformClick(),cambio=>{
-        Campo<TextBox>(cambio,"actual").Text="PruebaTemporal_2026!";Campo<TextBox>(cambio,"nueva").Text="PruebaPersonal_2026!";Campo<TextBox>(cambio,"repetir").Text="PruebaPersonal_2026!";Campo<Button>(cambio,"guardar").PerformClick();});
-        Esperar(()=>!Application.OpenForms.OfType<FormularioCambiarClave>().Any());Esperar(()=>Campo<Button>(acceso,"entrar").Enabled);
+        Mostrar(acceso);Campo<TextBox>(acceso,"ctUsuario").Text=usuario;Campo<TextBox>(acceso,"ctContrasena").Text="PruebaTemporal_2026!";
+        Modal<FormularioCambiarClave>(()=>Campo<Button>(acceso,"btnEntrarSistema").PerformClick(),cambio=>{
+        Campo<TextBox>(cambio,"ctActual").Text="PruebaTemporal_2026!";Campo<TextBox>(cambio,"ctNueva").Text="PruebaPersonal_2026!";Campo<TextBox>(cambio,"ctRepetir").Text="PruebaPersonal_2026!";Campo<Button>(cambio,"btnGuardar").PerformClick();});
+        Esperar(()=>!Application.OpenForms.OfType<FormularioCambiarClave>().Any());Esperar(()=>Campo<Button>(acceso,"btnEntrarSistema").Enabled);
         ok(repo.UsuarioActual is null,"Interfaz obliga a volver al acceso tras cambiar contraseña");
-        Campo<TextBox>(acceso,"_contrasena").Text="PruebaPersonal_2026!";Campo<Button>(acceso,"entrar").PerformClick();Esperar(()=>acceso.DialogResult==DialogResult.OK);
+        Campo<TextBox>(acceso,"ctContrasena").Text="PruebaPersonal_2026!";Campo<Button>(acceso,"btnEntrarSistema").PerformClick();Esperar(()=>acceso.DialogResult==DialogResult.OK);
         ok(repo.UsuarioActual?.Rol=="Mesero","Interfaz autentica cuenta personal de mesero");
     }
     var numero=900000+Random.Shared.Next(90000);admin.CrearMesa(numero,2);var mesa=repo.ListarMesas().Single(x=>x.Numero==numero);var producto=repo.ListarMenu().First(x=>x.Precio>1);
     var pedido=repo.CrearPedido(new SolicitudPedido{MesaId=mesa.Id,Detalles=[new(producto.Id,1)]});var cuenta=repo.RevisarCuenta(pedido.Id);
     using(var ajuste=new FormularioAjuste(repo,cuenta))
     {
-        Mostrar(ajuste);Campo<NumericUpDown>(ajuste,"descuento").Value=1;Campo<TextBox>(ajuste,"motivo").Text="Descuento de capacitación ficticio";
-        Modal<FormularioAutorizar>(()=>Campo<Button>(ajuste,"aplicar").PerformClick(),autorizar=>{
-        Capturar(autorizar,dir,"AutorizacionConCuenta");Campo<TextBox>(autorizar,"usuario").Text="admin";Campo<TextBox>(autorizar,"clave").Text="PruebaPersonal_2026!";Campo<Button>(autorizar,"autorizar").PerformClick();});
+        Mostrar(ajuste);Campo<NumericUpDown>(ajuste,"nudDescuento").Value=1;Campo<TextBox>(ajuste,"ctMotivo").Text="Descuento de capacitación ficticio";
+        Modal<FormularioAutorizar>(()=>Campo<Button>(ajuste,"btnAplicar").PerformClick(),autorizar=>{
+        Capturar(autorizar,dir,"AutorizacionConCuenta");Campo<TextBox>(autorizar,"ctUsuario").Text="admin";Campo<TextBox>(autorizar,"ctContrasena").Text="PruebaPersonal_2026!";Campo<Button>(autorizar,"btnAutorizar").PerformClick();});
         Esperar(()=>ajuste.DialogResult==DialogResult.OK);ok(repo.RevisarCuenta(pedido.Id).Descuento==1,"Interfaz solicita gerente y aplica solo el ajuste autorizado");
     }
     using(var principal=new FormularioPrincipal(repo,new ConfiguracionConexionTemporal(cadena),repo.UsuarioActual!))
     {
-        Mostrar(principal);Esperar(()=>Campo<FlowLayoutPanel>(principal,"menu").Enabled);
-        var botones=Campo<FlowLayoutPanel>(principal,"menu").Controls.OfType<Button>().Select(x=>x.Text).ToList();
+        Mostrar(principal);Esperar(()=>Campo<FlowLayoutPanel>(principal,"flpNavegacion").Enabled);
+        var botones=Campo<FlowLayoutPanel>(principal,"flpNavegacion").Controls.OfType<Button>().Select(x=>x.Text).ToList();
         ok(!botones.Contains("Reportes")&&!botones.Contains("Usuarios")&&!botones.Contains("Configuración"),"Menú mesero oculta administración y reportes");Capturar(principal,dir,"InicioMesero");principal.Close();
     }
  }

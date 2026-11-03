@@ -13,38 +13,38 @@ internal static class PruebasValidacionAcceso
     ok(Contrasenas.ErrorValidacion("   ") is not null,"Espacios rechazados");
     using(var f=new FormularioCambiarClave())
     {
-        Mostrar(f);Campo<TextBox>(f,"actual").Text="antigua";Campo<TextBox>(f,"nueva").Text="breve";Campo<TextBox>(f,"repetir").Text="breve";Campo<Button>(f,"guardar").PerformClick();
-        ok(Campo<Label>(f,"mensaje").Text.Contains("12 caracteres"),"Cambio valida antes del servicio");
-        Campo<TextBox>(f,"actual").Clear();Campo<TextBox>(f,"nueva").Clear();Campo<TextBox>(f,"repetir").Clear();Capturar(f,dir,"ClaveCorta");
-        Campo<TextBox>(f,"actual").Text="antigua";Campo<TextBox>(f,"nueva").Text="EjemploSoloPruebas2026!";Campo<TextBox>(f,"repetir").Text="distinta";Campo<Button>(f,"guardar").PerformClick();
-        ok(Campo<Label>(f,"mensaje").Text.Contains("no coinciden"),"Corrección y reintento sin reiniciar");
-        Campo<TextBox>(f,"actual").Clear();Campo<TextBox>(f,"nueva").Clear();Campo<TextBox>(f,"repetir").Clear();Capturar(f,dir,"CambioValidacion");
+        Mostrar(f);Campo<TextBox>(f,"ctActual").Text="antigua";Campo<TextBox>(f,"ctNueva").Text="breve";Campo<TextBox>(f,"ctRepetir").Text="breve";Campo<Button>(f,"btnGuardar").PerformClick();
+        ok(Campo<Label>(f,"lblMensaje").Text.Contains("12 caracteres"),"Cambio valida antes del servicio");
+        Campo<TextBox>(f,"ctActual").Clear();Campo<TextBox>(f,"ctNueva").Clear();Campo<TextBox>(f,"ctRepetir").Clear();Capturar(f,dir,"ClaveCorta");
+        Campo<TextBox>(f,"ctActual").Text="antigua";Campo<TextBox>(f,"ctNueva").Text="EjemploSoloPruebas2026!";Campo<TextBox>(f,"ctRepetir").Text="distinta";Campo<Button>(f,"btnGuardar").PerformClick();
+        ok(Campo<Label>(f,"lblMensaje").Text.Contains("no coinciden"),"Corrección y reintento sin reiniciar");
+        Campo<TextBox>(f,"ctActual").Clear();Campo<TextBox>(f,"ctNueva").Clear();Campo<TextBox>(f,"ctRepetir").Clear();Capturar(f,dir,"CambioValidacion");
     }
     using(var f=new FormularioUsuarios())
     {
-        Mostrar(f);Campo<TextBox>(f,"nombre").Text="Persona de prueba";Campo<TextBox>(f,"usuario").Text="prueba";Campo<TextBox>(f,"clave").Text="breve";Campo<Button>(f,"guardar").PerformClick();
-        ok(Campo<Label>(f,"mensaje").Text.Contains("12 caracteres")&&Campo<TextBox>(f,"nombre").Text=="Persona de prueba","Crear usuario valida y conserva nombre");
+        Mostrar(f);Campo<TextBox>(f,"ctNombre").Text="Persona de prueba";Campo<TextBox>(f,"ctUsuario").Text="prueba";Campo<TextBox>(f,"ctContrasena").Text="breve";Campo<Button>(f,"btnGuardar").PerformClick();
+        ok(Campo<Label>(f,"lblMensaje").Text.Contains("12 caracteres")&&Campo<TextBox>(f,"ctNombre").Text=="Persona de prueba","Crear usuario valida y conserva nombre");
     }
     using(var f=new FormularioPrimerAdministrador())
     {
-        Mostrar(f);foreach(var n in new[]{"token","nombre","usuario"})Campo<TextBox>(f,n).Text="DatosFicticiosDePrueba";Campo<TextBox>(f,"clave").Text="breve";Campo<TextBox>(f,"repetir").Text="breve";Campo<Button>(f,"guardar").PerformClick();
-        ok(Campo<Label>(f,"mensaje").Text.Contains("12 caracteres"),"Administrador inicial valida antes de SQL");
+        Mostrar(f);foreach(var n in new[]{"ctToken","ctNombre","ctUsuario"})Campo<TextBox>(f,n).Text="DatosFicticiosDePrueba";Campo<TextBox>(f,"ctContrasena").Text="breve";Campo<TextBox>(f,"ctRepetir").Text="breve";Campo<Button>(f,"btnGuardar").PerformClick();
+        ok(Campo<Label>(f,"lblMensaje").Text.Contains("12 caracteres"),"Administrador inicial valida antes de SQL");
     }
     using(var f=new FormularioAcceso())
     {
-        Mostrar(f);Console.WriteLine($"ENTORNO DPI observado {f.DeviceDpi}; tamaños de ventana en píxeles, sin cambiar escalado de Windows.");Campo<Button>(f,"entrar").PerformClick();ok(Campo<Label>(f,"_mensaje").Text.Contains("usuario"),"Usuario vacío no consulta SQL");
-        Campo<TextBox>(f,"_usuario").Text="prueba";Campo<Button>(f,"entrar").PerformClick();ok(Campo<Label>(f,"_mensaje").Text.Contains("contraseña actual"),"Contraseña vacía tiene mensaje específico");
-        Campo<TextBox>(f,"_contrasena").Text="breve";Campo<CheckBox>(f,"mostrarClave").Checked=true;ok(!Campo<TextBox>(f,"_contrasena").UseSystemPasswordChar,"Mostrar contraseña");Campo<CheckBox>(f,"mostrarClave").Checked=false;ok(Campo<TextBox>(f,"_contrasena").UseSystemPasswordChar,"Ocultar contraseña");Campo<TextBox>(f,"_contrasena").Clear();
+        Mostrar(f);Console.WriteLine($"ENTORNO DPI observado {f.DeviceDpi}; tamaños de ventana en píxeles, sin cambiar escalado de Windows.");Campo<Button>(f,"btnEntrarSistema").PerformClick();ok(Campo<Label>(f,"lblMensaje").Text.Contains("usuario"),"Usuario vacío no consulta SQL");
+        Campo<TextBox>(f,"ctUsuario").Text="prueba";Campo<Button>(f,"btnEntrarSistema").PerformClick();ok(Campo<Label>(f,"lblMensaje").Text.Contains("contraseña actual"),"Contraseña vacía tiene mensaje específico");
+        Campo<TextBox>(f,"ctContrasena").Text="breve";Campo<CheckBox>(f,"chkMostrarContrasena").Checked=true;ok(!Campo<TextBox>(f,"ctContrasena").UseSystemPasswordChar,"Mostrar contraseña");Campo<CheckBox>(f,"chkMostrarContrasena").Checked=false;ok(Campo<TextBox>(f,"ctContrasena").UseSystemPasswordChar,"Ocultar contraseña");Campo<TextBox>(f,"ctContrasena").Clear();
         foreach(var t in new[]{new Size(1280,720),new Size(1366,768)})
         {
-            f.Size=t;Campo<Label>(f,"_mensaje").Text="No se pudo verificar el acceso. Comprueba la conexión y vuelve a intentarlo. La configuración anterior se conserva.";f.PerformLayout();Application.DoEvents();
-            var p=Campo<TableLayoutPanel>(f,"estructura");var controles=p.Controls.Cast<Control>().Where(c=>c.Visible).ToArray();
+            f.Size=t;Campo<Label>(f,"lblMensaje").Text="No se pudo verificar el acceso. Comprueba la conexión y vuelve a intentarlo. La configuración anterior se conserva.";f.PerformLayout();Application.DoEvents();
+            var p=Campo<TableLayoutPanel>(f,"tlpEstructura");var controles=p.Controls.Cast<Control>().Where(c=>c.Visible).ToArray();
             ok(!controles.Any(a=>controles.Any(b=>a!=b&&a.Bounds.IntersectsWith(b.Bounds))),"Sin superposición con mensaje largo "+t.Width);
-            foreach(var nombre in new[]{"entrar","conexion","_mensaje","mostrarClave"})
+            foreach(var nombre in new[]{"btnEntrarSistema","btnConfigurarConexion","lblMensaje","chkMostrarContrasena"})
             {var c=Campo<Control>(f,nombre);var rect=f.RectangleToClient(c.RectangleToScreen(c.ClientRectangle));ok(f.ClientRectangle.Contains(rect)&&c.Parent!.ClientRectangle.Contains(c.Bounds),"Control visible sin recorte "+nombre+" en "+t.Width);}
             Capturar(f,dir,"Acceso-"+t.Width);
         }
-        ok(f.AcceptButton==Campo<Button>(f,"entrar")&&Campo<TextBox>(f,"_usuario").TabIndex==0&&Campo<Button>(f,"conexion").TabIndex==4,"Enter y tabulación configurados");
+        ok(f.AcceptButton==Campo<Button>(f,"btnEntrarSistema")&&Campo<TextBox>(f,"ctUsuario").TabIndex==0&&Campo<Button>(f,"btnConfigurarConexion").TabIndex==5,"Enter y tabulación configurados");
     }
  }
  static T Campo<T>(Form f,string n)=>(T)f.GetType().GetField(n,BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(f)!;

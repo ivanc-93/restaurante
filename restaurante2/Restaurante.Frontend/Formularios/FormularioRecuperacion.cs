@@ -27,36 +27,36 @@ public sealed partial class FormularioRecuperacion : Form
     {
         try
         {
-            lista.DataSource = DiarioOperaciones.Listar(_repo).ToList();
-            recuperar.Enabled = descartar.Enabled = lista.SelectedItem is OperacionPendienteLocal { Tipo: not "Ilegible" };
-            if (lista.Items.Count == 0)
-                detalle.Text = "No hay operaciones pendientes para este usuario y esta base.";
+            lstLista.DataSource = DiarioOperaciones.Listar(_repo).ToList();
+            btnRecuperar.Enabled = btnDescartar.Enabled = lstLista.SelectedItem is OperacionPendienteLocal { Tipo: not "Ilegible" };
+            if (lstLista.Items.Count == 0)
+                ctDetalle.Text = "No hay operaciones pendientes para este usuario y esta base.";
         }
         catch (Exception ex)
         {
-            detalle.Text = ex.Message;
-            recuperar.Enabled = descartar.Enabled = false;
+            ctDetalle.Text = ex.Message;
+            btnRecuperar.Enabled = btnDescartar.Enabled = false;
         }
     }
 
     private void Seleccion_Cambio(object? sender, EventArgs e)
     {
-        if (lista.SelectedItem is OperacionPendienteLocal p)
+        if (lstLista.SelectedItem is OperacionPendienteLocal p)
         {
-            detalle.Text = PresentacionPendiente.Resumen(p);
-            recuperar.Enabled = descartar.Enabled = p.Tipo != "Ilegible";
+            ctDetalle.Text = PresentacionPendiente.Resumen(p);
+            btnRecuperar.Enabled = btnDescartar.Enabled = p.Tipo != "Ilegible";
         }
     }
 
     private async void Recuperar_Click(object? sender, EventArgs e)
     {
-        if (_ocupado || lista.SelectedItem is not OperacionPendienteLocal p)
+        if (_ocupado || lstLista.SelectedItem is not OperacionPendienteLocal p)
             return;
         if (MessageBox.Show(this, "Revisa los datos mostrados. ¿Recuperar o completar exactamente esta operación?", "Recuperar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
         _ocupado = true;
-        lista.Enabled = false;
-        recuperar.Enabled = descartar.Enabled = false;
+        lstLista.Enabled = false;
+        btnRecuperar.Enabled = btnDescartar.Enabled = false;
         try
         {
             if (!await Task.Run(() => _repo.OperacionAplicada(p.Id)) && PresentacionPendiente.Autorizacion(p)is { } autorizacion)
@@ -71,25 +71,25 @@ public sealed partial class FormularioRecuperacion : Form
         }
         catch (Exception ex)
         {
-            detalle.Text = ex.Message;
+            ctDetalle.Text = ex.Message;
         }
         finally
         {
             _ocupado = false;
-            lista.Enabled = true;
-            recuperar.Enabled = descartar.Enabled = lista.SelectedItem is OperacionPendienteLocal { Tipo: not "Ilegible" };
+            lstLista.Enabled = true;
+            btnRecuperar.Enabled = btnDescartar.Enabled = lstLista.SelectedItem is OperacionPendienteLocal { Tipo: not "Ilegible" };
         }
     }
 
     private async void Descartar_Click(object? sender, EventArgs e)
     {
-        if (_ocupado || lista.SelectedItem is not OperacionPendienteLocal p)
+        if (_ocupado || lstLista.SelectedItem is not OperacionPendienteLocal p)
             return;
         if (MessageBox.Show(this, "SQL registrará el abandono definitivo de esta solicitud. Si otra instancia ya la aplicó, deberá recuperarse. No cancela pedidos ni consumo. ¿Continuar?", "Descartar solicitud no aplicada", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
         _ocupado = true;
-        lista.Enabled = false;
-        recuperar.Enabled = descartar.Enabled = false;
+        lstLista.Enabled = false;
+        btnRecuperar.Enabled = btnDescartar.Enabled = false;
         try
         {
             await Task.Run(() => DiarioOperaciones.DescartarRechazada(_repo, p));
@@ -97,13 +97,13 @@ public sealed partial class FormularioRecuperacion : Form
         }
         catch (Exception ex)
         {
-            detalle.Text = ex.Message;
+            ctDetalle.Text = ex.Message;
         }
         finally
         {
             _ocupado = false;
-            lista.Enabled = true;
-            recuperar.Enabled = descartar.Enabled = lista.SelectedItem is OperacionPendienteLocal { Tipo: not "Ilegible" };
+            lstLista.Enabled = true;
+            btnRecuperar.Enabled = btnDescartar.Enabled = lstLista.SelectedItem is OperacionPendienteLocal { Tipo: not "Ilegible" };
         }
     }
 }

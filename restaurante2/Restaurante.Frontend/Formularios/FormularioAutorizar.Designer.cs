@@ -1,39 +1,41 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioAutorizar
 {
-    private TextBox usuario = null!, clave = null!;
-    private Label resumen = null!, mensaje = null!;
-    private Button autorizar = null!, cancelar = null!;
-    private CheckBox mostrarClave = null!;
+    private TextBox ctUsuario = null!, ctContrasena = null!;
+    private Label lblResumen = null!, lblMensaje = null!;
+    private Button btnAutorizar = null!, btnCancelar = null!;
+    private CheckBox chkMostrarContrasena = null!;
     private void InitializeComponent()
     {
-        var p = DisenoFormulario.Preparar(this, "Autorización puntual del gerente");
-        resumen = new Label
+        var flpP = DisenoFormulario.Preparar(this, "Autorización puntual del gerente");
+        lblResumen = new Label
         {
             AutoSize = true,
-            MaximumSize = new Size(500, 0)
+            MaximumSize = new Size(500, 0),
+            Name = "lblResumen"
         };
-        p.Controls.Add(resumen);
-        usuario = DisenoFormulario.Campo(p, "Usuario del gerente o administrador");
-        clave = DisenoFormulario.Campo(p, "Contraseña individual", true);
-        usuario.MaxLength = 50;
-        usuario.TabIndex = 0;
-        clave.TabIndex = 1;
-        mostrarClave = new CheckBox
+        flpP.Controls.Add(lblResumen);
+        ctUsuario = DisenoFormulario.Campo(flpP, "Usuario del gerente o administrador");
+        ctContrasena = DisenoFormulario.Campo(flpP, "Contraseña individual", true);
+        ctUsuario.MaxLength = 50;
+        ctUsuario.TabIndex = 0;
+        ctContrasena.TabIndex = 1;
+        chkMostrarContrasena = new CheckBox
         {
             Text = "Mostrar contraseña",
             AutoSize = true,
-            TabIndex = 2
+            TabIndex = 2,
+            Name = "chkMostrarContrasena"
         };
-        mostrarClave.CheckedChanged += (_, _) => clave.UseSystemPasswordChar = !mostrarClave.Checked;
-        p.Controls.Add(mostrarClave);
-        p.Controls.Add(new Label { Text = "Introduce la contraseña vigente de esa cuenta. No es una contraseña nueva.", AutoSize = true, MaximumSize = new Size(650, 0) });
-        autorizar = DisenoFormulario.Boton(p, "Autorizar esta operación", Autorizar_Click);
-        autorizar.TabIndex = 3;
-        cancelar = DisenoFormulario.Boton(p, "Cancelar", Cancelar_Click);
-        cancelar.TabIndex = 4;
-        mensaje = DisenoFormulario.Mensaje(p);
-        AcceptButton = autorizar;
-        CancelButton = cancelar;
+        chkMostrarContrasena.CheckedChanged += (_, _) => ctContrasena.UseSystemPasswordChar = !chkMostrarContrasena.Checked;
+        flpP.Controls.Add(chkMostrarContrasena);
+        flpP.Controls.Add(new Label { Text = "Introduce la contraseña vigente de esa cuenta. No es una contraseña nueva.", AutoSize = true, MaximumSize = new Size(650, 0) });
+        btnAutorizar = DisenoFormulario.Boton(flpP, "Autorizar esta operación", Autorizar_Click);
+        btnAutorizar.TabIndex = 3;
+        btnCancelar = DisenoFormulario.Boton(flpP, "Cancelar", Cancelar_Click);
+        btnCancelar.TabIndex = 4;
+        lblMensaje = DisenoFormulario.Mensaje(flpP);
+        AcceptButton = btnAutorizar;
+        CancelButton = btnCancelar;
     }
 }

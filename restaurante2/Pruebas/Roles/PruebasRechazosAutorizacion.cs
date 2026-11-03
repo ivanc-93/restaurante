@@ -44,7 +44,7 @@ internal static class PruebasRechazosAutorizacion
     }
     finally{AppDomain.CurrentDomain.FirstChanceException-=escuchar;}
     using(var f=new FormularioAutorizar(mesero,solicitud.OperacionId,"GestionMesa",solicitud,"Mesa ficticia · cancelar sin consumo"))
-    {Mostrar(f);Campo<Button>(f,"cancelar").PerformClick();Esperar(()=>f.IsDisposed||f.DialogResult==DialogResult.Cancel);ok(Conteo("AutorizacionesOperacion",solicitud.OperacionId)==0,"Cancelar revoca aprobación previa y no ejecuta gestión");}
+    {Mostrar(f);Campo<Button>(f,"btnCancelar").PerformClick();Esperar(()=>f.IsDisposed||f.DialogResult==DialogResult.Cancel);ok(Conteo("AutorizacionesOperacion",solicitud.OperacionId)==0,"Cancelar revoca aprobación previa y no ejecuta gestión");}
     Intentar(gerente,Personal);Sql("UPDATE dbo.AutorizacionesOperacion SET Caduca=DATEADD(minute,-1,SYSUTCDATETIME()) WHERE OperacionId=@id;",("@id",solicitud.OperacionId));
     Rechaza(()=>mesero.GestionarMesa(solicitud),ok,"Aprobación vencida no permite ejecutar");
     mesero.AgregarProductoAPedido(pedido.Id,producto.Id,1);ok(Intentar(gerente,Personal).Estado==EstadoAutorizacion.SolicitudModificada,"Cuenta modificada devuelve instrucción de actualizar");
@@ -53,28 +53,28 @@ internal static class PruebasRechazosAutorizacion
     Rechaza(()=>mesero.GestionarMesa(solicitud),ok,"Cambio de cuenta autorizadora invalida aprobación");
     using(var f=new FormularioAutorizar(mesero,solicitud.OperacionId,"GestionMesa",solicitud,$"Mesa {mesa.Numero} · Pedido {pedido.Id}\nCancelar sin preparación ni consumo\nImporte {MonedaGuatemala.Formatear(mesero.RevisarCuenta(pedido.Id).Total)}"))
     {
-        Mostrar(f);Campo<Button>(f,"autorizar").PerformClick();ok(Campo<Label>(f,"mensaje").Text.Contains("usuario"),"Interfaz valida usuario vacío sin enviar");
-        Campo<TextBox>(f,"usuario").Text=gerente;Campo<Button>(f,"autorizar").PerformClick();ok(Campo<Label>(f,"mensaje").Text.Contains("contraseña vigente"),"Interfaz valida contraseña vacía sin nueva política de longitud");
-        Campo<TextBox>(f,"clave").Text="incorrecta";Campo<CheckBox>(f,"mostrarClave").Checked=true;ok(!Campo<TextBox>(f,"clave").UseSystemPasswordChar,"Mostrar contraseña funciona en autorización");
-        Campo<Button>(f,"autorizar").PerformClick();Esperar(()=>f.Resultado is not null&&Campo<Button>(f,"autorizar").Enabled);
-        ok(f.Resultado!.Estado==EstadoAutorizacion.CredencialesNoVerificadas&&Campo<TextBox>(f,"usuario").Text==gerente&&Campo<TextBox>(f,"clave").Text==""&& !Campo<CheckBox>(f,"mostrarClave").Checked,"Rechazo mantiene usuario limpia y vuelve a ocultar contraseña");
+        Mostrar(f);Campo<Button>(f,"btnAutorizar").PerformClick();ok(Campo<Label>(f,"lblMensaje").Text.Contains("usuario"),"Interfaz valida usuario vacío sin enviar");
+        Campo<TextBox>(f,"ctUsuario").Text=gerente;Campo<Button>(f,"btnAutorizar").PerformClick();ok(Campo<Label>(f,"lblMensaje").Text.Contains("contraseña vigente"),"Interfaz valida contraseña vacía sin nueva política de longitud");
+        Campo<TextBox>(f,"ctContrasena").Text="incorrecta";Campo<CheckBox>(f,"chkMostrarContrasena").Checked=true;ok(!Campo<TextBox>(f,"ctContrasena").UseSystemPasswordChar,"Mostrar contraseña funciona en autorización");
+        Campo<Button>(f,"btnAutorizar").PerformClick();Esperar(()=>f.Resultado is not null&&Campo<Button>(f,"btnAutorizar").Enabled);
+        ok(f.Resultado!.Estado==EstadoAutorizacion.CredencialesNoVerificadas&&Campo<TextBox>(f,"ctUsuario").Text==gerente&&Campo<TextBox>(f,"ctContrasena").Text==""&& !Campo<CheckBox>(f,"chkMostrarContrasena").Checked,"Rechazo mantiene usuario limpia y vuelve a ocultar contraseña");
         Capturar(f,dir,"AutorizacionRechazada");
         foreach(var tamano in new[]{new Size(1280,720),new Size(1366,768)})
-        {f.Size=tamano;f.PerformLayout();Application.DoEvents();foreach(var n in new[]{"autorizar","cancelar","mensaje"}){var c=Campo<Control>(f,n);ok(f.ClientRectangle.Contains(f.RectangleToClient(c.RectangleToScreen(c.ClientRectangle))),"Control visible "+n+" en "+tamano.Width);}Capturar(f,dir,"Autorizacion-"+tamano.Width);}
-        ok(!Campo<TextBox>(f,"clave").InvokeRequired,"Campo de contraseña conserva el hilo de interfaz después del rechazo");
-        Campo<TextBox>(f,"clave").Text=Personal;Application.DoEvents();
-        ok(Campo<TextBox>(f,"clave").Text.Length==Personal.Length,"Contraseña de reintento permanece en el campo antes de enviar");
-        Campo<Button>(f,"autorizar").PerformClick();
-        try{Esperar(()=>f.Resultado is not null&&Campo<Button>(f,"autorizar").Enabled||f.DialogResult==DialogResult.OK);}
-        catch{Capturar(f,dir,"ReintentoDiagnostico");Console.Error.WriteLine("Estado de reintento: "+f.Resultado?.Estado+"; "+Campo<Label>(f,"mensaje").Text+"; botón activo "+Campo<Button>(f,"autorizar").Enabled);throw;}
-        if(f.DialogResult!=DialogResult.OK)throw new Exception("Reintento: "+f.Resultado?.Estado+"; "+Campo<Label>(f,"mensaje").Text);
+        {f.Size=tamano;f.PerformLayout();Application.DoEvents();foreach(var n in new[]{"btnAutorizar","btnCancelar","lblMensaje"}){var c=Campo<Control>(f,n);ok(f.ClientRectangle.Contains(f.RectangleToClient(c.RectangleToScreen(c.ClientRectangle))),"Control visible "+n+" en "+tamano.Width);}Capturar(f,dir,"Autorizacion-"+tamano.Width);}
+        ok(!Campo<TextBox>(f,"ctContrasena").InvokeRequired,"Campo de contraseña conserva el hilo de interfaz después del rechazo");
+        Campo<TextBox>(f,"ctContrasena").Text=Personal;Application.DoEvents();
+        ok(Campo<TextBox>(f,"ctContrasena").Text.Length==Personal.Length,"Contraseña de reintento permanece en el campo antes de enviar");
+        Campo<Button>(f,"btnAutorizar").PerformClick();
+        try{Esperar(()=>f.Resultado is not null&&Campo<Button>(f,"btnAutorizar").Enabled||f.DialogResult==DialogResult.OK);}
+        catch{Capturar(f,dir,"ReintentoDiagnostico");Console.Error.WriteLine("Estado de reintento: "+f.Resultado?.Estado+"; "+Campo<Label>(f,"lblMensaje").Text+"; botón activo "+Campo<Button>(f,"btnAutorizar").Enabled);throw;}
+        if(f.DialogResult!=DialogResult.OK)throw new Exception("Reintento: "+f.Resultado?.Estado+"; "+Campo<Label>(f,"lblMensaje").Text);
         ok(f.Resultado!.Autorizada,"Mismo diálogo permite reintento correcto sin reiniciar");
     }
     mesero.GestionarMesa(solicitud);var repetido=mesero.GestionarMesa(solicitud);ok(repetido=="Cancelado"&&Conteo("OperacionesRestaurante",solicitud.OperacionId)==1,"Recuperación del resultado no duplica gestión");
     ok(Intentar(gerente,Personal).Estado==EstadoAutorizacion.OperacionAplicada,"Solicitud ya aplicada exige recuperación y no otra aprobación");
     var cfgSinSql=new ConfiguracionConexionTemporal("Server=127.0.0.1,1;Database=Restaurante_Pruebas_SinServidor;Integrated Security=True;Connect Timeout=1;Encrypt=False;");
     using(var f=new FormularioAutorizar(new RepositorioRestaurante(cfgSinSql),Guid.NewGuid(),"GestionMesa",solicitud,"Prueba de conexión no disponible"))
-    {Mostrar(f);Campo<TextBox>(f,"usuario").Text="cuenta ficticia";Campo<TextBox>(f,"clave").Text="valor ficticio";Campo<Button>(f,"autorizar").PerformClick();Esperar(()=>Campo<Button>(f,"autorizar").Enabled&&Campo<Label>(f,"mensaje").Text.Contains("base de datos"));ok(f.DialogResult!=DialogResult.OK&&f.Resultado is null,"Error SQL no se presenta como contraseña incorrecta ni autoriza");Capturar(f,dir,"AutorizacionSinSql");Campo<Button>(f,"cancelar").PerformClick();Esperar(()=>f.IsDisposed||f.DialogResult==DialogResult.Cancel);}
+    {Mostrar(f);Campo<TextBox>(f,"ctUsuario").Text="cuenta ficticia";Campo<TextBox>(f,"ctContrasena").Text="valor ficticio";Campo<Button>(f,"btnAutorizar").PerformClick();Esperar(()=>Campo<Button>(f,"btnAutorizar").Enabled&&Campo<Label>(f,"lblMensaje").Text.Contains("base de datos"));ok(f.DialogResult!=DialogResult.OK&&f.Resultado is null,"Error SQL no se presenta como contraseña incorrecta ni autoriza");Capturar(f,dir,"AutorizacionSinSql");Campo<Button>(f,"btnCancelar").PerformClick();Esperar(()=>f.IsDisposed||f.DialogResult==DialogResult.Cancel);}
  }
  static void Rechaza(Action a,Action<bool,string> ok,string mensaje){try{a();throw new Exception("Se permitió: "+mensaje);}catch(UnauthorizedAccessException){ok(true,mensaje);}}
  static T Campo<T>(Form f,string n)=>(T)f.GetType().GetField(n,BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(f)!;

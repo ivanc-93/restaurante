@@ -16,12 +16,12 @@ public sealed partial class FormularioCambiarClave : Form
     {
         if (ocupado)
             return;
-        if (!ValidacionCredenciales.Campo(actual, mensaje, "la contraseña actual") || !ValidacionCredenciales.Nueva(nueva, mensaje, repetir, actual))
+        if (!ValidacionCredenciales.Campo(ctActual, lblMensaje, "la contraseña actual") || !ValidacionCredenciales.Nueva(ctNueva, lblMensaje, ctRepetir, ctActual))
             return;
-        var a = actual.Text;
-        var n = nueva.Text;
+        var a = ctActual.Text;
+        var n = ctNueva.Text;
         ocupado = true;
-        guardar.Enabled = false;
+        btnGuardar.Enabled = false;
         bool terminado = false;
         try
         {
@@ -30,15 +30,15 @@ public sealed partial class FormularioCambiarClave : Form
         }
         catch (Exception ex)
         {
-            mensaje.Text = ex.Message;
+            lblMensaje.Text = ex.Message;
         }
         finally
         {
             ocupado = false;
-            guardar.Enabled = true;
-            actual.Clear();
-            nueva.Clear();
-            repetir.Clear();
+            btnGuardar.Enabled = true;
+            ctActual.Clear();
+            ctNueva.Clear();
+            ctRepetir.Clear();
         }
 
         if (terminado)

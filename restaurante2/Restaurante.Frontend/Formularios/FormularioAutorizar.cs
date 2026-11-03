@@ -19,7 +19,7 @@ public sealed partial class FormularioAutorizar : Form
         this.id = id;
         this.tipo = tipo;
         json = JsonSerializer.Serialize(solicitud, solicitud.GetType());
-        resumen.Text = detalle + "\nAutoriza únicamente estos datos durante dos minutos. La sesión del mesero no cambia.";
+        lblResumen.Text = detalle + "\nAutoriza únicamente estos datos durante dos minutos. La sesión del mesero no cambia.";
         FormClosing += (_, e) =>
         {
             if (ocupado)
@@ -39,8 +39,8 @@ public sealed partial class FormularioAutorizar : Form
     private void Procesando(bool valor)
     {
         ocupado = valor;
-        usuario.Enabled = clave.Enabled = mostrarClave.Enabled = autorizar.Enabled = cancelar.Enabled = !valor;
-        autorizar.Text = valor ? "Comprobando…" : "Autorizar esta operación";
+        ctUsuario.Enabled = ctContrasena.Enabled = chkMostrarContrasena.Enabled = btnAutorizar.Enabled = btnCancelar.Enabled = !valor;
+        btnAutorizar.Text = valor ? "Comprobando…" : "Autorizar esta operación";
         UseWaitCursor = valor;
     }
 
@@ -50,24 +50,24 @@ public sealed partial class FormularioAutorizar : Form
         if (ocupado)
             return;
         Resultado = null;
-        if (string.IsNullOrWhiteSpace(usuario.Text))
+        if (string.IsNullOrWhiteSpace(ctUsuario.Text))
         {
-            mensaje.Text = "Escribe el usuario del gerente o administrador.";
-            usuario.Focus();
+            lblMensaje.Text = "Escribe el usuario del gerente o administrador.";
+            ctUsuario.Focus();
             return;
         }
 
-        if (string.IsNullOrEmpty(clave.Text))
+        if (string.IsNullOrEmpty(ctContrasena.Text))
         {
-            mensaje.Text = "Escribe la contraseña vigente de esa cuenta.";
-            clave.Focus();
+            lblMensaje.Text = "Escribe la contraseña vigente de esa cuenta.";
+            ctContrasena.Focus();
             return;
         }
 
-        var u = usuario.Text;
-        var c = clave.Text;
+        var u = ctUsuario.Text;
+        var c = ctContrasena.Text;
         Procesando(true);
-        mensaje.Text = "Comprobando cuenta y solicitud…";
+        lblMensaje.Text = "Comprobando cuenta y solicitud…";
         ResultadoAutorizacion? resultado = null;
         string texto;
         try
@@ -88,9 +88,9 @@ public sealed partial class FormularioAutorizar : Form
         EnInterfaz(() =>
         {
             Resultado = resultado;
-            mensaje.Text = texto;
-            clave.Clear();
-            mostrarClave.Checked = false;
+            lblMensaje.Text = texto;
+            ctContrasena.Clear();
+            chkMostrarContrasena.Checked = false;
             Procesando(false);
             if (Resultado?.Autorizada == true)
             {
@@ -101,8 +101,8 @@ public sealed partial class FormularioAutorizar : Form
             else
             {
                 if (Resultado?.Estado == EstadoAutorizacion.OperacionAplicada)
-                    autorizar.Enabled = false;
-                clave.Focus();
+                    btnAutorizar.Enabled = false;
+                ctContrasena.Focus();
             }
         });
     }
@@ -126,8 +126,8 @@ public sealed partial class FormularioAutorizar : Form
         {
             EnInterfaz(() =>
             {
-                clave.Clear();
-                mostrarClave.Checked = false;
+                ctContrasena.Clear();
+                chkMostrarContrasena.Checked = false;
                 Procesando(false);
                 cerrando = true;
                 DialogResult = DialogResult.Cancel;

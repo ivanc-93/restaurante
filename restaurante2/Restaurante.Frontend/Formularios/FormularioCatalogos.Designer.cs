@@ -3,31 +3,31 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioCatalogos
 {
     private System.ComponentModel.IContainer? components;
-    private ComboBox modo = null!;
-    private DataGridView tabla = null!;
-    private TextBox nombre = null!;
-    private TextBox telefono = null!;
-    private TextBox correo = null!;
-    private TextBox categoria = null!;
-    private TextBox ubicacion = null!;
-    private ComboBox tipo = null!;
-    private NumericUpDown precio = null!;
-    private CheckBox alcoholica = null!;
-    private Button nuevo = null!;
-    private Button editar = null!;
-    private Button guardar = null!;
-    private Button desactivar = null!;
-    private FlowLayoutPanel campos = null!;
-    private TableLayoutPanel layout = null!;
-    private Label nombreLabel = null!;
-    private Label telefonoLabel = null!;
-    private Label correoLabel = null!;
-    private Label categoriaLabel = null!;
-    private Label ubicacionLabel = null!;
-    private Label tipoLabel = null!;
-    private Label precioLabel = null!;
-    private TextBox buscarCatalogo = null!;
-    private Label tituloCatalogo = null!, estadoEdicion = null!;
+    private ComboBox cbModo = null!;
+    private DataGridView dgvRegistros = null!;
+    private TextBox ctNombre = null!;
+    private TextBox ctTelefono = null!;
+    private TextBox ctCorreo = null!;
+    private TextBox ctCategoria = null!;
+    private TextBox ctUbicacion = null!;
+    private ComboBox cbTipo = null!;
+    private NumericUpDown nudPrecio = null!;
+    private CheckBox chkAlcoholica = null!;
+    private Button btnNuevo = null!;
+    private Button btnEditar = null!;
+    private Button btnGuardar = null!;
+    private Button btnDesactivar = null!;
+    private FlowLayoutPanel flpCampos = null!;
+    private TableLayoutPanel tlpLayout = null!;
+    private Label lblNombreLabel = null!;
+    private Label lblTelefonoLabel = null!;
+    private Label lblCorreoLabel = null!;
+    private Label lblCategoriaLabel = null!;
+    private Label lblUbicacionLabel = null!;
+    private Label lblTipoLabel = null!;
+    private Label lblPrecioLabel = null!;
+    private TextBox ctBuscarCatalogo = null!;
+    private Label lblTituloCatalogo = null!, lblEstadoEdicion = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -38,148 +38,220 @@ partial class FormularioCatalogos
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        modo = new ComboBox();
-        tabla = new DataGridView();
-        nombre = new TextBox();
-        telefono = new TextBox();
-        correo = new TextBox();
-        categoria = new TextBox();
-        ubicacion = new TextBox();
-        tipo = new ComboBox();
-        precio = new NumericUpDown();
-        alcoholica = new CheckBox();
-        nuevo = new Button();
-        editar = new Button();
-        guardar = new Button();
-        desactivar = new Button();
-        campos = new FlowLayoutPanel();
-        layout = new TableLayoutPanel();
-        nombreLabel = new Label();
-        telefonoLabel = new Label();
-        correoLabel = new Label();
-        categoriaLabel = new Label();
-        ubicacionLabel = new Label();
-        tipoLabel = new Label();
-        precioLabel = new Label();
-        ((System.ComponentModel.ISupportInitialize)tabla).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)precio).BeginInit();
+        cbModo = new ComboBox()
+        {
+            Name = "cbModo"
+        };
+        dgvRegistros = new DataGridView()
+        {
+            Name = "dgvRegistros"
+        };
+        ctNombre = new TextBox()
+        {
+            Name = "ctNombre"
+        };
+        ctTelefono = new TextBox()
+        {
+            Name = "ctTelefono"
+        };
+        ctCorreo = new TextBox()
+        {
+            Name = "ctCorreo"
+        };
+        ctCategoria = new TextBox()
+        {
+            Name = "ctCategoria"
+        };
+        ctUbicacion = new TextBox()
+        {
+            Name = "ctUbicacion"
+        };
+        cbTipo = new ComboBox()
+        {
+            Name = "cbTipo"
+        };
+        nudPrecio = new NumericUpDown()
+        {
+            Name = "nudPrecio"
+        };
+        chkAlcoholica = new CheckBox()
+        {
+            Name = "chkAlcoholica"
+        };
+        btnNuevo = new Button()
+        {
+            Name = "btnNuevo"
+        };
+        btnEditar = new Button()
+        {
+            Name = "btnEditar"
+        };
+        btnGuardar = new Button()
+        {
+            Name = "btnGuardar"
+        };
+        btnDesactivar = new Button()
+        {
+            Name = "btnDesactivar"
+        };
+        flpCampos = new FlowLayoutPanel()
+        {
+            Name = "flpCampos"
+        };
+        tlpLayout = new TableLayoutPanel()
+        {
+            Name = "tlpLayout"
+        };
+        lblNombreLabel = new Label()
+        {
+            Name = "lblNombreLabel"
+        };
+        lblTelefonoLabel = new Label()
+        {
+            Name = "lblTelefonoLabel"
+        };
+        lblCorreoLabel = new Label()
+        {
+            Name = "lblCorreoLabel"
+        };
+        lblCategoriaLabel = new Label()
+        {
+            Name = "lblCategoriaLabel"
+        };
+        lblUbicacionLabel = new Label()
+        {
+            Name = "lblUbicacionLabel"
+        };
+        lblTipoLabel = new Label()
+        {
+            Name = "lblTipoLabel"
+        };
+        lblPrecioLabel = new Label()
+        {
+            Name = "lblPrecioLabel"
+        };
+        ((System.ComponentModel.ISupportInitialize)dgvRegistros).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)nudPrecio).BeginInit();
         SuspendLayout();
         Font = Componentes.Fuente;
         AutoScaleDimensions = new SizeF(96, 96);
         AutoScaleMode = AutoScaleMode.Dpi;
         BackColor = Componentes.Fondo;
-        layout.Dock = DockStyle.Fill;
-        layout.Padding = new Padding(15);
-        layout.ColumnCount = 2;
-        layout.RowCount = 2;
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65F));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86F));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        modo.DropDownStyle = ComboBoxStyle.DropDownList;
-        modo.Items.AddRange(new object[] { "Clientes", "Productos" });
-        modo.Width = 220;
-        modo.SelectedIndexChanged += Modo_Cambio;
-        tabla.Dock = DockStyle.Fill;
-        tabla.ReadOnly = true;
-        tabla.AllowUserToAddRows = false;
-        tabla.AutoGenerateColumns = true;
-        campos.Dock = DockStyle.Fill;
-        campos.FlowDirection = FlowDirection.TopDown;
-        campos.WrapContents = false;
-        campos.AutoScroll = true;
-        campos.BackColor = Color.White;
-        campos.Padding = new Padding(18);
-        campos.Margin = new Padding(18, 0, 0, 0);
-        estadoEdicion = new Label
+        tlpLayout.Dock = DockStyle.Fill;
+        tlpLayout.Padding = new Padding(15);
+        tlpLayout.ColumnCount = 2;
+        tlpLayout.RowCount = 2;
+        tlpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65F));
+        tlpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
+        tlpLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 86F));
+        tlpLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        cbModo.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbModo.Items.AddRange(new object[] { "Clientes", "Productos" });
+        cbModo.Width = 220;
+        cbModo.SelectedIndexChanged += Modo_Cambio;
+        dgvRegistros.Dock = DockStyle.Fill;
+        dgvRegistros.ReadOnly = true;
+        dgvRegistros.AllowUserToAddRows = false;
+        dgvRegistros.AutoGenerateColumns = true;
+        flpCampos.Dock = DockStyle.Fill;
+        flpCampos.FlowDirection = FlowDirection.TopDown;
+        flpCampos.WrapContents = false;
+        flpCampos.AutoScroll = true;
+        flpCampos.BackColor = Color.White;
+        flpCampos.Padding = new Padding(18);
+        flpCampos.Margin = new Padding(18, 0, 0, 0);
+        lblEstadoEdicion = new Label
         {
             Text = "Nuevo registro",
             AutoSize = true,
             Font = new Font("Segoe UI", 18, FontStyle.Bold),
-            Margin = new Padding(0, 0, 0, 16)
+            Margin = new Padding(0, 0, 0, 16),
+            Name = "lblEstadoEdicion"
         };
-        nombreLabel.AutoSize = true;
-        telefonoLabel.AutoSize = true;
-        correoLabel.AutoSize = true;
-        categoriaLabel.AutoSize = true;
-        ubicacionLabel.AutoSize = true;
-        tipoLabel.AutoSize = true;
-        precioLabel.AutoSize = true;
-        nombre.Width = 260;
-        nombre.MaxLength = 120;
-        nombreLabel.Text = "Nombre (obligatorio)";
-        telefono.Width = 260;
-        telefono.MaxLength = 30;
-        telefonoLabel.Text = "Teléfono del cliente";
-        correo.Width = 260;
-        correo.MaxLength = 150;
-        correoLabel.Text = "Correo del cliente";
-        categoria.Width = 260;
-        categoria.MaxLength = 60;
-        categoriaLabel.Text = "Categoría del producto";
-        ubicacion.Width = 260;
-        ubicacion.MaxLength = 250;
-        ubicacionLabel.Text = "Ubicación del restaurante";
-        tipo.Width = 260;
-        tipo.DropDownStyle = ComboBoxStyle.DropDownList;
-        tipo.Items.AddRange(new object[] { "Plato", "Bebida" });
-        tipoLabel.Text = "Tipo de producto";
-        precio.Width = 260;
-        precio.DecimalPlaces = 2;
-        precio.Maximum = 99999999.99M;
-        precioLabel.Text = "Precio (cero = cortesía)";
-        alcoholica.Text = "Bebida alcohólica";
-        alcoholica.AutoSize = true;
-        nuevo.Text = "Nuevo / Limpiar";
-        nuevo.Size = new Size(260, 48);
-        nuevo.Click += Nuevo_Click;
-        editar.Text = "Editar seleccionado";
-        editar.Size = new Size(260, 32);
-        editar.Click += Seleccionar_Click;
-        guardar.Text = "Guardar cambios";
-        guardar.Size = new Size(260, 48);
-        guardar.Click += Guardar_Click;
-        desactivar.Text = "Desactivar seleccionado";
-        desactivar.Size = new Size(260, 32);
-        desactivar.Click += Desactivar_Click;
+        lblNombreLabel.AutoSize = true;
+        lblTelefonoLabel.AutoSize = true;
+        lblCorreoLabel.AutoSize = true;
+        lblCategoriaLabel.AutoSize = true;
+        lblUbicacionLabel.AutoSize = true;
+        lblTipoLabel.AutoSize = true;
+        lblPrecioLabel.AutoSize = true;
+        ctNombre.Width = 260;
+        ctNombre.MaxLength = 120;
+        lblNombreLabel.Text = "Nombre (obligatorio)";
+        ctTelefono.Width = 260;
+        ctTelefono.MaxLength = 30;
+        lblTelefonoLabel.Text = "Teléfono del cliente";
+        ctCorreo.Width = 260;
+        ctCorreo.MaxLength = 150;
+        lblCorreoLabel.Text = "Correo del cliente";
+        ctCategoria.Width = 260;
+        ctCategoria.MaxLength = 60;
+        lblCategoriaLabel.Text = "Categoría del producto";
+        ctUbicacion.Width = 260;
+        ctUbicacion.MaxLength = 250;
+        lblUbicacionLabel.Text = "Ubicación del restaurante";
+        cbTipo.Width = 260;
+        cbTipo.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbTipo.Items.AddRange(new object[] { "Plato", "Bebida" });
+        lblTipoLabel.Text = "Tipo de producto";
+        nudPrecio.Width = 260;
+        nudPrecio.DecimalPlaces = 2;
+        nudPrecio.Maximum = 99999999.99M;
+        lblPrecioLabel.Text = "Precio (cero = cortesía)";
+        chkAlcoholica.Text = "Bebida alcohólica";
+        chkAlcoholica.AutoSize = true;
+        btnNuevo.Text = "Nuevo / Limpiar";
+        btnNuevo.Size = new Size(260, 48);
+        btnNuevo.Click += Nuevo_Click;
+        btnEditar.Text = "Editar seleccionado";
+        btnEditar.Size = new Size(260, 32);
+        btnEditar.Click += Seleccionar_Click;
+        btnGuardar.Text = "Guardar cambios";
+        btnGuardar.Size = new Size(260, 48);
+        btnGuardar.Click += Guardar_Click;
+        btnDesactivar.Text = "Desactivar seleccionado";
+        btnDesactivar.Size = new Size(260, 32);
+        btnDesactivar.Click += Desactivar_Click;
         foreach (var boton in new[]
         {
-            nuevo,
-            editar,
-            guardar,
-            desactivar
+            btnNuevo,
+            btnEditar,
+            btnGuardar,
+            btnDesactivar
         }
 
         )
         {
-            Componentes.EstilizarBoton(boton, boton == guardar);
+            Componentes.EstilizarBoton(boton, boton == btnGuardar);
             boton.AutoSize = false;
             boton.Height = 48;
             boton.Margin = new Padding(0, 10, 0, 0);
         }
 
-        desactivar.ForeColor = Color.FromArgb(151, 45, 43);
-        Iconos.Aplicar(desactivar, "user-minus");
-        Iconos.Aplicar(guardar, "save");
-        Iconos.Aplicar(nuevo, "plus");
-        Iconos.Aplicar(editar, "pencil");
-        campos.Controls.AddRange(new Control[] { estadoEdicion, nombreLabel, nombre, telefonoLabel, telefono, correoLabel, correo, categoriaLabel, categoria, tipoLabel, tipo, precioLabel, precio, alcoholica, ubicacionLabel, ubicacion, guardar, nuevo, editar, desactivar });
-        tituloCatalogo = new Label
+        btnDesactivar.ForeColor = Color.FromArgb(151, 45, 43);
+        Iconos.Aplicar(btnDesactivar, "user-minus");
+        Iconos.Aplicar(btnGuardar, "save");
+        Iconos.Aplicar(btnNuevo, "plus");
+        Iconos.Aplicar(btnEditar, "pencil");
+        flpCampos.Controls.AddRange(new Control[] { lblEstadoEdicion, lblNombreLabel, ctNombre, lblTelefonoLabel, ctTelefono, lblCorreoLabel, ctCorreo, lblCategoriaLabel, ctCategoria, lblTipoLabel, cbTipo, lblPrecioLabel, nudPrecio, chkAlcoholica, lblUbicacionLabel, ctUbicacion, btnGuardar, btnNuevo, btnEditar, btnDesactivar });
+        lblTituloCatalogo = new Label
         {
             Text = "Clientes y productos",
             AutoSize = true,
             Font = new Font("Segoe UI", 24, FontStyle.Bold),
-            Margin = new Padding(0, 0, 24, 0)
+            Margin = new Padding(0, 0, 24, 0),
+            Name = "lblTituloCatalogo"
         };
-        var cabecera = new FlowLayoutPanel
+        var flpCabecera = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
-            WrapContents = true
+            WrapContents = true,
+            Name = "flpCabecera"
         };
-        cabecera.Controls.Add(tituloCatalogo);
-        cabecera.Controls.Add(modo);
-        buscarCatalogo = new TextBox
+        flpCabecera.Controls.Add(lblTituloCatalogo);
+        flpCabecera.Controls.Add(cbModo);
+        ctBuscarCatalogo = new TextBox
         {
             Name = "buscarCatalogo",
             Dock = DockStyle.Fill,
@@ -187,36 +259,37 @@ partial class FormularioCatalogos
             AccessibleName = "Buscar en el catálogo",
             Margin = new Padding(0, 0, 0, 12)
         };
-        buscarCatalogo.TextChanged += (_, _) => AplicarFiltro();
-        var listado = new TableLayoutPanel
+        ctBuscarCatalogo.TextChanged += (_, _) => AplicarFiltro();
+        var tlpListado = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 2
+            RowCount = 2,
+            Name = "tlpListado"
         };
-        listado.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        listado.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
-        listado.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        listado.Controls.Add(buscarCatalogo, 0, 0);
-        listado.Controls.Add(tabla, 0, 1);
-        tabla.CellDoubleClick += (_, _) => Seleccionar_Click(this, EventArgs.Empty);
-        tabla.DataBindingComplete += (_, _) =>
+        tlpListado.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tlpListado.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+        tlpListado.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        tlpListado.Controls.Add(ctBuscarCatalogo, 0, 0);
+        tlpListado.Controls.Add(dgvRegistros, 0, 1);
+        dgvRegistros.CellDoubleClick += (_, _) => Seleccionar_Click(this, EventArgs.Empty);
+        dgvRegistros.DataBindingComplete += (_, _) =>
         {
-            if (tabla.Columns.Contains("Id"))
-                tabla.Columns["Id"].Visible = false;
-            if (tabla.Columns.Contains("Telefono"))
-                tabla.Columns["Telefono"].HeaderText = "Teléfono";
-            foreach (DataGridViewRow fila in tabla.Rows)
+            if (dgvRegistros.Columns.Contains("Id"))
+                dgvRegistros.Columns["Id"].Visible = false;
+            if (dgvRegistros.Columns.Contains("Telefono"))
+                dgvRegistros.Columns["Telefono"].HeaderText = "Teléfono";
+            foreach (DataGridViewRow fila in dgvRegistros.Rows)
                 fila.MinimumHeight = 46;
         };
-        layout.Controls.Add(cabecera, 0, 0);
-        layout.SetColumnSpan(cabecera, 2);
-        layout.Controls.Add(listado, 0, 1);
-        layout.Controls.Add(campos, 1, 1);
-        campos.SizeChanged += (_, _) =>
+        tlpLayout.Controls.Add(flpCabecera, 0, 0);
+        tlpLayout.SetColumnSpan(flpCabecera, 2);
+        tlpLayout.Controls.Add(tlpListado, 0, 1);
+        tlpLayout.Controls.Add(flpCampos, 1, 1);
+        flpCampos.SizeChanged += (_, _) =>
         {
-            var ancho = Math.Max(140, campos.ClientSize.Width - campos.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8);
-            foreach (Control campo in campos.Controls)
+            var ancho = Math.Max(140, flpCampos.ClientSize.Width - flpCampos.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 8);
+            foreach (Control campo in flpCampos.Controls)
             {
                 if (campo is Label or CheckBox)
                     campo.MaximumSize = new Size(ancho, 0);
@@ -224,13 +297,13 @@ partial class FormularioCatalogos
                     campo.Width = ancho;
             }
         };
-        Controls.Add(layout);
+        Controls.Add(tlpLayout);
         ClientSize = new Size(1180, 720);
         MinimumSize = new Size(850, 520);
         StartPosition = FormStartPosition.CenterParent;
         Text = "Clientes, productos y restaurante";
-        ((System.ComponentModel.ISupportInitialize)tabla).EndInit();
-        ((System.ComponentModel.ISupportInitialize)precio).EndInit();
+        ((System.ComponentModel.ISupportInitialize)dgvRegistros).EndInit();
+        ((System.ComponentModel.ISupportInitialize)nudPrecio).EndInit();
         ResumeLayout(false);
         FormatoPresentacion.Aplicar(this);
     }

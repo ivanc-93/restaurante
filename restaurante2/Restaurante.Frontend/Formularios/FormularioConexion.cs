@@ -19,24 +19,24 @@ public sealed partial class FormularioConexion : Form
     {
         if (ocupado)
             return;
-        if (string.IsNullOrWhiteSpace(servidor.Text) || string.IsNullOrWhiteSpace(baseDatos.Text))
+        if (string.IsNullOrWhiteSpace(ctServidor.Text) || string.IsNullOrWhiteSpace(ctBaseDatos.Text))
         {
-            mensaje.Text = "Escriba servidor y base de datos.";
+            lblMensaje.Text = "Escriba servidor y base de datos.";
             return;
         }
 
-        var host = servidor.Text;
-        var db = baseDatos.Text;
-        var port = (int)puerto.Value;
-        var user = autenticacion.SelectedIndex == 0 ? "" : sqlUsuario.Text;
-        var pass = autenticacion.SelectedIndex == 0 ? "" : sqlClave.Text;
-        var trust = certificado.Checked;
-        var u = admin.Text;
-        var clave = adminClave.Text;
+        var host = ctServidor.Text;
+        var db = ctBaseDatos.Text;
+        var port = (int)nudPuerto.Value;
+        var user = cbAutenticacion.SelectedIndex == 0 ? "" : ctSqlUsuario.Text;
+        var pass = cbAutenticacion.SelectedIndex == 0 ? "" : ctContrasenaSql.Text;
+        var trust = chkCertificado.Checked;
+        var u = ctAdmin.Text;
+        var clave = ctAdminClave.Text;
         ocupado = true;
-        guardar.Enabled = probar.Enabled = false;
+        btnGuardar.Enabled = btnProbar.Enabled = false;
         var validandoEsquema = false;
-        mensaje.Text = "Comprobando conexión…";
+        lblMensaje.Text = "Comprobando conexión…";
         try
         {
             var temporal = new ConfiguracionConexionTemporal(ConfiguracionConexion.CrearCadena(host, port, db, user, pass, trust));
@@ -49,7 +49,7 @@ public sealed partial class FormularioConexion : Form
             validandoEsquema = true;
             await Task.Run(() => repo.ValidarEsquema());
             validandoEsquema = false;
-            mensaje.Text = "Conexión correcta. Esquema compatible con esta versión de Sabores.";
+            lblMensaje.Text = "Conexión correcta. Esquema compatible con esta versión de Sabores.";
             if (!guardarDestino)
                 return;
             if (await Task.Run(() => new ServicioInstalacion(temporal).NecesitaAdministrador()))
@@ -68,7 +68,7 @@ public sealed partial class FormularioConexion : Form
                     using var cambio = new FormularioCambiarClave(repo);
                     if (cambio.ShowDialog(this) != DialogResult.OK)
                         return;
-                    mensaje.Text = "Contraseña actualizada. Introduzca la nueva contraseña y vuelva a guardar.";
+                    lblMensaje.Text = "Contraseña actualizada. Introduzca la nueva contraseña y vuelva a guardar.";
                     return;
                 }
             }
@@ -81,14 +81,14 @@ public sealed partial class FormularioConexion : Form
         }
         catch (Exception ex)
         {
-            mensaje.Text = ErroresConexion.Describir(ex, validandoEsquema) + " La configuración anterior se conserva." + ErroresConexion.Registrar(ex);
+            lblMensaje.Text = ErroresConexion.Describir(ex, validandoEsquema) + " La configuración anterior se conserva." + ErroresConexion.Registrar(ex);
         }
         finally
         {
-            adminClave.Clear();
-            sqlClave.Clear();
+            ctAdminClave.Clear();
+            ctContrasenaSql.Clear();
             ocupado = false;
-            guardar.Enabled = probar.Enabled = true;
+            btnGuardar.Enabled = btnProbar.Enabled = true;
             if (DialogResult == DialogResult.OK)
                 Close();
         }

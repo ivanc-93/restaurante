@@ -3,14 +3,14 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioGestionMesa
 {
     private System.ComponentModel.IContainer? components;
-    private Label resumen = null!;
-    private ComboBox accion = null!;
-    private ComboBox resultado = null!;
-    private TextBox motivo = null!;
-    private CheckBox declarado = null!;
-    private CheckBox verificado = null!;
-    private Button aplicar = null!;
-    private FlowLayoutPanel campos = null!;
+    private Label lblResumen = null!;
+    private ComboBox cbAccion = null!;
+    private ComboBox cbResultado = null!;
+    private TextBox ctMotivo = null!;
+    private CheckBox chkDeclarado = null!;
+    private CheckBox chkVerificado = null!;
+    private Button btnAplicar = null!;
+    private FlowLayoutPanel flpCampos = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -21,51 +21,75 @@ partial class FormularioGestionMesa
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        resumen = new Label();
-        accion = new ComboBox();
-        resultado = new ComboBox();
-        motivo = new TextBox();
-        declarado = new CheckBox();
-        verificado = new CheckBox();
-        aplicar = new Button();
-        campos = new FlowLayoutPanel();
+        lblResumen = new Label()
+        {
+            Name = "lblResumen"
+        };
+        cbAccion = new ComboBox()
+        {
+            Name = "cbAccion"
+        };
+        cbResultado = new ComboBox()
+        {
+            Name = "cbResultado"
+        };
+        ctMotivo = new TextBox()
+        {
+            Name = "ctMotivo"
+        };
+        chkDeclarado = new CheckBox()
+        {
+            Name = "chkDeclarado"
+        };
+        chkVerificado = new CheckBox()
+        {
+            Name = "chkVerificado"
+        };
+        btnAplicar = new Button()
+        {
+            Name = "btnAplicar"
+        };
+        flpCampos = new FlowLayoutPanel()
+        {
+            Name = "flpCampos"
+        };
         SuspendLayout();
-        campos.Dock = DockStyle.Fill;
-        campos.FlowDirection = FlowDirection.TopDown;
-        campos.WrapContents = false;
-        campos.AutoScroll = true;
-        campos.Padding = new Padding(20);
-        resumen.AutoSize = true;
-        resumen.MaximumSize = new Size(480, 0);
-        accion.Width = 430;
-        accion.DropDownStyle = ComboBoxStyle.DropDownList;
-        accion.SelectedIndexChanged += Accion_Cambio;
-        resultado.Width = 430;
-        resultado.DropDownStyle = ComboBoxStyle.DropDownList;
-        resultado.Items.AddRange(new object[] { "Confirmado", "Rechazado" });
-        motivo.Width = 430;
-        motivo.Height = 100;
-        motivo.Multiline = true;
-        motivo.MaxLength = 500;
-        motivo.AccessibleName = "Motivo y evidencia obligatorios";
-        declarado.Text = "Declaro que no hubo preparación ni consumo";
-        declarado.AutoSize = true;
-        verificado.Text = "Comprobé manualmente la evidencia y el resultado";
-        verificado.AutoSize = true;
-        aplicar.Text = "Confirmar gestión";
-        aplicar.AutoSize = true;
-        aplicar.Enabled = false;
-        aplicar.Click += Aplicar_Click;
-        campos.Controls.Add(resumen);
-        campos.Controls.Add(accion);
-        campos.Controls.Add(new Label { Text = "Resultado externo (solo conciliación)", AutoSize = true });
-        campos.Controls.Add(resultado);
-        campos.Controls.Add(new Label { Text = "Motivo / evidencia (obligatorio)", AutoSize = true });
-        campos.Controls.Add(motivo);
-        campos.Controls.Add(declarado);
-        campos.Controls.Add(verificado);
-        campos.Controls.Add(aplicar);
-        Controls.Add(campos);
+        flpCampos.Dock = DockStyle.Fill;
+        flpCampos.FlowDirection = FlowDirection.TopDown;
+        flpCampos.WrapContents = false;
+        flpCampos.AutoScroll = true;
+        flpCampos.Padding = new Padding(20);
+        lblResumen.AutoSize = true;
+        lblResumen.MaximumSize = new Size(480, 0);
+        cbAccion.Width = 430;
+        cbAccion.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbAccion.SelectedIndexChanged += Accion_Cambio;
+        cbResultado.Width = 430;
+        cbResultado.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbResultado.Items.AddRange(new object[] { "Confirmado", "Rechazado" });
+        ctMotivo.Width = 430;
+        ctMotivo.Height = 100;
+        ctMotivo.Multiline = true;
+        ctMotivo.MaxLength = 500;
+        ctMotivo.AccessibleName = "Motivo y evidencia obligatorios";
+        chkDeclarado.Text = "Declaro que no hubo preparación ni consumo";
+        chkDeclarado.AutoSize = true;
+        chkVerificado.Text = "Comprobé manualmente la evidencia y el resultado";
+        chkVerificado.AutoSize = true;
+        btnAplicar.Text = "Confirmar gestión";
+        btnAplicar.AutoSize = true;
+        btnAplicar.Enabled = false;
+        btnAplicar.Click += Aplicar_Click;
+        flpCampos.Controls.Add(lblResumen);
+        flpCampos.Controls.Add(cbAccion);
+        flpCampos.Controls.Add(new Label { Text = "Resultado externo (solo conciliación)", AutoSize = true });
+        flpCampos.Controls.Add(cbResultado);
+        flpCampos.Controls.Add(new Label { Text = "Motivo / evidencia (obligatorio)", AutoSize = true });
+        flpCampos.Controls.Add(ctMotivo);
+        flpCampos.Controls.Add(chkDeclarado);
+        flpCampos.Controls.Add(chkVerificado);
+        flpCampos.Controls.Add(btnAplicar);
+        Controls.Add(flpCampos);
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(540, 530);

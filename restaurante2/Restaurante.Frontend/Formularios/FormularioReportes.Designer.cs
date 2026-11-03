@@ -3,25 +3,25 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioReportes
 {
     private System.ComponentModel.IContainer? components;
-    private DateTimePicker inicio = null!;
-    private DateTimePicker fin = null!;
-    private ComboBox agrupacion = null!;
-    private ComboBox mesa = null!;
-    private ComboBox cliente = null!;
-    private Button consultar = null!;
-    private DataGridView ventas = null!;
-    private DataGridView platos = null!;
-    private DataGridView pedidos = null!;
-    private FlowLayoutPanel filtros = null!;
-    private TabControl pestanas = null!;
-    private TabPage ventasTab = null!;
-    private TabPage platosTab = null!;
-    private TabPage pedidosTab = null!;
-    private Label total = null!;
-    private Label desdeLabel = null!;
-    private Label hastaLabel = null!;
-    private Label mesaLabel = null!;
-    private Label clienteLabel = null!;
+    private DateTimePicker dtpInicio = null!;
+    private DateTimePicker dtpFin = null!;
+    private ComboBox cbAgrupacion = null!;
+    private ComboBox cbMesa = null!;
+    private ComboBox cbCliente = null!;
+    private Button btnConsultar = null!;
+    private DataGridView dgvVentas = null!;
+    private DataGridView dgvPlatos = null!;
+    private DataGridView dgvPedidos = null!;
+    private FlowLayoutPanel flpFiltros = null!;
+    private TabControl tabPestanas = null!;
+    private TabPage tpVentasTab = null!;
+    private TabPage tpPlatosTab = null!;
+    private TabPage tpPedidosTab = null!;
+    private Label lblTotal = null!;
+    private Label lblDesdeLabel = null!;
+    private Label lblHastaLabel = null!;
+    private Label lblMesaLabel = null!;
+    private Label lblClienteLabel = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -32,86 +32,143 @@ partial class FormularioReportes
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        inicio = new DateTimePicker();
-        fin = new DateTimePicker();
-        agrupacion = new ComboBox();
-        mesa = new ComboBox();
-        cliente = new ComboBox();
-        consultar = new Button();
-        ventas = new DataGridView();
-        platos = new DataGridView();
-        pedidos = new DataGridView();
-        filtros = new FlowLayoutPanel();
-        pestanas = new TabControl();
-        ventasTab = new TabPage();
-        platosTab = new TabPage();
-        pedidosTab = new TabPage();
-        total = new Label();
-        desdeLabel = new Label();
-        hastaLabel = new Label();
-        mesaLabel = new Label();
-        clienteLabel = new Label();
-        ((System.ComponentModel.ISupportInitialize)ventas).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)platos).BeginInit();
-        ((System.ComponentModel.ISupportInitialize)pedidos).BeginInit();
+        dtpInicio = new DateTimePicker()
+        {
+            Name = "dtpInicio"
+        };
+        dtpFin = new DateTimePicker()
+        {
+            Name = "dtpFin"
+        };
+        cbAgrupacion = new ComboBox()
+        {
+            Name = "cbAgrupacion"
+        };
+        cbMesa = new ComboBox()
+        {
+            Name = "cbMesa"
+        };
+        cbCliente = new ComboBox()
+        {
+            Name = "cbCliente"
+        };
+        btnConsultar = new Button()
+        {
+            Name = "btnConsultar"
+        };
+        dgvVentas = new DataGridView()
+        {
+            Name = "dgvVentas"
+        };
+        dgvPlatos = new DataGridView()
+        {
+            Name = "dgvPlatos"
+        };
+        dgvPedidos = new DataGridView()
+        {
+            Name = "dgvPedidos"
+        };
+        flpFiltros = new FlowLayoutPanel()
+        {
+            Name = "flpFiltros"
+        };
+        tabPestanas = new TabControl()
+        {
+            Name = "tabPestanas"
+        };
+        tpVentasTab = new TabPage()
+        {
+            Name = "tpVentasTab"
+        };
+        tpPlatosTab = new TabPage()
+        {
+            Name = "tpPlatosTab"
+        };
+        tpPedidosTab = new TabPage()
+        {
+            Name = "tpPedidosTab"
+        };
+        lblTotal = new Label()
+        {
+            Name = "lblTotal"
+        };
+        lblDesdeLabel = new Label()
+        {
+            Name = "lblDesdeLabel"
+        };
+        lblHastaLabel = new Label()
+        {
+            Name = "lblHastaLabel"
+        };
+        lblMesaLabel = new Label()
+        {
+            Name = "lblMesaLabel"
+        };
+        lblClienteLabel = new Label()
+        {
+            Name = "lblClienteLabel"
+        };
+        ((System.ComponentModel.ISupportInitialize)dgvVentas).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)dgvPlatos).BeginInit();
+        ((System.ComponentModel.ISupportInitialize)dgvPedidos).BeginInit();
         SuspendLayout();
-        filtros.Dock = DockStyle.Top;
-        filtros.AutoSize = true;
-        filtros.Padding = new Padding(12);
-        filtros.AutoScroll = true;
-        desdeLabel.Text = "Desde";
-        desdeLabel.AutoSize = true;
-        hastaLabel.Text = "Hasta";
-        hastaLabel.AutoSize = true;
-        inicio.Format = DateTimePickerFormat.Short;
-        inicio.Width = 120;
-        fin.Format = DateTimePickerFormat.Short;
-        fin.Width = 120;
-        agrupacion.DropDownStyle = ComboBoxStyle.DropDownList;
-        agrupacion.Items.AddRange(new object[] { "Día", "Semana", "Mes" });
-        agrupacion.Width = 100;
-        agrupacion.SelectedIndex = 0;
-        mesaLabel.Text = "Mesa";
-        mesaLabel.AutoSize = true;
-        mesa.Width = 130;
-        mesa.DropDownStyle = ComboBoxStyle.DropDownList;
-        mesa.DisplayMember = "Nombre";
-        clienteLabel.Text = "Cliente";
-        clienteLabel.AutoSize = true;
-        cliente.Width = 180;
-        cliente.DropDownStyle = ComboBoxStyle.DropDownList;
-        cliente.DisplayMember = "Nombre";
-        consultar.Text = "Consultar";
-        consultar.Size = new Size(110, 32);
-        consultar.Click += Consultar_Click;
-        filtros.Controls.AddRange(new Control[] { desdeLabel, inicio, hastaLabel, fin, agrupacion, mesaLabel, mesa, clienteLabel, cliente, consultar });
-        pestanas.SelectedIndexChanged += Pestana_Cambio;
-        pestanas.Dock = DockStyle.Fill;
-        ventasTab.Text = "Ventas facturadas";
-        platosTab.Text = "Platos más vendidos";
-        pedidosTab.Text = "Pedidos por mesa y cliente";
-        ventas.Dock = DockStyle.Fill;
-        platos.Dock = DockStyle.Fill;
-        pedidos.Dock = DockStyle.Fill;
-        ventasTab.Controls.Add(ventas);
-        platosTab.Controls.Add(platos);
-        pedidosTab.Controls.Add(pedidos);
-        pestanas.TabPages.AddRange(new TabPage[] { ventasTab, platosTab, pedidosTab });
-        total.Dock = DockStyle.Bottom;
-        total.Height = 45;
-        total.Text = "Seleccione un intervalo";
-        Controls.Add(pestanas);
-        Controls.Add(filtros);
-        Controls.Add(total);
+        flpFiltros.Dock = DockStyle.Top;
+        flpFiltros.AutoSize = true;
+        flpFiltros.Padding = new Padding(12);
+        flpFiltros.AutoScroll = true;
+        lblDesdeLabel.Text = "Desde";
+        lblDesdeLabel.AutoSize = true;
+        lblHastaLabel.Text = "Hasta";
+        lblHastaLabel.AutoSize = true;
+        dtpInicio.Format = DateTimePickerFormat.Short;
+        dtpInicio.Width = 120;
+        dtpFin.Format = DateTimePickerFormat.Short;
+        dtpFin.Width = 120;
+        cbAgrupacion.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbAgrupacion.Items.AddRange(new object[] { "Día", "Semana", "Mes" });
+        cbAgrupacion.Width = 100;
+        cbAgrupacion.SelectedIndex = 0;
+        lblMesaLabel.Text = "Mesa";
+        lblMesaLabel.AutoSize = true;
+        cbMesa.Width = 130;
+        cbMesa.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbMesa.DisplayMember = "Nombre";
+        lblClienteLabel.Text = "Cliente";
+        lblClienteLabel.AutoSize = true;
+        cbCliente.Width = 180;
+        cbCliente.DropDownStyle = ComboBoxStyle.DropDownList;
+        cbCliente.DisplayMember = "Nombre";
+        btnConsultar.Text = "Consultar";
+        btnConsultar.Size = new Size(110, 32);
+        btnConsultar.Click += Consultar_Click;
+        flpFiltros.Controls.AddRange(new Control[] { lblDesdeLabel, dtpInicio, lblHastaLabel, dtpFin, cbAgrupacion, lblMesaLabel, cbMesa, lblClienteLabel, cbCliente, btnConsultar });
+        tabPestanas.SelectedIndexChanged += Pestana_Cambio;
+        tabPestanas.Dock = DockStyle.Fill;
+        tpVentasTab.Text = "Ventas facturadas";
+        tpPlatosTab.Text = "Platos más vendidos";
+        tpPedidosTab.Text = "Pedidos por mesa y cliente";
+        dgvVentas.Dock = DockStyle.Fill;
+        dgvPlatos.Dock = DockStyle.Fill;
+        dgvPedidos.Dock = DockStyle.Fill;
+        tpVentasTab.Controls.Add(dgvVentas);
+        tpPlatosTab.Controls.Add(dgvPlatos);
+        tpPedidosTab.Controls.Add(dgvPedidos);
+        tabPestanas.TabPages.AddRange(new TabPage[] { tpVentasTab, tpPlatosTab, tpPedidosTab });
+        lblTotal.Dock = DockStyle.Bottom;
+        lblTotal.Height = 45;
+        lblTotal.Text = "Seleccione un intervalo";
+        Controls.Add(tabPestanas);
+        Controls.Add(flpFiltros);
+        Controls.Add(lblTotal);
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(1100, 680);
         MinimumSize = new Size(900, 550);
         StartPosition = FormStartPosition.CenterParent;
         Text = "Reportes del restaurante";
-        ((System.ComponentModel.ISupportInitialize)ventas).EndInit();
-        ((System.ComponentModel.ISupportInitialize)platos).EndInit();
-        ((System.ComponentModel.ISupportInitialize)pedidos).EndInit();
+        ((System.ComponentModel.ISupportInitialize)dgvVentas).EndInit();
+        ((System.ComponentModel.ISupportInitialize)dgvPlatos).EndInit();
+        ((System.ComponentModel.ISupportInitialize)dgvPedidos).EndInit();
         ResumeLayout(false);
         FormatoPresentacion.Aplicar(this);
     }

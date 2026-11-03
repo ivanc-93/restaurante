@@ -17,10 +17,10 @@ public sealed partial class FormularioCatalogos : Form
     private List<ElementoMenu> _productosCatalogo = new();
     private void AplicarFiltro()
     {
-        if (tabla is null || buscarCatalogo is null)
+        if (dgvRegistros is null || ctBuscarCatalogo is null)
             return;
-        var texto = buscarCatalogo.Text.Trim();
-        tabla.DataSource = modo.Text switch
+        var texto = ctBuscarCatalogo.Text.Trim();
+        dgvRegistros.DataSource = cbModo.Text switch
         {
             "Clientes" => _clientesCatalogo.Where(c => c.Nombre.Contains(texto, StringComparison.CurrentCultureIgnoreCase) || (c.Telefono ?? "").Contains(texto, StringComparison.CurrentCultureIgnoreCase) || (c.Correo ?? "").Contains(texto, StringComparison.CurrentCultureIgnoreCase)).ToList(),
             "Productos" => _productosCatalogo.Where(p => p.Nombre.Contains(texto, StringComparison.CurrentCultureIgnoreCase) || p.Categoria.Contains(texto, StringComparison.CurrentCultureIgnoreCase)).ToList(),
@@ -36,25 +36,25 @@ public sealed partial class FormularioCatalogos : Form
         _repositorio = repositorio;
         _puedeAdministrar = repositorio.UsuarioActual?.Rol is "Administrador" or "Gerente";
         if (!_puedeAdministrar)
-            modo.Items.Remove("Productos");
-        Componentes.EstilizarTabla(tabla);
+            cbModo.Items.Remove("Productos");
+        Componentes.EstilizarTabla(dgvRegistros);
         if (administrador && _puedeAdministrar)
-            modo.Items.Add("Restaurante");
+            cbModo.Items.Add("Restaurante");
         if (soloRestaurante)
         {
-            modo.Items.Clear();
-            modo.Items.Add("Restaurante");
+            cbModo.Items.Clear();
+            cbModo.Items.Add("Restaurante");
         }
 
-        modo.SelectedIndex = 0;
+        cbModo.SelectedIndex = 0;
         Text = soloRestaurante ? "Información del restaurante" : "Catálogos · Clientes y productos";
         foreach (var campo in new TextBox[]
         {
-            nombre,
-            telefono,
-            correo,
-            categoria,
-            ubicacion
+            ctNombre,
+            ctTelefono,
+            ctCorreo,
+            ctCategoria,
+            ctUbicacion
         }
 
         )
@@ -63,17 +63,17 @@ public sealed partial class FormularioCatalogos : Form
                 if (_listo && Enabled)
                     _sucio = true;
             };
-        precio.ValueChanged += (_, _) =>
+        nudPrecio.ValueChanged += (_, _) =>
         {
             if (_listo && Enabled)
                 _sucio = true;
         };
-        tipo.SelectedIndexChanged += (_, _) =>
+        cbTipo.SelectedIndexChanged += (_, _) =>
         {
             if (_listo && Enabled)
                 _sucio = true;
         };
-        alcoholica.CheckedChanged += (_, _) =>
+        chkAlcoholica.CheckedChanged += (_, _) =>
         {
             if (_listo && Enabled)
                 _sucio = true;
@@ -97,41 +97,41 @@ public sealed partial class FormularioCatalogos : Form
         if (!ConfirmarSalida())
         {
             _cambiandoModo = true;
-            modo.SelectedIndex = _modoAnterior;
+            cbModo.SelectedIndex = _modoAnterior;
             _cambiandoModo = false;
             return;
         }
 
-        _modoAnterior = modo.SelectedIndex;
+        _modoAnterior = cbModo.SelectedIndex;
         await CargarAsync();
     }
 
     private async Task CargarAsync()
     {
-        var entidad = modo.Text;
+        var entidad = cbModo.Text;
         await EjecutarAsync(async () =>
         {
             if (entidad == "Clientes")
                 _clientesCatalogo = await Task.Run(() => _repositorio.ListarClientes().ToList());
             if (entidad == "Productos")
                 _productosCatalogo = await Task.Run(() => _repositorio.ListarMenu().ToList());
-            tituloCatalogo.Text = entidad;
-            buscarCatalogo.Visible = entidad != "Restaurante";
-            buscarCatalogo.PlaceholderText = entidad == "Productos" ? "Buscar producto o categoría" : "Buscar cliente, teléfono o correo";
+            lblTituloCatalogo.Text = entidad;
+            ctBuscarCatalogo.Visible = entidad != "Restaurante";
+            ctBuscarCatalogo.PlaceholderText = entidad == "Productos" ? "Buscar producto o categoría" : "Buscar cliente, teléfono o correo";
             AplicarFiltro();
             Limpiar();
-            telefono.Visible = telefonoLabel.Visible = correo.Visible = correoLabel.Visible = entidad == "Clientes";
-            categoria.Visible = categoriaLabel.Visible = tipo.Visible = tipoLabel.Visible = precio.Visible = precioLabel.Visible = alcoholica.Visible = entidad == "Productos";
-            ubicacion.Visible = ubicacionLabel.Visible = entidad == "Restaurante";
-            nuevo.Visible = entidad != "Restaurante";
-            editar.Visible = _puedeAdministrar && entidad != "Restaurante";
-            desactivar.Enabled = _puedeAdministrar && entidad != "Restaurante";
-            desactivar.Visible = editar.Visible;
+            ctTelefono.Visible = lblTelefonoLabel.Visible = ctCorreo.Visible = lblCorreoLabel.Visible = entidad == "Clientes";
+            ctCategoria.Visible = lblCategoriaLabel.Visible = cbTipo.Visible = lblTipoLabel.Visible = nudPrecio.Visible = lblPrecioLabel.Visible = chkAlcoholica.Visible = entidad == "Productos";
+            ctUbicacion.Visible = lblUbicacionLabel.Visible = entidad == "Restaurante";
+            btnNuevo.Visible = entidad != "Restaurante";
+            btnEditar.Visible = _puedeAdministrar && entidad != "Restaurante";
+            btnDesactivar.Enabled = _puedeAdministrar && entidad != "Restaurante";
+            btnDesactivar.Visible = btnEditar.Visible;
             if (entidad == "Restaurante")
             {
                 var datos = await Task.Run(_repositorio.ObtenerRestaurante);
-                nombre.Text = datos.Nombre;
-                ubicacion.Text = datos.Ubicacion;
+                ctNombre.Text = datos.Nombre;
+                ctUbicacion.Text = datos.Ubicacion;
             }
 
             _sucio = false;
@@ -160,15 +160,15 @@ public sealed partial class FormularioCatalogos : Form
     private void Limpiar()
     {
         _id = null;
-        nombre.Clear();
-        telefono.Clear();
-        correo.Clear();
-        categoria.Clear();
-        ubicacion.Clear();
-        precio.Value = 0;
-        tipo.SelectedIndex = 0;
-        alcoholica.Checked = false;
-        estadoEdicion.Text = modo.Text == "Restaurante" ? "Información del restaurante" : "Nuevo registro";
+        ctNombre.Clear();
+        ctTelefono.Clear();
+        ctCorreo.Clear();
+        ctCategoria.Clear();
+        ctUbicacion.Clear();
+        nudPrecio.Value = 0;
+        cbTipo.SelectedIndex = 0;
+        chkAlcoholica.Checked = false;
+        lblEstadoEdicion.Text = cbModo.Text == "Restaurante" ? "Información del restaurante" : "Nuevo registro";
     }
 
     private void Nuevo_Click(object? sender, EventArgs e)
@@ -184,40 +184,40 @@ public sealed partial class FormularioCatalogos : Form
     {
         if (!_puedeAdministrar || !ConfirmarSalida())
             return;
-        switch (tabla.CurrentRow?.DataBoundItem)
+        switch (dgvRegistros.CurrentRow?.DataBoundItem)
         {
             case Cliente c:
                 _id = c.Id;
-                nombre.Text = c.Nombre;
-                telefono.Text = c.Telefono;
-                correo.Text = c.Correo;
+                ctNombre.Text = c.Nombre;
+                ctTelefono.Text = c.Telefono;
+                ctCorreo.Text = c.Correo;
                 break;
             case ElementoMenu p:
                 _id = p.Id;
-                nombre.Text = p.Nombre;
-                categoria.Text = p.Categoria;
-                precio.Value = p.Precio;
-                tipo.SelectedItem = p.Tipo;
-                alcoholica.Checked = p is Bebida { Alcoholica: true };
+                ctNombre.Text = p.Nombre;
+                ctCategoria.Text = p.Categoria;
+                nudPrecio.Value = p.Precio;
+                cbTipo.SelectedItem = p.Tipo;
+                chkAlcoholica.Checked = p is Bebida { Alcoholica: true };
                 break;
         }
 
         _sucio = false;
-        estadoEdicion.Text = _id.HasValue ? "Editar registro" : "Nuevo registro";
+        lblEstadoEdicion.Text = _id.HasValue ? "Editar registro" : "Nuevo registro";
     }
 
     private async void Guardar_Click(object? sender, EventArgs e)
     {
-        var entidad = modo.Text;
+        var entidad = cbModo.Text;
         var id = _id;
-        var n = nombre.Text;
-        var tel = telefono.Text;
-        var mail = correo.Text;
-        var cat = categoria.Text;
-        var t = tipo.Text;
-        var p = precio.Value;
-        var a = alcoholica.Checked;
-        var u = ubicacion.Text;
+        var n = ctNombre.Text;
+        var tel = ctTelefono.Text;
+        var mail = ctCorreo.Text;
+        var cat = ctCategoria.Text;
+        var t = cbTipo.Text;
+        var p = nudPrecio.Value;
+        var a = chkAlcoholica.Checked;
+        var u = ctUbicacion.Text;
         var guardado = false;
         await EjecutarAsync(async () =>
         {
@@ -251,7 +251,7 @@ public sealed partial class FormularioCatalogos : Form
         if (_dialogos.Mostrar(this, "¿Desactivar el registro? Su historial se conservará.", "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
             return;
         var id = _id.Value;
-        var entidad = modo.Text;
+        var entidad = cbModo.Text;
         await EjecutarAsync(() => Task.Run(() =>
         {
             if (entidad == "Clientes")

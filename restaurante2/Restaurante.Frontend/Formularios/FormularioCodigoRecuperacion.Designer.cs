@@ -1,37 +1,39 @@
 namespace Restaurante.Frontend.Formularios;
 partial class FormularioCodigoRecuperacion
 {
-    private TextBox clave = null!, codigo = null!;
-    private Label mensaje = null!;
-    private Button generar = null!, continuar = null!;
-    private CheckBox guardado = null!;
+    private TextBox ctContrasena = null!, ctCodigo = null!;
+    private Label lblMensaje = null!;
+    private Button btnGenerar = null!, btnContinuar = null!;
+    private CheckBox chkGuardado = null!;
     private void InitializeComponent()
     {
-        var p = DisenoFormulario.Preparar(this, "Código de emergencia del Administrador");
-        p.Controls.Add(new Label { Text = "Guarda este código fuera del equipo, en un gestor seguro o papel protegido. Permite recuperar tu cuenta si olvidas la contraseña. Quien lo posea podría tomar el control de tu cuenta. Generar otro revoca el anterior.", AutoSize = true, MaximumSize = new Size(650, 0) });
-        clave = DisenoFormulario.Campo(p, "Contraseña vigente de tu usuario Administrador", true);
-        p.Controls.Add(new Label { Text = "Aquí se escribe la contraseña con la que inicias sesión. El código de emergencia se genera en el campo de abajo; no sustituye tu contraseña en este paso.", AutoSize = true, MaximumSize = new Size(650, 0) });
-        codigo = DisenoFormulario.Campo(p, "Código nuevo: se muestra únicamente en esta ventana", true);
-        codigo.ReadOnly = true;
-        var mostrar = new CheckBox
+        var flpP = DisenoFormulario.Preparar(this, "Código de emergencia del Administrador");
+        flpP.Controls.Add(new Label { Text = "Guarda este código fuera del equipo, en un gestor seguro o papel protegido. Permite recuperar tu cuenta si olvidas la contraseña. Quien lo posea podría tomar el control de tu cuenta. Generar otro revoca el anterior.", AutoSize = true, MaximumSize = new Size(650, 0) });
+        ctContrasena = DisenoFormulario.Campo(flpP, "Contraseña vigente de tu usuario Administrador", true);
+        flpP.Controls.Add(new Label { Text = "Aquí se escribe la contraseña con la que inicias sesión. El código de emergencia se genera en el campo de abajo; no sustituye tu contraseña en este paso.", AutoSize = true, MaximumSize = new Size(650, 0) });
+        ctCodigo = DisenoFormulario.Campo(flpP, "Código nuevo: se muestra únicamente en esta ventana", true);
+        ctCodigo.ReadOnly = true;
+        var chkMostrar = new CheckBox
         {
             Text = "Mostrar código de emergencia",
-            AutoSize = true
+            AutoSize = true,
+            Name = "chkMostrar"
         };
-        mostrar.CheckedChanged += (_, _) => codigo.UseSystemPasswordChar = !mostrar.Checked;
-        p.Controls.Add(mostrar);
-        guardado = new CheckBox
+        chkMostrar.CheckedChanged += (_, _) => ctCodigo.UseSystemPasswordChar = !chkMostrar.Checked;
+        flpP.Controls.Add(chkMostrar);
+        chkGuardado = new CheckBox
         {
             Text = "He guardado el código en un lugar seguro fuera del equipo",
-            AutoSize = true
+            AutoSize = true,
+            Name = "chkGuardado"
         };
-        p.Controls.Add(guardado);
-        guardado.CheckedChanged += (_, _) => continuar.Enabled = guardado.Checked && codigo.Text.Length > 0;
-        generar = DisenoFormulario.Boton(p, "Generar código", Generar_Click);
-        continuar = DisenoFormulario.Boton(p, "He guardado el código", Confirmar_Click);
-        continuar.Enabled = false;
-        DisenoFormulario.Boton(p, "Cancelar", (_, _) => Close());
-        mensaje = DisenoFormulario.Mensaje(p);
-        AcceptButton = generar;
+        flpP.Controls.Add(chkGuardado);
+        chkGuardado.CheckedChanged += (_, _) => btnContinuar.Enabled = chkGuardado.Checked && ctCodigo.Text.Length > 0;
+        btnGenerar = DisenoFormulario.Boton(flpP, "Generar código", Generar_Click);
+        btnContinuar = DisenoFormulario.Boton(flpP, "He guardado el código", Confirmar_Click);
+        btnContinuar.Enabled = false;
+        DisenoFormulario.Boton(flpP, "Cancelar", (_, _) => Close());
+        lblMensaje = DisenoFormulario.Mensaje(flpP);
+        AcceptButton = btnGenerar;
     }
 }

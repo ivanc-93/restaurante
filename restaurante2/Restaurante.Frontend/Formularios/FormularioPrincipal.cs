@@ -18,21 +18,21 @@ public sealed partial class FormularioPrincipal : Form
         _configuracion = configuracion;
         _usuario = usuario;
         _dialogos = dialogos ?? new DialogosUsuario();
-        usuarioLabel.Text = $"{usuario.Nombre} ({usuario.Rol})";
-        AgregarNavegacion(menu, "RESUMEN", "Inicio", MostrarInicio);
-        AgregarNavegacion(menu, "SERVICIO", "Mesas", MostrarMesasPos);
-        AgregarNavegacion(menu, "SERVICIO", "Pedidos", MostrarPedidosPos);
-        AgregarNavegacion(menu, "DATOS", "Catálogos", MostrarCatalogos);
+        lblUsuarioLabel.Text = $"{usuario.Nombre} ({usuario.Rol})";
+        AgregarNavegacion(flpNavegacion, "RESUMEN", "Inicio", MostrarInicio);
+        AgregarNavegacion(flpNavegacion, "SERVICIO", "Mesas", MostrarMesasPos);
+        AgregarNavegacion(flpNavegacion, "SERVICIO", "Pedidos", MostrarPedidosPos);
+        AgregarNavegacion(flpNavegacion, "DATOS", "Catálogos", MostrarCatalogos);
         if (usuario.Rol is "Administrador" or "Gerente")
-            AgregarNavegacion(menu, "ANÁLISIS", "Reportes", MostrarReportes);
+            AgregarNavegacion(flpNavegacion, "ANÁLISIS", "Reportes", MostrarReportes);
         if (usuario.Rol == "Administrador")
-            AgregarNavegacion(menu, "ADMINISTRACIÓN", "Usuarios", () =>
+            AgregarNavegacion(flpNavegacion, "ADMINISTRACIÓN", "Usuarios", () =>
             {
                 using var f = new FormularioUsuarios(_repositorio);
                 f.ShowDialog(this);
                 return Task.CompletedTask;
             });
-        AgregarNavegacion(menu, "CUENTA", "Cambiar contraseña", () =>
+        AgregarNavegacion(flpNavegacion, "CUENTA", "Cambiar contraseña", () =>
         {
             using var f = new FormularioCambiarClave(_repositorio);
             if (f.ShowDialog(this) == DialogResult.OK)
@@ -44,10 +44,10 @@ public sealed partial class FormularioPrincipal : Form
             return Task.CompletedTask;
         });
         if (usuario.Rol is "Administrador" or "Gerente")
-            AgregarNavegacion(menu, "ADMINISTRACIÓN", "Configuración", MostrarConfiguracion);
-        menu.Enabled = false;
-        _contenido.Enabled = false;
-        salir.Enabled = false;
+            AgregarNavegacion(flpNavegacion, "ADMINISTRACIÓN", "Configuración", MostrarConfiguracion);
+        flpNavegacion.Enabled = false;
+        pnlContenido.Enabled = false;
+        btnCerrarSesion.Enabled = false;
         Shown += async (_, _) =>
         {
             await EjecutarSeguro(MostrarInicio);
@@ -77,19 +77,20 @@ public sealed partial class FormularioPrincipal : Form
 
     private void AgregarNavegacion(FlowLayoutPanel menu, string grupo, string texto, Func<Task> accion)
     {
-        var boton = Componentes.Boton(texto, false);
-        boton.Name = "nav_" + texto;
-        boton.AutoSize = false;
-        boton.BackColor = Componentes.Verde;
-        boton.ForeColor = Color.White;
-        boton.FlatAppearance.BorderSize = 0;
-        boton.FlatAppearance.MouseOverBackColor = Color.FromArgb(68, 103, 76);
-        boton.FlatAppearance.MouseDownBackColor = Componentes.VerdeOscuro;
-        boton.Width = Math.Max(190, menu.ClientSize.Width - 24);
-        boton.Tag = grupo;
-        boton.Height = 48;
-        boton.TextAlign = ContentAlignment.MiddleLeft;
-        boton.Margin = new Padding(0, 2, 0, 2);
+        var btnBoton = Componentes.Boton(texto, false);
+        btnBoton.Name = "btnBoton";
+        btnBoton.Name = "nav_" + texto;
+        btnBoton.AutoSize = false;
+        btnBoton.BackColor = Componentes.Verde;
+        btnBoton.ForeColor = Color.White;
+        btnBoton.FlatAppearance.BorderSize = 0;
+        btnBoton.FlatAppearance.MouseOverBackColor = Color.FromArgb(68, 103, 76);
+        btnBoton.FlatAppearance.MouseDownBackColor = Componentes.VerdeOscuro;
+        btnBoton.Width = Math.Max(190, menu.ClientSize.Width - 24);
+        btnBoton.Tag = grupo;
+        btnBoton.Height = 48;
+        btnBoton.TextAlign = ContentAlignment.MiddleLeft;
+        btnBoton.Margin = new Padding(0, 2, 0, 2);
         var icono = texto switch
         {
             "Inicio" => "layout-dashboard",
@@ -99,19 +100,19 @@ public sealed partial class FormularioPrincipal : Form
             "Reportes" => "chart-column",
             _ => "settings"
         };
-        Iconos.Aplicar(boton, icono);
-        boton.Click += async (_, _) =>
+        Iconos.Aplicar(btnBoton, icono);
+        btnBoton.Click += async (_, _) =>
         {
             await EjecutarSeguro(accion);
             SeleccionarNavegacion(texto);
         };
-        boton.Enabled = _configuracion.EstaConfigurada || accion == MostrarConfiguracion || accion == MostrarInicio;
-        menu.Controls.Add(boton);
+        btnBoton.Enabled = _configuracion.EstaConfigurada || accion == MostrarConfiguracion || accion == MostrarInicio;
+        menu.Controls.Add(btnBoton);
     }
 
     private void SeleccionarNavegacion(string texto)
     {
-        foreach (var item in menu.Controls.OfType<Button>())
+        foreach (var item in flpNavegacion.Controls.OfType<Button>())
         {
             item.BackColor = item.Text == texto ? Color.FromArgb(75, 105, 79) : Componentes.Verde;
             item.ForeColor = Color.White;
@@ -120,9 +121,9 @@ public sealed partial class FormularioPrincipal : Form
 
     private async Task EjecutarSeguro(Func<Task> accion)
     {
-        menu.Enabled = false;
-        _contenido.Enabled = false;
-        salir.Enabled = false;
+        flpNavegacion.Enabled = false;
+        pnlContenido.Enabled = false;
+        btnCerrarSesion.Enabled = false;
         UseWaitCursor = true;
         try
         {
@@ -137,9 +138,9 @@ public sealed partial class FormularioPrincipal : Form
             if (!IsDisposed)
             {
                 FormatoPresentacion.Aplicar(this);
-                menu.Enabled = true;
-                _contenido.Enabled = true;
-                salir.Enabled = true;
+                flpNavegacion.Enabled = true;
+                pnlContenido.Enabled = true;
+                btnCerrarSesion.Enabled = true;
                 UseWaitCursor = false;
             }
         }
@@ -178,54 +179,59 @@ public sealed partial class FormularioPrincipal : Form
             return;
         }
 
-        _titulo.Text = "Panel de control / Inicio";
+        lblTitulo.Text = "Panel de control / Inicio";
         SeleccionarNavegacion("Inicio");
         LimpiarContenido();
-        var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Tu restaurante, de un vistazo", "Hola, " + _usuario.Nombre + ". Selecciona una mesa o continúa una atención."));
+        var tlpPagina = CrearPagina();
+        tlpPagina.Controls.Add(Encabezado("Tu restaurante, de un vistazo", "Hola, " + _usuario.Nombre + ". Selecciona una mesa o continúa una atención."));
         if (!_configuracion.EstaConfigurada)
         {
-            pagina.Controls.Add(Aviso("Configura la conexión del equipo para comenzar.", "Abrir conexión SQL", MostrarConexion));
+            tlpPagina.Controls.Add(Aviso("Configura la conexión del equipo para comenzar.", "Abrir conexión SQL", MostrarConexion));
             return;
         }
 
         var resumen = await Task.Run(_repositorio.ObtenerResumen);
         var restaurante = await Task.Run(_repositorio.ObtenerRestaurante);
         Text = "Sabores | " + restaurante.Nombre;
-        var tarjetas = new FlowLayoutPanel
+        var flpTarjetas = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 8, 0, 16)
+            Margin = new Padding(0, 8, 0, 16),
+            Name = "flpTarjetas"
         };
         if (_usuario.Rol is "Administrador" or "Gerente")
-            tarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Componentes.Terracota));
-        tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "Atenciones en curso", Componentes.Verde));
-        tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para atender", Componentes.Verde));
-        tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú actual", Componentes.Terracota));
-        pagina.Controls.Add(tarjetas);
-        var acciones = new FlowLayoutPanel
+            flpTarjetas.Controls.Add(TarjetaEstadistica("COMPROBANTES HOY", FormatoPresentacion.Moneda(resumen.VentasDelDia), "Importe emitido; no caja", Componentes.Terracota));
+        flpTarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "Atenciones en curso", Componentes.Verde));
+        flpTarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para atender", Componentes.Verde));
+        flpTarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú actual", Componentes.Terracota));
+        tlpPagina.Controls.Add(flpTarjetas);
+        var flpAcciones = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 0, 0, 14)
+            Margin = new Padding(0, 0, 0, 14),
+            Name = "flpAcciones"
         };
-        var ver = Componentes.Boton("Ver mesas");
-        Iconos.Aplicar(ver, "armchair");
-        ver.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
-        var recuperar = Componentes.Boton("Recuperar operaciones pendientes", false);
-        Iconos.Aplicar(recuperar, "refresh");
-        recuperar.Click += async (_, _) => await EjecutarSeguro(async () =>
+        var btnVer = Componentes.Boton("Ver mesas");
+        btnVer.Name = "btnVer";
+        Iconos.Aplicar(btnVer, "armchair");
+        btnVer.Click += async (_, _) => await EjecutarSeguro(MostrarMesasPos);
+        var btnRecuperar = Componentes.Boton("Recuperar operaciones pendientes", false);
+        btnRecuperar.Name = "btnRecuperar";
+        Iconos.Aplicar(btnRecuperar, "refresh");
+        btnRecuperar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             using var formulario = new FormularioRecuperacion(_repositorio);
             formulario.ShowDialog(this);
             await MostrarInicio();
         });
-        var incidencias = Componentes.Boton("Incidencias de consumo", false);
-        Iconos.Aplicar(incidencias, "alert");
-        incidencias.Click += async (_, _) => await EjecutarSeguro(async () =>
+        var btnIncidencias = Componentes.Boton("Incidencias de consumo", false);
+        btnIncidencias.Name = "btnIncidencias";
+        Iconos.Aplicar(btnIncidencias, "alert");
+        btnIncidencias.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             using var f = new FormularioIncidencias(_repositorio);
             f.ShowDialog(this);
@@ -233,35 +239,36 @@ public sealed partial class FormularioPrincipal : Form
         });
         foreach (var b in new[]
         {
-            ver,
-            recuperar,
-            incidencias
+            btnVer,
+            btnRecuperar,
+            btnIncidencias
         }
 
         )
             b.Margin = new Padding(0, 0, 12, 10);
-        acciones.Controls.AddRange([ver, recuperar, incidencias]);
-        pagina.Controls.Add(acciones);
+        flpAcciones.Controls.AddRange([btnVer, btnRecuperar, btnIncidencias]);
+        tlpPagina.Controls.Add(flpAcciones);
         var pendientes = DiarioOperaciones.Listar(_repositorio);
         if (pendientes.Count > 0)
-            pagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupera antes de repetir acciones.", 12, true));
-        pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes", 18, true));
+            tlpPagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupera antes de repetir acciones.", 12, true));
+        tlpPagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes", 18, true));
         var abiertos = (await Task.Run(_repositorio.ListarPedidos)).Where(p => p.Estado is "Abierto" or "En preparación").Take(5).ToList();
         if (abiertos.Count == 0)
-            pagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Selecciona Ver mesas para comenzar."));
+            tlpPagina.Controls.Add(Componentes.Etiqueta("No hay pedidos abiertos. Selecciona Ver mesas para comenzar."));
         foreach (var pedido in abiertos)
         {
-            var continuar = Componentes.Boton($"Mesa {pedido.NumeroMesa}    ·    Pedido #{pedido.Id}    ·    {pedido.Estado}    ·    {FormatoPresentacion.Moneda(pedido.Total)}", false);
-            continuar.Dock = DockStyle.Top;
-            continuar.Margin = new Padding(0, 0, 0, 8);
-            Iconos.Aplicar(continuar, "clipboard-list");
-            continuar.Click += async (_, _) => await EjecutarSeguro(async () =>
+            var btnContinuar = Componentes.Boton($"Mesa {pedido.NumeroMesa}    ·    Pedido #{pedido.Id}    ·    {pedido.Estado}    ·    {FormatoPresentacion.Moneda(pedido.Total)}", false);
+            btnContinuar.Name = "btnContinuar";
+            btnContinuar.Dock = DockStyle.Top;
+            btnContinuar.Margin = new Padding(0, 0, 0, 8);
+            Iconos.Aplicar(btnContinuar, "clipboard-list");
+            btnContinuar.Click += async (_, _) => await EjecutarSeguro(async () =>
             {
                 var mesas = await Task.Run(_repositorio.ListarMesas);
                 await AbrirMesa(mesas.Single(m => m.Numero == pedido.NumeroMesa));
                 await MostrarInicio();
             });
-            pagina.Controls.Add(continuar);
+            tlpPagina.Controls.Add(btnContinuar);
         }
 
         FormatoPresentacion.Aplicar(this);
@@ -269,36 +276,38 @@ public sealed partial class FormularioPrincipal : Form
 
     private TableLayoutPanel CrearPagina()
     {
-        var pagina = new TableLayoutPanel
+        var tlpPagina = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             ColumnCount = 1,
-            GrowStyle = TableLayoutPanelGrowStyle.AddRows
+            GrowStyle = TableLayoutPanelGrowStyle.AddRows,
+            Name = "tlpPagina"
         };
-        pagina.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        _contenido.Controls.Add(pagina);
-        return pagina;
+        tlpPagina.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        pnlContenido.Controls.Add(tlpPagina);
+        return tlpPagina;
     }
 
     private static Control Encabezado(string titulo, string descripcion)
     {
-        var panel = new TableLayoutPanel
+        var tlpPanel = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
             ColumnCount = 1,
-            Padding = new Padding(0, 0, 0, 15)
+            Padding = new Padding(0, 0, 0, 15),
+            Name = "tlpPanel"
         };
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, Font = new Font("Segoe UI", 23, FontStyle.Bold), ForeColor = Componentes.Tinta });
-        panel.Controls.Add(new Label { Text = descripcion, AutoSize = true, ForeColor = Componentes.Secundario, Margin = new Padding(0, 10, 0, 5) });
-        return panel;
+        tlpPanel.Controls.Add(new Label { Text = titulo, AutoSize = true, Font = new Font("Segoe UI", 23, FontStyle.Bold), ForeColor = Componentes.Tinta });
+        tlpPanel.Controls.Add(new Label { Text = descripcion, AutoSize = true, ForeColor = Componentes.Secundario, Margin = new Padding(0, 10, 0, 5) });
+        return tlpPanel;
     }
 
     private static Control TarjetaEstadistica(string titulo, string valor, string detalle, Color acento)
     {
-        var panel = new TableLayoutPanel
+        var tlpPanel = new TableLayoutPanel
         {
             BackColor = Color.White,
             AutoSize = true,
@@ -307,69 +316,74 @@ public sealed partial class FormularioPrincipal : Form
             RowCount = 3,
             Padding = new Padding(16),
             Margin = new Padding(0, 0, 12, 12),
-            MinimumSize = new Size(205, 128)
+            MinimumSize = new Size(205, 128),
+            Name = "tlpPanel"
         };
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 11, FontStyle.Bold) });
-        panel.Controls.Add(new Label { Text = valor, AutoSize = true, ForeColor = acento, Font = new Font("Segoe UI", 23, FontStyle.Bold), Margin = new Padding(0, 6, 0, 4) });
-        panel.Controls.Add(new Label { Text = detalle, AutoSize = true, ForeColor = Componentes.Secundario });
-        return panel;
+        tlpPanel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 11, FontStyle.Bold) });
+        tlpPanel.Controls.Add(new Label { Text = valor, AutoSize = true, ForeColor = acento, Font = new Font("Segoe UI", 23, FontStyle.Bold), Margin = new Padding(0, 6, 0, 4) });
+        tlpPanel.Controls.Add(new Label { Text = detalle, AutoSize = true, ForeColor = Componentes.Secundario });
+        return tlpPanel;
     }
 
     private async Task MostrarMenuMesas()
     {
-        _titulo.Text = "Servicio  /  Menú y mesas";
+        lblTitulo.Text = "Servicio  /  Menú y mesas";
         LimpiarContenido();
-        var pagina = CrearPagina();
-        pagina.Controls.Add(Encabezado("Menú y mesas", "Consulta los productos activos y el estado de las mesas."));
-        var pestanas = new TabControl
+        var tlpPagina = CrearPagina();
+        tlpPagina.Controls.Add(Encabezado("Menú y mesas", "Consulta los productos activos y el estado de las mesas."));
+        var tabPestanas = new TabControl
         {
             Dock = DockStyle.Top,
             Height = 510,
-            Font = Componentes.Fuente
+            Font = Componentes.Fuente,
+            Name = "tabPestanas"
         };
-        var tabMenu = new TabPage("  Menú  ")
+        var tpTabMenu = new TabPage("  Menú  ")
         {
             BackColor = Color.White,
-            Padding = new Padding(12)
+            Padding = new Padding(12),
+            Name = "tpTabMenu"
         };
-        var tabMesas = new TabPage("  Mesas  ")
+        var tpTabMesas = new TabPage("  Mesas  ")
         {
             BackColor = Color.White,
-            Padding = new Padding(12)
+            Padding = new Padding(12),
+            Name = "tpTabMesas"
         };
-        var menu = NuevaTabla();
-        var mesas = NuevaTabla();
-        var herramientasMesas = new FlowLayoutPanel
+        var dgvMenu = NuevaTabla();
+        var dgvMesas = NuevaTabla();
+        var flpHerramientasMesas = new FlowLayoutPanel
         {
             Dock = DockStyle.Top,
             Height = 52,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = false,
-            Padding = new Padding(0, 2, 0, 4)
+            Padding = new Padding(0, 2, 0, 4),
+            Name = "flpHerramientasMesas"
         };
-        var crear = BotonMesa("＋ Nueva mesa", 125);
-        var editar = BotonMesa("Editar", 90);
-        var visualizar = BotonMesa("Visualizar", 100);
-        var eliminar = BotonMesa("Eliminar", 90, false);
-        crear.Enabled = editar.Enabled = eliminar.Enabled = _repositorio.UsuarioActual?.Rol is "Administrador" or "Gerente";
-        herramientasMesas.Controls.AddRange([crear, editar, visualizar, eliminar]);
-        tabMesas.Controls.Add(mesas);
-        tabMesas.Controls.Add(herramientasMesas);
-        tabMenu.Controls.Add(menu);
-        pestanas.TabPages.Add(tabMenu);
-        pestanas.TabPages.Add(tabMesas);
-        pagina.Controls.Add(pestanas);
-        menu.DataSource = (await Task.Run(_repositorio.ListarMenu)).ToList();
+        var btnCrear = BotonMesa("＋ Nueva mesa", 125);
+        var btnEditar = BotonMesa("Editar", 90);
+        var btnVisualizar = BotonMesa("Visualizar", 100);
+        var btnEliminar = BotonMesa("Eliminar", 90, false);
+        btnCrear.Enabled = btnEditar.Enabled = btnEliminar.Enabled = _repositorio.UsuarioActual?.Rol is "Administrador" or "Gerente";
+        flpHerramientasMesas.Controls.AddRange([btnCrear, btnEditar, btnVisualizar, btnEliminar]);
+        tpTabMesas.Controls.Add(dgvMesas);
+        tpTabMesas.Controls.Add(flpHerramientasMesas);
+        tpTabMenu.Controls.Add(dgvMenu);
+        tabPestanas.TabPages.Add(tpTabMenu);
+        tabPestanas.TabPages.Add(tpTabMesas);
+        tlpPagina.Controls.Add(tabPestanas);
+        dgvMenu.DataSource = (await Task.Run(_repositorio.ListarMenu)).ToList();
         async Task<List<Mesa>> CargarMesas()
         {
             var lista = (await Task.Run(_repositorio.ListarMesas)).ToList();
-            mesas.DataSource = null;
-            mesas.DataSource = lista;
+            dgvMesas.DataSource = null;
+            dgvMesas.DataSource = lista;
             return lista;
         }
 
-        Mesa? MesaSeleccionada() => mesas.CurrentRow?.DataBoundItem as Mesa;
-        crear.Click += async (_, _) => await EjecutarSeguro(async () =>
+        Mesa? MesaSeleccionada() => dgvMesas.CurrentRow?.DataBoundItem as Mesa;
+        btnCrear.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var siguiente = (await CargarMesas()).Select(m => m.Numero).DefaultIfEmpty(0).Max() + 1;
             using var formulario = new FormularioMesa(siguienteNumero: siguiente);
@@ -380,7 +394,7 @@ public sealed partial class FormularioPrincipal : Form
             await Task.Run(() => _repositorio.CrearMesa(numero, capacidad));
             await CargarMesas();
         });
-        editar.Click += async (_, _) => await EjecutarSeguro(async () =>
+        btnEditar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
@@ -398,7 +412,7 @@ public sealed partial class FormularioPrincipal : Form
             await Task.Run(() => _repositorio.ActualizarMesa(seleccionada.Id, numero, capacidad, estado));
             await CargarMesas();
         });
-        visualizar.Click += async (_, _) => await EjecutarSeguro(async () =>
+        btnVisualizar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
@@ -411,7 +425,7 @@ public sealed partial class FormularioPrincipal : Form
             formulario.ShowDialog(this);
             await CargarMesas();
         });
-        eliminar.Click += async (_, _) => await EjecutarSeguro(async () =>
+        btnEliminar.Click += async (_, _) => await EjecutarSeguro(async () =>
         {
             var seleccionada = MesaSeleccionada();
             if (seleccionada is null)
@@ -431,12 +445,13 @@ public sealed partial class FormularioPrincipal : Form
 
     private static Button BotonMesa(string texto, int ancho, bool primario = true)
     {
-        var boton = Componentes.Boton(texto, primario);
-        boton.Width = ancho;
-        boton.AutoSize = true;
-        boton.Height = 36;
-        boton.Margin = new Padding(0, 2, 8, 2);
-        return boton;
+        var btnBoton = Componentes.Boton(texto, primario);
+        btnBoton.Name = "btnBoton";
+        btnBoton.Width = ancho;
+        btnBoton.AutoSize = true;
+        btnBoton.Height = 36;
+        btnBoton.Margin = new Padding(0, 2, 8, 2);
+        return btnBoton;
     }
 
     private Task MostrarReportes()
@@ -448,8 +463,8 @@ public sealed partial class FormularioPrincipal : Form
 
     private void LimpiarContenido()
     {
-        while (_contenido.Controls.Count > 0)
-            _contenido.Controls[0].Dispose();
+        while (pnlContenido.Controls.Count > 0)
+            pnlContenido.Controls[0].Dispose();
     }
 
     private Task MostrarConexion()
@@ -469,21 +484,23 @@ public sealed partial class FormularioPrincipal : Form
 
     private static Control Campo(string etiqueta, Control campo)
     {
-        var grupo = new TableLayoutPanel
+        var tlpGrupo = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 2,
-            Margin = new Padding(0, 0, 12, 0)
+            Margin = new Padding(0, 0, 12, 0),
+            Name = "tlpGrupo"
         };
-        grupo.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
-        grupo.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        var titulo = Componentes.Etiqueta(etiqueta, 9, true);
-        titulo.Margin = new Padding(0, 2, 0, 0);
+        tlpGrupo.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
+        tlpGrupo.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        var lblTitulo = Componentes.Etiqueta(etiqueta, 9, true);
+        lblTitulo.Name = "lblTitulo";
+        lblTitulo.Margin = new Padding(0, 2, 0, 0);
         campo.Dock = DockStyle.Fill;
-        grupo.Controls.Add(titulo, 0, 0);
-        grupo.Controls.Add(campo, 0, 1);
-        return grupo;
+        tlpGrupo.Controls.Add(lblTitulo, 0, 0);
+        tlpGrupo.Controls.Add(campo, 0, 1);
+        return tlpGrupo;
     }
 
     private static ComboBox Combo() => new()
@@ -497,58 +514,64 @@ public sealed partial class FormularioPrincipal : Form
     };
     private static DataGridView NuevaTabla()
     {
-        var tabla = new DataGridView
+        var dgvRegistros = new DataGridView
         {
             Dock = DockStyle.Fill,
-            AutoGenerateColumns = true
+            AutoGenerateColumns = true,
+            Name = "dgvRegistros"
         };
-        Componentes.EstilizarTabla(tabla);
-        return tabla;
+        Componentes.EstilizarTabla(dgvRegistros);
+        return dgvRegistros;
     }
 
     private static Control ComponenteSeccion(string titulo, string subtitulo)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Fill;
-        panel.Controls.Add(new Label { Text = titulo + "\r\n" + subtitulo, Dock = DockStyle.Top, Height = 48, ForeColor = Componentes.Tinta, Font = Componentes.Fuente });
-        return panel;
+        var pnlPanel = Componentes.Tarjeta();
+        pnlPanel.Name = "pnlPanel";
+        pnlPanel.Dock = DockStyle.Fill;
+        pnlPanel.Controls.Add(new Label { Text = titulo + "\r\n" + subtitulo, Dock = DockStyle.Top, Height = 48, ForeColor = Componentes.Tinta, Font = Componentes.Fuente });
+        return pnlPanel;
     }
 
     private static Control PanelConTitulo(string titulo, DataGridView tabla, Button? accion = null)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Fill;
-        panel.Controls.Add(tabla);
+        var pnlPanel = Componentes.Tarjeta();
+        pnlPanel.Name = "pnlPanel";
+        pnlPanel.Dock = DockStyle.Fill;
+        pnlPanel.Controls.Add(tabla);
         if (accion is null)
         {
-            panel.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Top, Height = 35, Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Componentes.Tinta });
+            pnlPanel.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Top, Height = 35, Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Componentes.Tinta });
         }
         else
         {
-            var encabezado = new Panel
+            var pnlEncabezado = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 48
+                Height = 48,
+                Name = "pnlEncabezado"
             };
-            encabezado.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Left, AutoSize = true, Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Componentes.Tinta, TextAlign = ContentAlignment.MiddleLeft });
+            pnlEncabezado.Controls.Add(new Label { Text = titulo, Dock = DockStyle.Left, AutoSize = true, Font = new Font("Segoe UI", 13, FontStyle.Bold), ForeColor = Componentes.Tinta, TextAlign = ContentAlignment.MiddleLeft });
             accion.Dock = DockStyle.Right;
             accion.Height = 36;
-            encabezado.Controls.Add(accion);
-            panel.Controls.Add(encabezado);
+            pnlEncabezado.Controls.Add(accion);
+            pnlPanel.Controls.Add(pnlEncabezado);
         }
 
-        return panel;
+        return pnlPanel;
     }
 
     private Control Aviso(string texto, string botonTexto, Func<Task> accion)
     {
-        var panel = Componentes.Tarjeta();
-        panel.Dock = DockStyle.Top;
-        panel.Height = 155;
-        panel.Controls.Add(new Label { Text = texto, AutoSize = true, Font = new Font("Segoe UI", 12), Location = new Point(20, 20) });
-        var boton = Componentes.Boton(botonTexto);
-        boton.Location = new Point(20, 75);
-        boton.Width = 210;
+        var pnlPanel = Componentes.Tarjeta();
+        pnlPanel.Name = "pnlPanel";
+        pnlPanel.Dock = DockStyle.Top;
+        pnlPanel.Height = 155;
+        pnlPanel.Controls.Add(new Label { Text = texto, AutoSize = true, Font = new Font("Segoe UI", 12), Location = new Point(20, 20) });
+        var btnBoton = Componentes.Boton(botonTexto);
+        btnBoton.Name = "btnBoton";
+        btnBoton.Location = new Point(20, 75);
+        btnBoton.Width = 210;
         var icono = texto switch
         {
             "Inicio" => "layout-dashboard",
@@ -558,18 +581,18 @@ public sealed partial class FormularioPrincipal : Form
             "Reportes" => "chart-column",
             _ => "settings"
         };
-        Iconos.Aplicar(boton, icono);
-        boton.Click += async (_, _) =>
+        Iconos.Aplicar(btnBoton, icono);
+        btnBoton.Click += async (_, _) =>
         {
             await EjecutarSeguro(accion);
-            foreach (var item in menu.Controls.OfType<Button>())
+            foreach (var item in flpNavegacion.Controls.OfType<Button>())
             {
-                item.BackColor = item == boton ? Componentes.Verde : Color.White;
-                item.ForeColor = item == boton ? Color.White : Componentes.Tinta;
+                item.BackColor = item == btnBoton ? Componentes.Verde : Color.White;
+                item.ForeColor = item == btnBoton ? Color.White : Componentes.Tinta;
             }
         };
-        panel.Controls.Add(boton);
-        return panel;
+        pnlPanel.Controls.Add(btnBoton);
+        return pnlPanel;
     }
 
     private void MostrarError(Exception excepcion) => _dialogos.Mostrar(this, excepcion.Message, "No se pudo completar la operación", MessageBoxButtons.OK, MessageBoxIcon.Error);

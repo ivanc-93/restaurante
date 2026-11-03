@@ -3,7 +3,7 @@ namespace Restaurante.Frontend.Formularios;
 partial class FormularioComprobante
 {
     private System.ComponentModel.IContainer? components;
-    private TextBox contenido = null!;
+    private TextBox ctContenido = null!;
     protected override void Dispose(bool disposing)
     {
         if (disposing)
@@ -14,16 +14,19 @@ partial class FormularioComprobante
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        contenido = new TextBox();
+        ctContenido = new TextBox()
+        {
+            Name = "ctContenido"
+        };
         SuspendLayout();
-        contenido.Dock = DockStyle.Fill;
-        contenido.Multiline = true;
-        contenido.ReadOnly = true;
-        contenido.ScrollBars = ScrollBars.Both;
-        contenido.BackColor = Color.White;
-        contenido.Font = new Font("Segoe UI", 11);
-        contenido.AccessibleName = "Comprobante interno académico";
-        Controls.Add(contenido);
+        ctContenido.Dock = DockStyle.Fill;
+        ctContenido.Multiline = true;
+        ctContenido.ReadOnly = true;
+        ctContenido.ScrollBars = ScrollBars.Both;
+        ctContenido.BackColor = Color.White;
+        ctContenido.Font = new Font("Segoe UI", 11);
+        ctContenido.AccessibleName = "Comprobante interno académico";
+        Controls.Add(ctContenido);
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(720, 650);

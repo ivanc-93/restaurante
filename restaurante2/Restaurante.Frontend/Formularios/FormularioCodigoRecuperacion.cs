@@ -12,8 +12,8 @@ public sealed partial class FormularioCodigoRecuperacion : Form
         FormClosing += (_, e) => e.Cancel = ocupado;
         FormClosed += (_, _) =>
         {
-            clave.Clear();
-            codigo.Clear();
+            ctContrasena.Clear();
+            ctCodigo.Clear();
         };
     }
 
@@ -21,16 +21,16 @@ public sealed partial class FormularioCodigoRecuperacion : Form
     {
         if (ocupado)
             return;
-        if (string.IsNullOrEmpty(clave.Text))
+        if (string.IsNullOrEmpty(ctContrasena.Text))
         {
-            mensaje.Text = "Escribe tu contraseña vigente de Administrador, no el código de emergencia.";
-            clave.Focus();
+            lblMensaje.Text = "Escribe tu contraseña vigente de Administrador, no el código de emergencia.";
+            ctContrasena.Focus();
             return;
         }
 
-        var c = clave.Text;
+        var c = ctContrasena.Text;
         ocupado = true;
-        generar.Enabled = continuar.Enabled = clave.Enabled = guardado.Enabled = false;
+        btnGenerar.Enabled = btnContinuar.Enabled = ctContrasena.Enabled = chkGuardado.Enabled = false;
         UseWaitCursor = true;
         Restaurante.Backend.Dominio.ResultadoGeneracionCodigo? resultado = null;
         string? error = null;
@@ -52,38 +52,38 @@ public sealed partial class FormularioCodigoRecuperacion : Form
         DisenoFormulario.EnInterfaz(this, () =>
         {
             ocupado = false;
-            generar.Enabled = clave.Enabled = guardado.Enabled = true;
+            btnGenerar.Enabled = ctContrasena.Enabled = chkGuardado.Enabled = true;
             UseWaitCursor = false;
-            clave.Clear();
+            ctContrasena.Clear();
             if (error is not null)
             {
-                codigo.Clear();
-                guardado.Checked = false;
-                mensaje.Text = error;
+                ctCodigo.Clear();
+                chkGuardado.Checked = false;
+                lblMensaje.Text = error;
             }
             else if (resultado is not null)
             {
-                mensaje.Text = resultado.Mensaje;
+                lblMensaje.Text = resultado.Mensaje;
                 if (resultado.Generado)
                 {
-                    codigo.Text = resultado.Codigo;
-                    guardado.Checked = false;
+                    ctCodigo.Text = resultado.Codigo;
+                    chkGuardado.Checked = false;
                 }
                 else
-                    clave.Focus();
+                    ctContrasena.Focus();
             }
 
-            continuar.Enabled = guardado.Checked && codigo.Text.Length > 0;
+            btnContinuar.Enabled = chkGuardado.Checked && ctCodigo.Text.Length > 0;
         });
     }
 
     private async void Confirmar_Click(object? sender, EventArgs e)
     {
-        if (ocupado || !guardado.Checked || codigo.Text.Length == 0)
+        if (ocupado || !chkGuardado.Checked || ctCodigo.Text.Length == 0)
             return;
-        var valor = codigo.Text;
+        var valor = ctCodigo.Text;
         ocupado = true;
-        continuar.Enabled = generar.Enabled = false;
+        btnContinuar.Enabled = btnGenerar.Enabled = false;
         Restaurante.Backend.Dominio.ResultadoRecuperacion? resultado = null;
         try
         {
@@ -104,9 +104,9 @@ public sealed partial class FormularioCodigoRecuperacion : Form
             }
             else
             {
-                mensaje.Text = resultado?.Mensaje ?? "No se confirmó el código con SQL. Comprueba la conexión y vuelve a confirmar antes de cerrar.";
-                continuar.Enabled = guardado.Checked;
-                generar.Enabled = true;
+                lblMensaje.Text = resultado?.Mensaje ?? "No se confirmó el código con SQL. Comprueba la conexión y vuelve a confirmar antes de cerrar.";
+                btnContinuar.Enabled = chkGuardado.Checked;
+                btnGenerar.Enabled = true;
             }
         });
     }

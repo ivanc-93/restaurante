@@ -139,7 +139,7 @@ internal static class PruebasAuditoria
             bloqueo.Open();using var t=bloqueo.BeginTransaction();using(var q=new SqlCommand("UPDATE dbo.Usuarios WITH(TABLOCKX) SET Nombre=Nombre WHERE Usuario=N'admin';",bloqueo,t))q.ExecuteNonQuery();
             using var f=new FormularioUsuarios(admin);f.Show();Application.DoEvents();f.Close();ok(!f.IsDisposed,"Cerrar durante lectura de usuarios espera una finalización segura");
             t.Rollback();var limite=DateTime.UtcNow.AddSeconds(15);
-            while(DateTime.UtcNow<limite&&!((System.Windows.Forms.Button)typeof(FormularioUsuarios).GetField("guardar",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.GetValue(f)!).Enabled){Application.DoEvents();Thread.Sleep(10);}
+            while(DateTime.UtcNow<limite&&!((System.Windows.Forms.Button)typeof(FormularioUsuarios).GetField("btnGuardar",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.GetValue(f)!).Enabled){Application.DoEvents();Thread.Sleep(10);}
             Application.DoEvents();f.Close();ok(f.IsDisposed,"Lectura finalizada permite cerrar sin tocar controles destruidos");
         }
         SynchronizationContext.SetSynchronizationContext(null);

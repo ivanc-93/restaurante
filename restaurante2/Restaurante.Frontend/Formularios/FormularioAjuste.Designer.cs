@@ -1,35 +1,37 @@
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioAjuste
 {
-    private Label resumen = null!, mensaje = null!;
-    private ComboBox tipo = null!;
-    private NumericUpDown descuento = null!;
-    private TextBox motivo = null!;
-    private Button aplicar = null!;
+    private Label lblResumen = null!, lblMensaje = null!;
+    private ComboBox cbTipo = null!;
+    private NumericUpDown nudDescuento = null!;
+    private TextBox ctMotivo = null!;
+    private Button btnAplicar = null!;
     private void InitializeComponent()
     {
-        var p = DisenoFormulario.Preparar(this, "Descuento o cortesía antes del cobro");
-        resumen = new Label
+        var flpP = DisenoFormulario.Preparar(this, "Descuento o cortesía antes del cobro");
+        lblResumen = new Label
         {
             AutoSize = true,
-            MaximumSize = new Size(500, 0)
+            MaximumSize = new Size(500, 0),
+            Name = "lblResumen"
         };
-        p.Controls.Add(resumen);
-        tipo = DisenoFormulario.Opciones(p, "Tipo de ajuste", "Descuento", "Cortesía");
-        p.Controls.Add(new Label { Text = "Descuento en Q sobre el importe original", AutoSize = true });
-        descuento = new NumericUpDown
+        flpP.Controls.Add(lblResumen);
+        cbTipo = DisenoFormulario.Opciones(flpP, "Tipo de ajuste", "Descuento", "Cortesía");
+        flpP.Controls.Add(new Label { Text = "Descuento en Q sobre el importe original", AutoSize = true });
+        nudDescuento = new NumericUpDown
         {
             DecimalPlaces = 2,
             Maximum = 9999999999.99m,
-            Width = 250
+            Width = 250,
+            Name = "nudDescuento"
         };
-        p.Controls.Add(descuento);
-        motivo = DisenoFormulario.Campo(p, "Motivo obligatorio");
-        aplicar = DisenoFormulario.Boton(p, "Solicitar y aplicar ajuste", Aplicar_Click);
-        mensaje = DisenoFormulario.Mensaje(p);
-        tipo.SelectedIndexChanged += (_, _) =>
+        flpP.Controls.Add(nudDescuento);
+        ctMotivo = DisenoFormulario.Campo(flpP, "Motivo obligatorio");
+        btnAplicar = DisenoFormulario.Boton(flpP, "Solicitar y aplicar ajuste", Aplicar_Click);
+        lblMensaje = DisenoFormulario.Mensaje(flpP);
+        cbTipo.SelectedIndexChanged += (_, _) =>
         {
-            descuento.Enabled = tipo.Text != "Cortesía";
+            nudDescuento.Enabled = cbTipo.Text != "Cortesía";
         };
     }
 }
