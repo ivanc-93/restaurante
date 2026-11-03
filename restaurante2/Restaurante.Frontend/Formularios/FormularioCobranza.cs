@@ -48,6 +48,23 @@ public sealed partial class FormularioCobranza : Form
 
         CambiarCuenta();
         FormatoPresentacion.Aplicar(this);
+        foreach (var nombre in new[]
+        {
+            "OperacionId",
+            "CuentaId",
+            "Entregado",
+            "Cambio"
+        }
+
+        )
+            if (dgvAbonos.Columns.Contains(nombre))
+                dgvAbonos.Columns[nombre].Visible = false;
+        if (dgvAbonos.Columns.Contains("Fecha"))
+            dgvAbonos.Columns["Fecha"].DefaultCellStyle.Format = "dd/MM HH:mm";
+        dgvAbonos.AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.DisplayedCells;
+        dgvAbonos.DefaultCellStyle.Font = new Font("Segoe UI", 10);
+        dgvAbonos.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+        btnDividir.Visible = !estado.Congelada;
     }
 
     private static string M(decimal v) => MonedaGuatemala.Formatear(v);

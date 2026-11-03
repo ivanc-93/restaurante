@@ -1,0 +1,11 @@
+CAPTURA inicio-reservas; DPI 168
+OK Inicio presenta reservas activas con acceso a consulta
+CAPTURA cobranza-abonos; DPI 168
+CAPTURA historial-abonos; DPI 168
+OK Cobranza muestra acción real de abono
+CAPTURA separar-cuentas; DPI 168
+CAPTURA opciones-cierre; DPI 168
+CAPTURA recibo-abono; DPI 168
+CAPTURA promocion; DPI 168
+OK Comanda mantiene tabla y botón de cobro sin expansión desproporcionada
+CAPTURA mesa-pedido; DPI 168
