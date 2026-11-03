@@ -34,7 +34,7 @@ partial class FormularioPrincipal
         estructura.Dock = DockStyle.Fill;
         estructura.ColumnCount = 2;
         estructura.RowCount = 2;
-        estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 245F));
+        estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 225F));
         estructura.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         estructura.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F));
         estructura.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -45,7 +45,7 @@ partial class FormularioPrincipal
         marca.ForeColor = Color.White;
         marca.Font = new Font("Segoe UI",21F,FontStyle.Bold);
         marca.Dock = DockStyle.Top;
-        marca.Height = 80;
+        marca.Height = 64;
         menu.Dock = DockStyle.Fill;
         menu.FlowDirection = FlowDirection.TopDown;
         menu.WrapContents = false;
@@ -80,7 +80,7 @@ partial class FormularioPrincipal
         Controls.Add(estructura);
         AutoScaleDimensions = new SizeF(96F,96F);
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(1260,800);
+        ClientSize = new Size(1180,720);
         MinimumSize = new Size(650,380);
         StartPosition = FormStartPosition.CenterScreen;
         Text = "Sabores | Gestión de restaurante";

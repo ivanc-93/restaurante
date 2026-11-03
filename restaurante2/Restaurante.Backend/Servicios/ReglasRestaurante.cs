@@ -4,6 +4,18 @@ namespace Restaurante.Backend.Servicios;
 
 public static class ReglasRestaurante
 {
+    public const decimal MaximoPedido = 9999999999.99m;
+    public static decimal TotalAdmitido(decimal actual, decimal incremento)
+    {
+        var total = actual + incremento;
+        if (actual < 0 || incremento < 0 || total > MaximoPedido)
+            throw new ArgumentException("El pedido supera el importe máximo permitido. Reduce la cantidad antes de agregar.");
+        return total;
+    }
+    public static void ExigirSinAjuste(decimal descuento)
+    {
+        if (descuento != 0) throw new InvalidOperationException("Este pedido tiene un descuento o cortesía. Un gerente debe retirarlo desde Gestionar cierre (ajuste de Q0 con motivo), cambiar los productos y autorizar el nuevo ajuste. El descuento no se eliminará automáticamente.");
+    }
     public static string Texto(string? valor, string campo, int maximo)
     {
         var texto = valor?.Trim() ?? "";

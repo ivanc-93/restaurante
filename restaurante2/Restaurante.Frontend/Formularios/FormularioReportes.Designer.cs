@@ -49,13 +49,14 @@ partial class FormularioReportes
 
         filtros.Controls.AddRange(new Control[]{desdeLabel,inicio,hastaLabel,fin,agrupacion,mesaLabel,mesa,clienteLabel,cliente,consultar});
         pestanas.SelectedIndexChanged += Pestana_Cambio;
-        pestanas.Dock=DockStyle.Fill; ventasTab.Text="Ventas facturadas"; platosTab.Text="Platos más vendidos"; pedidosTab.Text="Pedidos por mesa y cliente";
+        pestanas.Dock=DockStyle.Fill; ventasTab.Text="Comprobantes · neto"; platosTab.Text="Platos · unidades y bruto"; pedidosTab.Text="Pedidos por mesa y cliente";
         ventas.Dock=DockStyle.Fill; platos.Dock=DockStyle.Fill; pedidos.Dock=DockStyle.Fill;
         ventasTab.Controls.Add(ventas); platosTab.Controls.Add(platos); pedidosTab.Controls.Add(pedidos);
         pestanas.TabPages.AddRange(new TabPage[]{ventasTab,platosTab,pedidosTab});
-        total.Dock=DockStyle.Bottom; total.Height=45; total.Text="Seleccione un intervalo";
+        total.Dock=DockStyle.Bottom; total.AutoSize=true; total.Padding=new Padding(12); total.MaximumSize=new Size(1050,0);
+        SizeChanged+=(_,_)=>total.MaximumSize=new Size(Math.Max(200,ClientSize.Width-24),0); total.Text="Seleccione un intervalo";
         Controls.Add(pestanas); Controls.Add(filtros); Controls.Add(total);
-        AutoScaleDimensions=new SizeF(7F,15F); AutoScaleMode=AutoScaleMode.Font;
+        Font=Componentes.Fuente;AutoScaleDimensions=new SizeF(96F,96F); AutoScaleMode=AutoScaleMode.Dpi;
         ClientSize=new Size(1100,680); MinimumSize=new Size(900,550); StartPosition=FormStartPosition.CenterParent;
         Text="Reportes del restaurante";
         ((System.ComponentModel.ISupportInitialize)ventas).EndInit(); ((System.ComponentModel.ISupportInitialize)platos).EndInit(); ((System.ComponentModel.ISupportInitialize)pedidos).EndInit();

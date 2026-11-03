@@ -1,0 +1,28 @@
+Base nueva: Restaurante_Pruebas_Frontend_20261102_180919_0f335f. No se consulta ni modifica RestauranteDB.
+OK: Centavos exactos y cantidad inválida
+OK: Límite de pedido antes de SQL
+OK: Fechas bisiestas y semana entre años
+OK: Descuento no se pierde ni cambia el pedido
+OK: Cortesía no desaparece al agregar
+OK: No prepara pedido vacío; cancelación sigue posible
+OK: Preparación por tandas protege lo preparado y permite corregir lo nuevo
+OK: Pedido preparado antiguo conserva protección
+OK: Importe acumulado excesivo no deja detalles parciales
+OK: Efectivo insuficiente y cobro idempotente con cambio exacto
+OK: Cuenta modificada rechaza cobro desactualizado
+OK: Tarjeta incierta no emite comprobante ni permite cobrar otra vez
+OK: Reactivar producto y cliente conserva ID y bloquea duplicados
+OK: Mesero no reactiva ni cambia ajustes sin autorización
+OK: Misma identidad SQL por conexión normal y memoria compartida
+OK: Recuperación de respuesta perdida no duplica producto al cambiar alias
+OK: Registro de alias anterior migra sin perder solicitud
+OK: Destino antiguo desconocido queda visible y no ejecutable
+OK: Dos cobros concurrentes solo generan una factura
+OK: Reportes netos concilian con comprobantes
+OK: Pantalla Inicio
+OK: Pantalla Pedido
+OK: Pantalla Cobro
+OK: Pantalla Catalogos
+OK: Pantalla Reportes
+OK: Pantalla Inactivos
+RESULTADO: 26 correctas; 0 fallidas. Base aislada: Restaurante_Pruebas_Frontend_20261102_180919_0f335f

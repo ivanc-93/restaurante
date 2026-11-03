@@ -5,10 +5,25 @@ namespace Restaurante.Frontend.Formularios;
 internal static class FormatoPresentacion
 {
     // Restaurant in Guatemala: presentation only, no conversion of stored amounts.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Form,object> Adaptados=new();
+    private static void AjustarVentana(Form form)
+    {
+        var area=Screen.FromControl(form).WorkingArea;
+        form.MinimumSize=new Size(Math.Min(form.MinimumSize.Width,area.Width),Math.Min(form.MinimumSize.Height,area.Height));
+        if(form.WindowState==FormWindowState.Normal) {
+            form.Size=new Size(Math.Min(form.Width,area.Width),Math.Min(form.Height,area.Height));
+            form.Location=new Point(Math.Clamp(form.Left,area.Left,Math.Max(area.Left,area.Right-form.Width)),Math.Clamp(form.Top,area.Top,Math.Max(area.Top,area.Bottom-form.Height)));
+        }
+    }
     private static readonly CultureInfo Cultura = CultureInfo.GetCultureInfo("es-GT");
     public static string Moneda(decimal importe) => Restaurante.Backend.Servicios.MonedaGuatemala.Formatear(importe);
     public static void Aplicar(Form formulario)
     {
+        if(!Adaptados.TryGetValue(formulario,out _)) {
+            Adaptados.Add(formulario,new object());
+            formulario.Shown+=(_,_)=>AjustarVentana(formulario);
+            formulario.DpiChanged+=(_,_)=>formulario.BeginInvoke((Action)(()=>AjustarVentana(formulario)));
+        }
         formulario.BackColor = Componentes.Fondo;
         formulario.Font = Componentes.Fuente;
         AplicarControles(formulario);

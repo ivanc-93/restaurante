@@ -28,6 +28,7 @@ public sealed partial class FormularioReportes : Form
                 mesa.DataSource=new List<OpcionFiltro>{new(null,"Todas las mesas")}.Concat(opciones.Mesas.Select(m=>new OpcionFiltro(m.Id,$"Mesa {m.Numero}"))).ToList();
                 cliente.DataSource=new List<OpcionFiltro>{new(null,"Todos los clientes"),new(0,"Público general")}.Concat(opciones.Clientes.Select(c=>new OpcionFiltro(c.Id,c.Nombre))).ToList();
                 _listo=true;
+                Pestana_Cambio(this,EventArgs.Empty);
                 await CargarAsync();
             }
             catch(Exception ex) { if(!IsDisposed&&!Disposing)MessageBox.Show(this,ex.Message,"Filtros de reportes",MessageBoxButtons.OK,MessageBoxIcon.Error); }

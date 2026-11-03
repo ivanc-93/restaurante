@@ -19,11 +19,13 @@ public sealed partial class FormularioCobro : Form
         _repo=repo;_cuenta=cuenta;_dialogos=dialogos??new DialogosUsuario();
         tablaCuenta.DataSource=cuenta.Detalles.ToList();
         totalCuenta.Text="Total  "+FormatoPresentacion.Moneda(cuenta.Total);
+        desgloseCuenta.Text=$"Consumo: {FormatoPresentacion.Moneda(cuenta.ImporteOriginal)}\nDescuento / cortesía: −{FormatoPresentacion.Moneda(cuenta.Descuento)}";
         detalle.Text=$"Mesa {cuenta.NumeroMesa} · Pedido #{cuenta.PedidoId}\r\n\r\n"+
             string.Join("\r\n",cuenta.Detalles.Select(d=>$"{d.Cantidad} × {d.Producto}\r\n{FormatoPresentacion.Moneda(d.PrecioUnitario)} = {FormatoPresentacion.Moneda(d.Importe)}\r\n"))+
             $"\r\nOriginal: {FormatoPresentacion.Moneda(cuenta.ImporteOriginal)}\r\nDescuento: {FormatoPresentacion.Moneda(cuenta.Descuento)}\r\nTOTAL: {FormatoPresentacion.Moneda(cuenta.Total)}";
         receptor.Text=cuenta.Cliente;publico.Checked=cuenta.ClienteId is null;
         if(cuenta.Total==0)metodo.Items.Add("Cortesía");
+        metodo.SelectedItem=cuenta.Total==0?"Cortesía":"Efectivo";
         cliente.SelectedIndexChanged+=(_,_)=> {
             if(cliente.SelectedItem is Cliente c && c.Id>0) {publico.Checked=false;receptor.Text=c.Nombre;correo.Text=c.Correo;opcionales.Checked=!string.IsNullOrWhiteSpace(c.Correo);}
         };
@@ -31,7 +33,8 @@ public sealed partial class FormularioCobro : Form
             catch(Exception ex){mensaje.Text=ex.Message;} };
         FormClosing+=(_,e)=>{if(_ocupado)e.Cancel=true;};
         campos.SizeChanged+=(_,_)=>AjustarCampos();
-        pie.SizeChanged+=(_,_)=>{var ancho=Math.Max(120,ClientSize.Width-estructura.Padding.Horizontal-16);if(mensaje.MaximumSize.Width!=ancho){mensaje.MaximumSize=new Size(ancho,(int)(40*DeviceDpi/96f));saldo.MaximumSize=new Size(ancho,0);}};
+        pie.SizeChanged+=(_,_)=>{var ancho=Math.Max(120,ClientSize.Width-estructura.Padding.Horizontal-16);if(mensaje.MaximumSize.Width!=ancho){mensaje.MaximumSize=new Size(ancho,0);saldo.MaximumSize=new Size(ancho,0);}};
+        receptor.TextChanged+=Datos_Cambio;referencia.TextChanged+=Datos_Cambio;
         Datos_Cambio(this,EventArgs.Empty);
     }
     private void Datos_Cambio(object? sender,EventArgs e)
@@ -48,9 +51,14 @@ public sealed partial class FormularioCobro : Form
         if(metodo.Text=="Tarjeta")entregado.Value=_cuenta.Total;
         if(metodo.Text=="Cortesía")entregado.Value=0;
         var diferencia=entregado.Value-_cuenta.Total;
-        saldo.Text=$"Total: {FormatoPresentacion.Moneda(_cuenta.Total)} · "+(diferencia>=0?$"Cambio: {FormatoPresentacion.Moneda(diferencia)}":$"Falta: {FormatoPresentacion.Moneda(-diferencia)}");
+        saldo.Text=metodo.Text=="Efectivo"?(diferencia>=0?$"Cambio a entregar: {FormatoPresentacion.Moneda(diferencia)}":$"Falta recibir: {FormatoPresentacion.Moneda(-diferencia)}")
+            :metodo.Text=="Tarjeta"?$"Tarjeta: {FormatoPresentacion.Moneda(_cuenta.Total)} · confirmación manual":metodo.Text=="Cortesía"?"Cortesía autorizada · sin dinero recibido":"Selecciona cómo se pagará la cuenta";
+        saldo.ForeColor=diferencia<0&&metodo.Text=="Efectivo"?Componentes.Terracota:Componentes.Verde;
         _ultimoAncho=0;AjustarCampos();
         if(!_ocupado)confirmar.Enabled=_solicitud is not null||datosConfirmados.Checked&&metodo.SelectedIndex>=0
+            &&(publico.Checked||!string.IsNullOrWhiteSpace(receptor.Text))
+            &&(metodo.Text!="Efectivo"||entregado.Value>=_cuenta.Total)
+            &&(metodo.Text!="Tarjeta"||resultadoTarjeta.SelectedIndex>=0&&(resultadoTarjeta.Text=="Rechazado"||!string.IsNullOrWhiteSpace(referencia.Text)))
             &&(metodo.Text=="Tarjeta"&&resultadoTarjeta.Text is "Rechazado" or "Incierto"||pagoConfirmado.Checked);
     }
     private void AjustarCampos()
@@ -102,6 +110,6 @@ public sealed partial class FormularioCobro : Form
             { _solicitud=null;campos.Enabled=true;confirmar.Text="Confirmar operación"; }
             else confirmar.Text="Recuperar la misma operación";
         }
-        finally{_ocupado=false;confirmar.Enabled=true;}
+        finally{_ocupado=false;Datos_Cambio(this,EventArgs.Empty);}
     }
 }

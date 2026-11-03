@@ -1,4 +1,4 @@
-using Restaurante.Frontend.Servicios;
+﻿using Restaurante.Frontend.Servicios;
 using Restaurante.Backend.Dominio;
 using Restaurante.Backend.Servicios;
 
@@ -27,7 +27,7 @@ public sealed partial class FormularioPrincipal : Form
         AgregarNavegacion(menu, "DATOS", "Catálogos", MostrarCatalogos);
         if(usuario.Rol is "Administrador" or "Gerente") AgregarNavegacion(menu, "ANÁLISIS", "Reportes", MostrarReportes);
         if(usuario.Rol=="Administrador") AgregarNavegacion(menu,"ADMINISTRACIÓN","Usuarios",()=>{using var f=new FormularioUsuarios(_repositorio);f.ShowDialog(this);return Task.CompletedTask;});
-        AgregarNavegacion(menu,"CUENTA","Cambiar contraseña",()=>{using var f=new FormularioCambiarClave(_repositorio);if(f.ShowDialog(this)==DialogResult.OK){SesionCerrada=true;Close();}return Task.CompletedTask;});
+        AgregarNavegacion(menu,"CUENTA","Mi contraseña",()=>{using var f=new FormularioCambiarClave(_repositorio);if(f.ShowDialog(this)==DialogResult.OK){SesionCerrada=true;Close();}return Task.CompletedTask;});
         if (usuario.Rol is "Administrador" or "Gerente")
             AgregarNavegacion(menu, "ADMINISTRACIÓN", "Configuración", MostrarConfiguracion);
         menu.Enabled = false;
@@ -65,6 +65,7 @@ public sealed partial class FormularioPrincipal : Form
         boton.Width = Math.Max(190, menu.ClientSize.Width - 24);
         boton.Tag = grupo;
         boton.Height = 48;
+        boton.Font=new Font("Segoe UI",10.5f,FontStyle.Bold);boton.AutoEllipsis=true;boton.AccessibleName=texto;
         boton.TextAlign = ContentAlignment.MiddleLeft;
         boton.Margin = new Padding(0, 2, 0, 2);
         var icono = texto switch { "Inicio" => "layout-dashboard", "Mesas" => "armchair", "Pedidos" => "clipboard-list", "Catálogos" => "utensils-crossed", "Reportes" => "chart-column", _ => "settings" };
@@ -133,9 +134,18 @@ public sealed partial class FormularioPrincipal : Form
         tarjetas.Controls.Add(TarjetaEstadistica("PEDIDOS ABIERTOS", resumen.PedidosAbiertos.ToString(), "Atenciones en curso", Componentes.Verde));
         tarjetas.Controls.Add(TarjetaEstadistica("MESAS DISPONIBLES", resumen.MesasDisponibles.ToString(), "Listas para atender", Componentes.Verde));
         tarjetas.Controls.Add(TarjetaEstadistica("PRODUCTOS ACTIVOS", resumen.ProductosActivos.ToString(), "En el menú actual", Componentes.Terracota));
-        pagina.Controls.Add(tarjetas);
+        void AjustarResumen()
+        {
+            var ancho=tarjetas.ClientSize.Width;
+            if(ancho<=0)return;
+            var minimo=(int)(235*DeviceDpi/96f);
+            var columnas=ancho>=4*(minimo+18)?4:ancho>=2*(minimo+18)?2:1;
+            foreach(Control tarjeta in tarjetas.Controls)tarjeta.Width=Math.Max(180,ancho/columnas-tarjeta.Margin.Horizontal-1);
+        }
+        tarjetas.SizeChanged+=(_,_)=>AjustarResumen();
+        pagina.Controls.Add(tarjetas);AjustarResumen();
         var acciones = new FlowLayoutPanel { Dock=DockStyle.Top, AutoSize=true, WrapContents=true, Margin=new Padding(0,0,0,14) };
-        var ver = Componentes.Boton("Ver mesas");Iconos.Aplicar(ver,"armchair");
+        var ver = Componentes.Boton("Nuevo pedido / Ver mesas");Iconos.Aplicar(ver,"armchair");
         ver.Click+=async(_,_)=>await EjecutarSeguro(MostrarMesasPos);
         var recuperar=Componentes.Boton("Recuperar operaciones pendientes",false);Iconos.Aplicar(recuperar,"refresh");
         recuperar.Click+=async(_,_)=>await EjecutarSeguro(async()=>{using var formulario=new FormularioRecuperacion(_repositorio);formulario.ShowDialog(this);await MostrarInicio();});
@@ -144,6 +154,7 @@ public sealed partial class FormularioPrincipal : Form
         foreach(var b in new[]{ver,recuperar,incidencias})b.Margin=new Padding(0,0,12,10);
         acciones.Controls.AddRange([ver,recuperar,incidencias]);pagina.Controls.Add(acciones);
         var pendientes=DiarioOperaciones.Listar(_repositorio);
+        recuperar.Visible=pendientes.Count>0;
         if(pendientes.Count>0)pagina.Controls.Add(Componentes.Etiqueta($"Atención: {pendientes.Count} operación(es) pendiente(s). Recupera antes de repetir acciones.",12,true));
         pagina.Controls.Add(Componentes.Etiqueta("Pedidos abiertos recientes",18,true));
         var abiertos=(await Task.Run(_repositorio.ListarPedidos)).Where(p=>p.Estado is "Abierto" or "En preparación").Take(5).ToList();
@@ -172,15 +183,8 @@ public sealed partial class FormularioPrincipal : Form
         panel.Controls.Add(new Label { Text=descripcion, AutoSize=true, ForeColor=Componentes.Secundario, Margin=new Padding(0,10,0,5) });
         return panel;
     }
-    private static Control TarjetaEstadistica(string titulo, string valor, string detalle, Color acento)
-    {
-        var panel = new TableLayoutPanel { BackColor = Color.White, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            ColumnCount = 1, RowCount = 3, Padding = new Padding(16), Margin = new Padding(0, 0, 12, 12), MinimumSize = new Size(205, 128) };
-        panel.Controls.Add(new Label { Text = titulo, AutoSize = true, ForeColor = Componentes.Secundario, Font = new Font("Segoe UI", 11, FontStyle.Bold) });
-        panel.Controls.Add(new Label { Text = valor, AutoSize = true, ForeColor = acento, Font = new Font("Segoe UI", 23, FontStyle.Bold), Margin = new Padding(0, 6, 0, 4) });
-        panel.Controls.Add(new Label { Text = detalle, AutoSize = true, ForeColor = Componentes.Secundario });
-        return panel;
-    }
+    private static Control TarjetaEstadistica(string titulo,string valor,string detalle,Color acento)
+        => new TarjetaResumen(titulo,valor,detalle,acento);
 
     private async Task MostrarMenuMesas()
     {

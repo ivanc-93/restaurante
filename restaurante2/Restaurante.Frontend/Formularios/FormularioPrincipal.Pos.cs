@@ -31,7 +31,7 @@ public sealed partial class FormularioPrincipal
             var escala=DeviceDpi/96f;var disponible=Math.Max(1,tarjetas.ClientSize.Width);
             var columnas=Math.Clamp((int)(disponible/(275*escala)),1,4);
             var ancho=Math.Max((int)(240*escala),disponible/columnas-(int)(18*escala));
-            foreach(var tarjeta in tarjetas.Controls.OfType<TarjetaMesa>())tarjeta.Size=new Size(ancho,(int)(270*escala));
+            foreach(var tarjeta in tarjetas.Controls.OfType<TarjetaMesa>())tarjeta.Size=new Size(ancho,(int)(340*escala));
         }
         void Dibujar()
         {
@@ -81,7 +81,17 @@ public sealed partial class FormularioPrincipal
         pagina.Controls.Add(nuevo);
         var tabla = NuevaTabla(); tabla.Height = 380; tabla.Dock = DockStyle.Top;
         var datos = await Task.Run(_repositorio.ListarPedidos);
-        tabla.DataSource = datos.OrderByDescending(p => p.Fecha).ToList();
+        var filtros=new FlowLayoutPanel{Dock=DockStyle.Top,AutoSize=true,WrapContents=true};
+        var buscar=new TextBox{Width=220,PlaceholderText="Mesa, cliente o pedido"};
+        var estado=new ComboBox{Width=170,DropDownStyle=ComboBoxStyle.DropDownList};estado.Items.AddRange(new object[]{"Todos","Abierto","En preparación","Facturado","Cancelado","Incidencia"});estado.SelectedIndex=0;
+        var filtrarFechas=new CheckBox{Text="Por fecha",AutoSize=true};
+        var desdePedido=new DateTimePicker{Format=DateTimePickerFormat.Short,Width=125,Value=Restaurante.Backend.Servicios.RelojGuatemala.Hoy.AddDays(-30)};
+        var hastaPedido=new DateTimePicker{Format=DateTimePickerFormat.Short,Width=125,Value=Restaurante.Backend.Servicios.RelojGuatemala.Hoy};
+        var anterior=Componentes.Boton("Anterior",false);var siguiente=Componentes.Boton("Siguiente",false);var contador=Componentes.Etiqueta("");int numeroPagina=0;
+        void Filtrar(){var texto=buscar.Text.Trim();var lista=datos.Where(p=>(!filtrarFechas.Checked||(p.Fecha.Date>=desdePedido.Value.Date&&p.Fecha.Date<=hastaPedido.Value.Date))&&(estado.SelectedIndex==0||p.Estado==estado.Text)&&(p.Cliente.Contains(texto,StringComparison.CurrentCultureIgnoreCase)||p.NumeroMesa.ToString().Contains(texto)||p.Id.ToString().Contains(texto))).OrderByDescending(p=>p.Fecha).ToList();var paginas=Math.Max(1,(lista.Count+24)/25);numeroPagina=Math.Clamp(numeroPagina,0,paginas-1);tabla.DataSource=lista.Skip(numeroPagina*25).Take(25).ToList();contador.Text=$"{lista.Count} pedidos · página {numeroPagina+1} de {paginas}";anterior.Enabled=numeroPagina>0;siguiente.Enabled=numeroPagina+1<paginas;}
+        buscar.TextChanged+=(_,_)=>{numeroPagina=0;Filtrar();};estado.SelectedIndexChanged+=(_,_)=>{numeroPagina=0;Filtrar();};anterior.Click+=(_,_)=>{numeroPagina--;Filtrar();};siguiente.Click+=(_,_)=>{numeroPagina++;Filtrar();};
+        filtrarFechas.CheckedChanged+=(_,_)=>{numeroPagina=0;Filtrar();};desdePedido.ValueChanged+=(_,_)=>{numeroPagina=0;Filtrar();};hastaPedido.ValueChanged+=(_,_)=>{numeroPagina=0;Filtrar();};
+        filtros.Controls.AddRange(new Control[]{buscar,estado,filtrarFechas,desdePedido,hastaPedido,anterior,siguiente,contador});pagina.Controls.Add(filtros);Filtrar();
         pagina.Controls.Add(tabla);
         var abrir = Componentes.Boton("Continuar pedido seleccionado", false); abrir.AutoSize = true;
         abrir.Click += async (_, _) => await EjecutarSeguro(async () =>
