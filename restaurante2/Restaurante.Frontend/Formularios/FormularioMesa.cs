@@ -15,7 +15,11 @@ public sealed partial class FormularioMesa : Form
         nudCapacidad.Value = Math.Clamp(mesa?.Capacidad ?? 4, 1, 100);
         cbEstado.SelectedItem = mesa?.Estado ?? "Disponible";
         nudNumero.Enabled = nudCapacidad.Enabled = !soloLectura;
-        cbEstado.Enabled = mesa is not null && !soloLectura && mesa.Estado is "Disponible" or "Reservada";
+        cbEstado.Enabled = mesa is not null && !soloLectura && mesa.Estado == "Disponible";
+        if (mesa?.Estado != "Reservada")
+            cbEstado.Items.Remove("Reservada");
+        if (mesa?.Estado == "Reservada")
+            nudNumero.Enabled = false;
         btnAceptar.Text = soloLectura ? "Cerrar" : "Guardar";
     }
 }

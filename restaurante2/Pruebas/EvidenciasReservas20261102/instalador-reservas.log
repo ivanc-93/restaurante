@@ -1,0 +1,23 @@
+
+(0 rows affected)
+Id          Numero      Diagnostico
+----------- ----------- ----------------------------------------------------------------------
+          9       41001 Reserva anterior sin titular registrado; no se libera automáticamente.
+Id          Numero      Diagnostico
+----------- ----------- ----------------------------------------------------------------------
+          9       41001 Reserva anterior sin titular registrado; no se libera automáticamente.
+
+(0 rows affected)
+Id          Numero      Diagnostico
+----------- ----------- ----------------------------------------------------------------------
+          9       41001 Reserva anterior sin titular registrado; no se libera automáticamente.
+{
+  "Servidor": "(localdb)\\MSSQLLocalDB",
+  "Base": "Restaurante_Pruebas_Reservas_20261102_C",
+  "Respaldo": "C:\\Users\\DaniveK\\.codex\\visualizations\\2026\\10\\25\\01a174b9-7292-7271-95db-4bea2c57c13d\\Reservas20261102\\ensayo-instalador\\Restaurante_Pruebas_Reservas_20261102_C_20261102_212457_4a193f.bak",
+  "Restaurada": "Restaurante_Pruebas_Restauracion_20261102_212457_4a193f",
+  "Fecha": "2026-11-02T21:25:01.5154194-06:00",
+  "TablasVerificadas": 23,
+  "Verificacion": "Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena de migraciones solicitada probada; última migración repetida en copia; CHECKDB antes y después del ensayo",
+  "Version": 8
+}

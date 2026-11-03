@@ -122,3 +122,7 @@ Consulta [cambios, pruebas, limitaciones y recuperación](Pruebas/InterfazPOS.md
 ## Guía para estudiar y exponer el código
 
 Consulta [la guía de exposición y los inventarios](Documentacion/EstructuraCodigo/README.md). Incluye nombres de controles, recorridos, POO, pruebas y reversión de la reorganización.
+
+## Reservas de mesas (esquema 008, activación autorizada)
+
+Se incorporó reserva por titular, atención con el primer producto y cancelación con motivo/autorización. La aplicación conserva compatibilidad con esquemas anteriores y no migra automáticamente. Consulte [manual de reservas](Documentacion/ManualUsuario/Reservas_20261102.md), [recorrido para exponer](Documentacion/EstructuraCodigo/Reservas_20261102.md), [resultados de pruebas](Pruebas/Reservas/README.md) y [activación/recuperación](BaseDatos/Reservas008.md). No aplicar a la base habitual sin la autorización específica requerida.

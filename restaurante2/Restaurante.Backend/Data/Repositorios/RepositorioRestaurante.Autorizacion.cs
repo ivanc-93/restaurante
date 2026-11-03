@@ -55,6 +55,7 @@ public sealed partial class RepositorioRestaurante
                 "GestionMesa" => JsonSerializer.Deserialize<SolicitudGestionMesa>(json),
                 "ConciliarTarjeta" => JsonSerializer.Deserialize<SolicitudConciliacion>(json),
                 "Ajuste" => JsonSerializer.Deserialize<SolicitudAjuste>(json),
+                "CancelarReserva" => JsonSerializer.Deserialize<SolicitudCancelacionReserva>(json),
                 "CorreccionLinea" => JsonSerializer.Deserialize<SolicitudCorreccionLinea>(json),
                 _ => null
             };
@@ -67,6 +68,7 @@ public sealed partial class RepositorioRestaurante
         var solicitudId = solicitud switch
         {
             SolicitudCorreccionLinea s => s.OperacionId,
+            SolicitudCancelacionReserva s => s.OperacionId,
             SolicitudGestionMesa s => s.OperacionId,
             SolicitudAjuste s => s.OperacionId,
             SolicitudConciliacion s => s.OperacionId,
@@ -94,7 +96,13 @@ public sealed partial class RepositorioRestaurante
         string? version = null;
         decimal? total = null;
         string? motivo = null;
-        if (solicitud is SolicitudGestionMesa g)
+        if (solicitud is SolicitudCancelacionReserva reserva)
+        {
+            mesa = reserva.MesaId;
+            version = reserva.Version;
+            motivo = reserva.Motivo;
+        }
+        else if (solicitud is SolicitudGestionMesa g)
         {
             if (g.Accion is not ("Cancelar" or "Incidencia" or "Corregir estado"))
                 return R(EstadoAutorizacion.SolicitudInvalida, "Acción no autorizable.");
@@ -148,7 +156,19 @@ public sealed partial class RepositorioRestaurante
                 return R(EstadoAutorizacion.SolicitudModificada, "La mesa cambió. Actualiza la cuenta antes de autorizar.");
         }
 
-        if (pedido.HasValue)
+        if (solicitud is SolicitudCancelacionReserva cancelacion)
+        {
+            try
+            {
+                ExigirReservas(c, t);
+                ExigirReservaActiva(c, t, cancelacion.MesaId, cancelacion.ReservaId, cancelacion.Version);
+            }
+            catch (InvalidOperationException)
+            {
+                return R(EstadoAutorizacion.SolicitudModificada, "La reserva cambió o no está disponible para cancelar. Actualiza la vista.");
+            }
+        }
+        else if (pedido.HasValue)
         {
             using var q = Consulta(c, t, "SELECT MesaId,Estado,VersionCuenta,Total FROM dbo.Pedidos WITH(UPDLOCK,HOLDLOCK) WHERE Id=@p;", ("@p", pedido));
             using var r = q.ExecuteReader();

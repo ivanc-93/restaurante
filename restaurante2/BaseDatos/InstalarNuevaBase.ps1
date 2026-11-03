@@ -4,7 +4,8 @@ param(
  [Parameter(Mandatory=$true)][ValidatePattern('^[A-Za-z][A-Za-z0-9_]{0,79}$')][string]$BaseDatos,
  [securestring]$TokenInstalacion,
  [switch]$ConRecuperacion,
- [switch]$ConOperaciones
+ [switch]$ConOperaciones,
+ [switch]$ConReservas
 )
 $ErrorActionPreference='Stop'
 # Solo bases inexistentes: no borra usuarios ni reinicia bases del grupo.
@@ -31,13 +32,17 @@ try {
   & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot "Migracion_$n.sql")
   if($LASTEXITCODE -ne 0){throw "Falló migración $n. No continuar."}
  }
- if($ConRecuperacion -or $ConOperaciones){
+ if($ConRecuperacion -or $ConOperaciones -or $ConReservas){
   & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot 'Migracion_006.sql')
   if($LASTEXITCODE -ne 0){throw 'Falló migración 006. No continuar.'}
  }
- if($ConOperaciones){
+ if($ConOperaciones -or $ConReservas){
   & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot 'Migracion_007.sql')
   if($LASTEXITCODE -ne 0){throw 'Falló migración 007. No continuar.'}
+ }
+ if($ConReservas){
+  & sqlcmd -S $Servidor -E -b -I -f 65001 -d $BaseDatos -i (Join-Path $PSScriptRoot 'Migracion_008.sql')
+  if($LASTEXITCODE -ne 0){throw 'Falló migración 008. No continuar.'}
  }
  if($null -ne $hash){
   & sqlcmd -S $Servidor -E -b -d $BaseDatos -Q "UPDATE dbo.InstalacionSabores SET TokenInstalacionHash='$hash' WHERE Id=1 AND Completada=0 AND NOT EXISTS(SELECT 1 FROM dbo.Usuarios);"

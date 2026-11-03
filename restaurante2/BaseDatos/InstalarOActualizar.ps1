@@ -2,7 +2,8 @@ param(
     [Parameter(Mandatory=$true)][string]$Servidor,
     [ValidatePattern('^[A-Za-z][A-Za-z0-9_]{0,79}$')][string]$BaseDatos='RestauranteDB',
     [Parameter(Mandatory=$true)][string]$RutaRespaldos,
-    [switch]$ConFuncionesAuditadas
+    [switch]$ConFuncionesAuditadas,
+    [switch]$ConReservas
 )
 $ErrorActionPreference='Stop'
 # Windows authentication. For SQL authentication use the SQL scripts from SSMS with that connection.
@@ -42,6 +43,7 @@ foreach($linea in $archivos) {
 }
 if($moves.Count -lt 2){throw 'Listado de archivos incompleto; no se ejecutará la migración.'}
 Sql 'master' ("RESTORE DATABASE [$copia] FROM DISK=N'$bakSql' WITH CHECKSUM,"+($moves -join ',')+';')|Out-Host
+Sql $copia "DBCC CHECKDB ([$copia]) WITH NO_INFOMSGS;"|Out-Host
 $tablas=@(Sql $BaseDatos "SET NOCOUNT ON;SELECT name FROM sys.tables WHERE schema_id=SCHEMA_ID(N'dbo') AND is_ms_shipped=0 ORDER BY name;" | Where-Object {![string]::IsNullOrWhiteSpace($_)} | ForEach-Object {$_.Trim()})
 $consultas=$tablas|ForEach-Object {$nombre=$_.Replace("'","''");$identificador=$_.Replace(']',']]');"SELECT N'$nombre',COUNT_BIG(*),COALESCE(CHECKSUM_AGG(BINARY_CHECKSUM(*)),0) FROM dbo.[$identificador]"}
 $huella="SET NOCOUNT ON;"+($consultas -join ' UNION ALL ')
@@ -49,11 +51,13 @@ $original=(Sql $BaseDatos $huella | Out-String).Trim()
 $restaurado=(Sql $copia $huella | Out-String).Trim()
 if($original -ne $restaurado){throw "La restauración no coincide con el estado actual. No se migró $BaseDatos. Compruebe actividad concurrente y el respaldo."}
 $migraciones=@('Migracion_002.sql','Migracion_003.sql','Migracion_004.sql','Migracion_005.sql')
-if($ConFuncionesAuditadas){$migraciones+=@('Migracion_006.sql','Migracion_007.sql')}
+if($ConFuncionesAuditadas -or $ConReservas){$migraciones+=@('Migracion_006.sql','Migracion_007.sql')}
+if($ConReservas){$migraciones+=@('Migracion_008.sql')}
 foreach($archivo in $migraciones) {Script $copia (Join-Path $PSScriptRoot $archivo)}
 Script $copia (Join-Path $PSScriptRoot $migraciones[-1])
+Sql $copia "DBCC CHECKDB ([$copia]) WITH NO_INFOMSGS;"|Out-Host
 foreach($archivo in $migraciones) {Script $BaseDatos (Join-Path $PSScriptRoot $archivo)}
-$resultado=[ordered]@{Servidor=$Servidor;Base=$BaseDatos;Respaldo=$bak;Restaurada=$copia;Fecha=(Get-Date).ToString('o');TablasVerificadas=$tablas.Count;Verificacion='Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena 002/003/004/005 probada; última migración repetida en copia';Version=[int]((Sql $BaseDatos 'SET NOCOUNT ON;SELECT MAX(Version) FROM dbo.VersionEsquema;' | Out-String).Trim())}
+$resultado=[ordered]@{Servidor=$Servidor;Base=$BaseDatos;Respaldo=$bak;Restaurada=$copia;Fecha=(Get-Date).ToString('o');TablasVerificadas=$tablas.Count;Verificacion='Restauración real; tablas dbo con conteos/checksum iguales antes de migrar; cadena de migraciones solicitada probada; última migración repetida en copia; CHECKDB antes y después del ensayo';Version=[int]((Sql $BaseDatos 'SET NOCOUNT ON;SELECT MAX(Version) FROM dbo.VersionEsquema;' | Out-String).Trim())}
 $registro=Join-Path $ruta ($BaseDatos+'_'+$sufijo+'.json')
 $resultado|ConvertTo-Json|Set-Content $registro -Encoding utf8
 $resultado|ConvertTo-Json

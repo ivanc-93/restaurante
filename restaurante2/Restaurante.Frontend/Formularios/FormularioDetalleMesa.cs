@@ -8,15 +8,17 @@ public sealed partial class FormularioDetalleMesa : Form
     private readonly IRepositorioRestaurante _repositorio = null!;
     private readonly Mesa _mesa = null!;
     private PedidoResumen? _pedido;
+    private ReservaResumen? _reserva;
     private List<ElementoMenu> _menu = new();
     private bool _ocupado;
     private bool _cargando;
     private bool _recuperacionPendiente;
     public FormularioDetalleMesa() => InitializeComponent();
-    public FormularioDetalleMesa(IRepositorioRestaurante repositorio, Mesa mesa, IDialogosUsuario? dialogos = null) : this()
+    public FormularioDetalleMesa(IRepositorioRestaurante repositorio, Mesa mesa, IDialogosUsuario? dialogos = null, ReservaResumen? reserva = null) : this()
     {
         _repositorio = repositorio;
         _mesa = mesa;
+        _reserva = reserva;
         _dialogos = dialogos ?? new DialogosUsuario();
         Text = $"Mesa {mesa.Numero} | Pedido";
         Shown += async (_, _) => await RecargarSeguroAsync();
@@ -41,6 +43,13 @@ public sealed partial class FormularioDetalleMesa : Form
             var datos = await Task.Run(() =>
             {
                 var actual = _repositorio.ListarMesas().Single(m => m.Id == _mesa.Id);
+                if (_reserva is not null)
+                {
+                    var vigente = _repositorio.ConsultarReservaMesa(_mesa.Id);
+                    if (actual.Estado != "Reservada" || vigente?.Id != _reserva.Id || vigente.Version != _reserva.Version)
+                        throw new InvalidOperationException("La reserva cambió o ya fue atendida/cancelada. Regresa a Mesas y actualiza.");
+                }
+
                 var pedido = _repositorio.ObtenerPedidoAbierto(_mesa.Id);
                 var productos = _repositorio.ListarMenu().ToList();
                 var clientes = _repositorio.ListarClientes().ToList();
@@ -63,7 +72,7 @@ public sealed partial class FormularioDetalleMesa : Form
             };
             if (_pedido is null)
                 cbClientes.SelectedItem = cbClientes.Items.Cast<Cliente>().FirstOrDefault(c => c.Id == clienteId) ?? cbClientes.Items[0];
-            cbClientes.Enabled = _pedido is null && datos.actual.Estado == "Disponible";
+            cbClientes.Enabled = _pedido is null && (datos.actual.Estado == "Disponible" || datos.actual.Estado == "Reservada" && _reserva is not null);
             cbCategoria.Items.Clear();
             cbCategoria.Items.Add("Todas las categorías");
             cbCategoria.Items.AddRange(_menu.Select(p => p.Categoria).Distinct().Order().Cast<object>().ToArray());
@@ -73,7 +82,7 @@ public sealed partial class FormularioDetalleMesa : Form
             lblTotal.Text = _pedido is null ? "Sin pedido registrado" : $"Total: {FormatoPresentacion.Moneda(_pedido.Total)}";
             lblEstado.Text = _pedido is null ? "El primer producto abre y guarda el pedido." : "Productos guardados. Cada incorporación se registra al agregar.";
             _recuperacionPendiente = DiarioOperaciones.Listar(_repositorio).Count > 0;
-            btnAgregarProducto.Enabled = _menu.Count > 0 && (_pedido is not null || datos.actual.Estado == "Disponible") && datos.incierta is null;
+            btnAgregarProducto.Enabled = _menu.Count > 0 && (_pedido is not null || (datos.actual.Estado == "Disponible" || datos.actual.Estado == "Reservada" && _reserva is not null)) && datos.incierta is null;
             flpCatalogo.Enabled = btnAgregarProducto.Enabled;
             if (_recuperacionPendiente)
                 btnAgregarProducto.Enabled = flpCatalogo.Enabled = false;
@@ -92,6 +101,7 @@ public sealed partial class FormularioDetalleMesa : Form
         catch (Exception ex)
         {
             _recuperacionPendiente = true;
+            btnGestionar.Enabled = false;
             lblEstado.Text = "No se pudo confirmar el estado. Cierra y vuelve a abrir la mesa para actualizar; no repitas la operación.";
             _dialogos.Mostrar(this, ex.Message, "No se pudo cargar la mesa", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
@@ -156,7 +166,13 @@ public sealed partial class FormularioDetalleMesa : Form
         btnAgregarProducto.Enabled = btnRevisarCobro.Enabled = flpCatalogo.Enabled = cbClientes.Enabled = false;
         try
         {
-            if (_pedido is null)
+            if (_pedido is null && _reserva is not null)
+            {
+                var solicitud = new SolicitudAtencionReserva(Guid.NewGuid(), _reserva.Id, _mesa.Id, _reserva.Version, cliente > 0 ? cliente : null, [new DetallePedidoSolicitud(producto.Id, cantidad)]);
+                await DiarioOperaciones.Ejecutar(_repositorio, "AtenderReserva", solicitud.OperacionId, solicitud, () => _repositorio.AtenderReserva(solicitud));
+                _reserva = null;
+            }
+            else if (_pedido is null)
             {
                 var solicitud = new SolicitudPedido
                 {

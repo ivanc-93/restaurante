@@ -226,26 +226,35 @@ public sealed partial class RepositorioRestaurante
             using (var q = Consulta(c, t, "SELECT Estado FROM dbo.Mesas WHERE Id=@id;", ("@id", solicitud.MesaId)))
                 if (q.ExecuteScalar() as string != "Disponible")
                     throw new InvalidOperationException("La mesa ya no está disponible.");
-            string cliente = "Público general";
-            if (solicitud.ClienteId.HasValue)
-            {
-                using var q = Consulta(c, t, "SELECT Nombre FROM dbo.Clientes WHERE Id=@id AND Activo=1;", ("@id", solicitud.ClienteId));
-                cliente = q.ExecuteScalar() as string ?? throw new InvalidOperationException("El cliente ya no está activo.");
-            }
+            SinPedidoAbierto(c, t, solicitud.MesaId);
+            if (ReservasHabilitadasEn(c, t) && ReservaEn(c, t, solicitud.MesaId)is not null)
+                throw new InvalidOperationException("La mesa tiene una reserva activa. Actualiza la vista.");
+            return CrearPedidoConConsumo(c, t, actor, solicitud.MesaId, solicitud.ClienteId, solicitud.Detalles, solicitud.OperacionId, "Disponible");
+        });
+    }
 
-            using var insertar = Consulta(c, t, """
+    // Comparte la escritura, no la transacción: el llamador conserva operación → mesa → reserva/pedido.
+    private static PedidoCreado CrearPedidoConConsumo(SqlConnection c, SqlTransaction t, UsuarioAutenticado actor, int mesaId, int? clienteId, IReadOnlyList<DetallePedidoSolicitud> detalles, Guid operacion, string estadoAnterior)
+    {
+        string cliente = "Público general";
+        if (clienteId.HasValue)
+        {
+            using var q = Consulta(c, t, "SELECT Nombre FROM dbo.Clientes WHERE Id=@id AND Activo=1;", ("@id", clienteId));
+            cliente = q.ExecuteScalar() as string ?? throw new InvalidOperationException("El cliente ya no está activo.");
+        }
+
+        using var insertar = Consulta(c, t, """
                 INSERT dbo.Pedidos(MesaId,ClienteId,Total,ClienteHistorico,MesaHistorica,CapturaLegada)
                 OUTPUT INSERTED.Id SELECT @mesa,@cliente,0,@nombre,Numero,0 FROM dbo.Mesas WHERE Id=@mesa;
-                """, ("@mesa", solicitud.MesaId), ("@cliente", solicitud.ClienteId), ("@nombre", cliente));
-            var id = (int)insertar.ExecuteScalar()!;
-            foreach (var d in solicitud.Detalles)
-                InsertarLinea(c, t, id, d.PlatoId, d.Cantidad);
-            Ejecutar(c, t, "UPDATE dbo.Mesas SET Estado=N'Ocupada' WHERE Id=@id;", ("@id", solicitud.MesaId));
-            using var total = Consulta(c, t, "SELECT Total FROM dbo.Pedidos WHERE Id=@id;", ("@id", id));
-            var importe = (decimal)total.ExecuteScalar()!;
-            Auditar(c, t, solicitud.OperacionId, actor, id, solicitud.MesaId, "AbrirPedido", "Disponible", "Abierto", "Primer producto registrado", importe);
-            return new PedidoCreado(id, importe, null);
-        });
+                """, ("@mesa", mesaId), ("@cliente", clienteId), ("@nombre", cliente));
+        var id = (int)insertar.ExecuteScalar()!;
+        foreach (var d in detalles)
+            InsertarLinea(c, t, id, d.PlatoId, d.Cantidad);
+        Ejecutar(c, t, "UPDATE dbo.Mesas SET Estado=N'Ocupada' WHERE Id=@id;", ("@id", mesaId));
+        using var total = Consulta(c, t, "SELECT Total FROM dbo.Pedidos WHERE Id=@id;", ("@id", id));
+        var importe = (decimal)total.ExecuteScalar()!;
+        Auditar(c, t, operacion, actor, id, mesaId, "AbrirPedido", estadoAnterior, "Abierto", "Primer producto registrado", importe);
+        return new PedidoCreado(id, importe, null);
     }
 
     private static decimal InsertarLinea(SqlConnection c, SqlTransaction t, int pedidoId, int menuId, int cantidad)

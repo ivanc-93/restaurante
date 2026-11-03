@@ -89,6 +89,12 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
         {
             actual.Parameters.AddWithValue("@id", id);
             var anterior = (string)actual.ExecuteScalar()!;
+            if (ReservasHabilitadasEn(conexion, transaccion) && (anterior == "Reservada" || estado == "Reservada"))
+            {
+                if (estado != anterior || numero != NumeroActualMesa(conexion, transaccion, id))
+                    throw new InvalidOperationException("Usa las acciones de reserva para atender o cancelar. No cambies su estado o número desde el catálogo.");
+            }
+
             if ((anterior is "Ocupada" or "En limpieza") && estado != anterior)
                 throw new InvalidOperationException("Utilice Gestionar cierre para resolver el estado con motivo y auditoría.");
             if (estado == "Ocupada" && anterior != "Ocupada")
@@ -143,6 +149,9 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
         using var conexion = AbrirConexion();
         using var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable);
         SesionEn(conexion, transaccion, gerente: true);
+        using (var estado = Consulta(conexion, transaccion, "SELECT Estado FROM dbo.Mesas WITH(UPDLOCK,HOLDLOCK) WHERE Id=@id;", ("@id", id)))
+            if (estado.ExecuteScalar() as string == "Reservada")
+                throw new InvalidOperationException("Resuelve la reserva antes de eliminar la mesa. El historial se conserva.");
         using var comando = new SqlCommand("DELETE dbo.Mesas WHERE Id = @id;", conexion, transaccion);
         comando.Parameters.Add("@id", SqlDbType.Int).Value = id;
         try
@@ -153,8 +162,14 @@ public sealed partial class RepositorioRestaurante(IConfiguracionConexion config
         }
         catch (SqlException ex)when (ex.Number == 547)
         {
-            throw new InvalidOperationException("No se puede eliminar esta mesa porque tiene pedidos asociados. Puedes editar su estado en lugar de eliminarla.", ex);
+            throw new InvalidOperationException("No se puede eliminar esta mesa porque tiene pedidos o reservas asociados. Puedes editar sus datos en lugar de eliminarla.", ex);
         }
+    }
+
+    private static int NumeroActualMesa(SqlConnection c, SqlTransaction t, int id)
+    {
+        using var q = Consulta(c, t, "SELECT Numero FROM dbo.Mesas WHERE Id=@id;", ("@id", id));
+        return (int)q.ExecuteScalar()!;
     }
 
     private static void ValidarMesa(int numero, int capacidad)

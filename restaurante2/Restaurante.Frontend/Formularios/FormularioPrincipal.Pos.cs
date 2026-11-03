@@ -52,29 +52,6 @@ public sealed partial class FormularioPrincipal
         btnAdministrar.Click += async (_, _) => await EjecutarSeguro(MostrarMenuMesas);
         flpHerramientas.Controls.AddRange([ctBuscar, cbFiltro, btnActualizar, btnAdministrar]);
         tlpPagina.Controls.Add(flpHerramientas);
-        var flpLeyenda = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            WrapContents = true,
-            Margin = new Padding(0, 0, 0, 12),
-            Name = "flpLeyenda"
-        };
-        foreach (var estado in new[]
-        {
-            "Disponible",
-            "En limpieza",
-            "Ocupada",
-            "Reservada"
-        }
-
-        )
-        {
-            var estilo = EstadoVisualMesa.De(estado);
-            flpLeyenda.Controls.Add(new Label { Text = "  " + estado + "  ", AutoSize = true, BackColor = estilo.Fondo, ForeColor = estilo.Tinta, Margin = new Padding(0, 0, 12, 4), Padding = new Padding(4) });
-        }
-
-        tlpPagina.Controls.Add(flpLeyenda);
         var flpTarjetas = new FlowLayoutPanel
         {
             Name = "flpTarjetasMesas",
@@ -87,6 +64,9 @@ public sealed partial class FormularioPrincipal
         tlpPagina.Controls.Add(flpTarjetas);
         var mesas = await Task.Run(_repositorio.ListarMesas);
         var pedidos = await Task.Run(_repositorio.ListarPedidos);
+        var reservasHabilitadas = await Task.Run(_repositorio.ReservasDisponibles);
+        var operacionesPendientes = DiarioOperaciones.Listar(_repositorio).Count > 0;
+        var reservas = reservasHabilitadas ? await Task.Run(_repositorio.ListarReservasActivas) : Array.Empty<ReservaResumen>();
         void Ajustar()
         {
             var escala = DeviceDpi / 96f;
@@ -105,7 +85,14 @@ public sealed partial class FormularioPrincipal
             foreach (var mesa in mesas.Where(m => (cbFiltro.SelectedIndex == 0 || m.Estado == cbFiltro.Text) && m.Numero.ToString().Contains(ctBuscar.Text.Trim())))
             {
                 var pedido = pedidos.FirstOrDefault(p => p.NumeroMesa == mesa.Numero && p.Estado is "Abierto" or "En preparación");
-                var tarjeta = new TarjetaMesa(mesa, pedido);
+                var reserva = reservas.FirstOrDefault(r => r.MesaId == mesa.Id);
+                var tarjeta = new TarjetaMesa(mesa, pedido, reserva, reservasHabilitadas, operacionesPendientes);
+                tarjeta.btnReservarMesa.Click += async (_, _) => await EjecutarSeguro(async () =>
+                {
+                    using var reservar = new FormularioReservarMesa(_repositorio, mesa);
+                    reservar.ShowDialog(this);
+                    await MostrarMesasPos();
+                });
                 tarjeta.btnAccionMesa.Click += async (_, _) => await EjecutarSeguro(async () =>
                 {
                     var actual = (await Task.Run(_repositorio.ListarMesas)).Single(m => m.Id == mesa.Id);
@@ -115,10 +102,11 @@ public sealed partial class FormularioPrincipal
                         using var gestion = new FormularioGestionMesa(_repositorio, actual, _dialogos);
                         gestion.ShowDialog(this);
                     }
-                    else if (actual.Estado == "Reservada" && _usuario.Rol is "Administrador" or "Gerente")
+                    else if (actual.Estado == "Reservada")
                     {
-                        await MostrarMenuMesas();
-                        return;
+                        var vigente = reservasHabilitadas ? await Task.Run(() => _repositorio.ConsultarReservaMesa(actual.Id)) : null;
+                        using var consulta = new FormularioReservaDetalle(_repositorio, actual, vigente, _dialogos);
+                        consulta.ShowDialog(this);
                     }
                     else
                         await AbrirMesa(actual);

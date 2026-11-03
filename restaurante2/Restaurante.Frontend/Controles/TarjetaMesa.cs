@@ -10,8 +10,11 @@ internal sealed class TarjetaMesa : UserControl
     private readonly EstadoVisualMesa estilo;
     internal Mesa Mesa { get; }
     internal Button btnAccionMesa { get; }
+    internal Button btnReservarMesa { get; }
 
-    internal TarjetaMesa(Mesa mesa, PedidoResumen? pedido)
+    private readonly Label lblNombreReserva;
+    private readonly ToolTip ayudaReserva = new();
+    internal TarjetaMesa(Mesa mesa, PedidoResumen? pedido, ReservaResumen? reserva = null, bool reservasHabilitadas = false, bool operacionesPendientes = false)
     {
         Mesa = mesa;
         Name = "mesa_" + mesa.Id;
@@ -27,11 +30,11 @@ internal sealed class TarjetaMesa : UserControl
             Name = nameof(tlpCuerpo),
             Dock = DockStyle.Fill,
             ColumnCount = 2,
-            RowCount = 5
+            RowCount = 7
         };
         tlpCuerpo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         tlpCuerpo.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        for (var fila = 0; fila < 5; fila++)
+        for (var fila = 0; fila < 7; fila++)
             tlpCuerpo.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         lblEstado = new Label
         {
@@ -73,7 +76,26 @@ internal sealed class TarjetaMesa : UserControl
             Anchor = AnchorStyles.Right | AnchorStyles.Top,
             AccessibleName = "Mesa del restaurante"
         };
-        btnAccionMesa = Componentes.Boton(mesa.Estado == "Ocupada" && pedido is null ? "Gestionar estado" : estilo.Accion);
+        lblNombreReserva = new Label
+        {
+            Name = nameof(lblNombreReserva),
+            AutoSize = false,
+            AutoEllipsis = true,
+            Dock = DockStyle.Fill,
+            Visible = mesa.Estado == "Reservada",
+            Text = mesa.Estado == "Reservada" ? reserva is null ? "Reserva anterior: titular pendiente de revisión" : "Reserva: " + reserva.Nombre : "",
+            ForeColor = estilo.Tinta,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        ayudaReserva.SetToolTip(lblNombreReserva, reserva?.Nombre ?? "Reserva anterior sin titular registrado; solicita revisión.");
+        btnReservarMesa = Componentes.Boton("Reservar mesa", false);
+        btnReservarMesa.Name = nameof(btnReservarMesa);
+        btnReservarMesa.Dock = DockStyle.Fill;
+        btnReservarMesa.Visible = mesa.Estado == "Disponible";
+        btnReservarMesa.Enabled = reservasHabilitadas && !operacionesPendientes;
+        btnReservarMesa.AccessibleName = $"Reservar mesa {mesa.Numero}";
+        ayudaReserva.SetToolTip(btnReservarMesa, operacionesPendientes ? "Recupera las operaciones pendientes desde Inicio antes de registrar otra reserva." : reservasHabilitadas ? "Apartar esta mesa para una persona" : "Requiere actualización 008 autorizada; la conexión actual se conserva.");
+        btnAccionMesa = Componentes.Boton(mesa.Estado == "Reservada" ? "Ver reserva" : mesa.Estado == "Ocupada" && pedido is null ? "Gestionar estado" : estilo.Accion);
         btnAccionMesa.Name = nameof(btnAccionMesa);
         btnAccionMesa.Dock = DockStyle.Fill;
         btnAccionMesa.BackColor = estilo.Tinta;
@@ -85,9 +107,14 @@ internal sealed class TarjetaMesa : UserControl
         tlpCuerpo.Controls.Add(lblCuenta, 0, 3);
         tlpCuerpo.Controls.Add(picMesa, 1, 1);
         tlpCuerpo.SetRowSpan(picMesa, 3);
-        tlpCuerpo.Controls.Add(btnAccionMesa, 0, 4);
+        tlpCuerpo.Controls.Add(lblNombreReserva, 0, 4);
+        tlpCuerpo.SetColumnSpan(lblNombreReserva, 2);
+        tlpCuerpo.Controls.Add(btnAccionMesa, 0, 5);
         tlpCuerpo.SetColumnSpan(btnAccionMesa, 2);
+        tlpCuerpo.Controls.Add(btnReservarMesa, 0, 6);
+        tlpCuerpo.SetColumnSpan(btnReservarMesa, 2);
         Controls.Add(tlpCuerpo);
+        Disposed += (_, _) => ayudaReserva.Dispose();
         AjustarEscala();
     }
 
@@ -117,6 +144,10 @@ internal sealed class TarjetaMesa : UserControl
         picMesa.Size = new Size(Px(48), Px(48));
         // La ilustración central usa el PNG de 48 px, no amplía el de 24 px en DPI base.
         picMesa.Image = Iconos.Obtener("armchair", Math.Max(192, DeviceDpi));
+        lblNombreReserva.Height = Px(38);
+        lblNombreReserva.MinimumSize = new Size(0, Px(38));
+        btnReservarMesa.MinimumSize = new Size(0, Px(42));
+        Iconos.Aplicar(btnReservarMesa, "calendar");
         btnAccionMesa.MinimumSize = new Size(0, Px(44));
         btnAccionMesa.Margin = new Padding(0, Px(8), 0, 0);
         Iconos.Aplicar(btnAccionMesa, estilo.Icono);

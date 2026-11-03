@@ -42,6 +42,9 @@ internal static class DiarioOperaciones
     {
         var id = p.Tipo switch
         {
+            "Reservar" => JsonSerializer.Deserialize<SolicitudReserva>(p.Datos)?.OperacionId,
+            "CancelarReserva" => JsonSerializer.Deserialize<SolicitudCancelacionReserva>(p.Datos)?.OperacionId,
+            "AtenderReserva" => JsonSerializer.Deserialize<SolicitudAtencionReserva>(p.Datos)?.OperacionId,
             "Abrir" => JsonSerializer.Deserialize<SolicitudPedido>(p.Datos)?.OperacionId,
             "Agregar" => JsonSerializer.Deserialize<SolicitudIncorporacion>(p.Datos)?.OperacionId,
             "Cobro" => JsonSerializer.Deserialize<SolicitudCobro>(p.Datos)?.OperacionId,
@@ -107,6 +110,17 @@ internal static class DiarioOperaciones
     {
         switch (p.Tipo)
         {
+            case "Reservar":
+                var reserva = JsonSerializer.Deserialize<SolicitudReserva>(p.Datos)!;
+                var creada = await Ejecutar(repo, p.Tipo, p.Id, reserva, () => repo.ReservarMesa(reserva));
+                return $"Reserva #{creada.Id} registrada para la mesa {creada.NumeroMesa}.";
+            case "CancelarReserva":
+                var cancelacion = JsonSerializer.Deserialize<SolicitudCancelacionReserva>(p.Datos)!;
+                return await Ejecutar(repo, p.Tipo, p.Id, cancelacion, () => repo.CancelarReserva(cancelacion));
+            case "AtenderReserva":
+                var atencion = JsonSerializer.Deserialize<SolicitudAtencionReserva>(p.Datos)!;
+                var atendida = await Ejecutar(repo, p.Tipo, p.Id, atencion, () => repo.AtenderReserva(atencion));
+                return $"Reserva atendida; pedido #{atendida.Id}. No se duplicó el consumo.";
             case "Corregir":
                 var correccion = JsonSerializer.Deserialize<SolicitudCorreccionLinea>(p.Datos)!;
                 return MonedaGuatemala.Formatear(await Ejecutar(repo, p.Tipo, p.Id, correccion, () => repo.CorregirLinea(correccion)));
