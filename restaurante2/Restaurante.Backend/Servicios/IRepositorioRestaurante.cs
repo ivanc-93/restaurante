@@ -30,6 +30,7 @@ public interface IRepositorioRestaurante
     decimal AplicarAjuste(SolicitudAjuste solicitud);
     UsuarioAutenticado? UsuarioActual { get; }
     string IdentificadorBase { get; }
+    string IdentificadorBaseAnterior => IdentificadorBase;
     bool BaseEsPruebas { get; }
     void CerrarSesion();
     void ValidarEsquema();
@@ -63,6 +64,8 @@ public interface IRepositorioRestaurante
     void GuardarRestaurante(string nombre, string ubicacion);
     void GuardarCliente(int? id, string nombre, string? telefono, string? correo);
     void DesactivarCliente(int id);
+    IReadOnlyList<RegistroInactivo> ListarInactivos(bool productos) => throw new NotSupportedException();
+    void ReactivarRegistro(bool productos,int id) => throw new NotSupportedException();
     void GuardarProducto(int? id, string nombre, string categoria, string tipo, decimal precio, bool alcoholica);
     void DesactivarProducto(int id);
     IReadOnlyList<VentaPeriodo> ReportarVentasPeriodo(DateTime desde, DateTime hasta, string agrupacion);

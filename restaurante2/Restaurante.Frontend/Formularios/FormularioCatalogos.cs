@@ -40,6 +40,10 @@ public sealed partial class FormularioCatalogos : Form
         if (administrador&&_puedeAdministrar) modo.Items.Add("Restaurante");
         if (soloRestaurante) { modo.Items.Clear(); modo.Items.Add("Restaurante"); }
         modo.SelectedIndex = 0;
+        var inactivos=Componentes.Boton("Ver inactivos / Reactivar",false);
+        inactivos.Visible=_puedeAdministrar&&!soloRestaurante;
+        inactivos.Click+=async(_,_)=>{if(!ConfirmarSalida()||modo.Text=="Restaurante")return;using var f=new FormularioReactivar(_repositorio,modo.Text=="Productos");f.ShowDialog(this);await CargarAsync();};
+        campos.Controls.Add(inactivos);
         Text = soloRestaurante ? "Información del restaurante" : "Catálogos · Clientes y productos";
         foreach (var campo in new TextBox[] {nombre,telefono,correo,categoria,ubicacion})
             campo.TextChanged += (_,_) => { if (_listo && Enabled) _sucio=true; };

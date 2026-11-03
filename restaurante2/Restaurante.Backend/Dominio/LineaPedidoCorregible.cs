@@ -1,2 +1,2 @@
 namespace Restaurante.Backend.Dominio;
-public sealed record LineaPedidoCorregible(int Id,string Producto,int CantidadOriginal,int CantidadVigente,decimal PrecioUnitario);
+public sealed record LineaPedidoCorregible(int Id,string Producto,int CantidadOriginal,int CantidadVigente,decimal PrecioUnitario,bool Preparada=false);

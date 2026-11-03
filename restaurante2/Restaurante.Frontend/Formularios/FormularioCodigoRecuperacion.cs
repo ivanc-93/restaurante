@@ -1,4 +1,5 @@
 using Restaurante.Backend.Servicios;
+using Restaurante.Frontend.Servicios;
 namespace Restaurante.Frontend.Formularios;
 public sealed partial class FormularioCodigoRecuperacion:Form
 {
@@ -11,8 +12,8 @@ public sealed partial class FormularioCodigoRecuperacion:Form
         var c=clave.Text;ocupado=true;generar.Enabled=continuar.Enabled=clave.Enabled=guardado.Enabled=false;UseWaitCursor=true;
         Restaurante.Backend.Dominio.ResultadoGeneracionCodigo? resultado=null;string? error=null;
         try{resultado=await Task.Run(()=>repo.IntentarGenerarCodigoRecuperacion(c)).ConfigureAwait(false);}
-        catch(Microsoft.Data.SqlClient.SqlException){error="No se confirmó la generación con SQL. No confirmes un código anterior: comprueba la conexión y genera un reemplazo para guardar el último obtenido.";}
-        catch(Exception ex){System.Diagnostics.Trace.TraceError("Generación de código: {0}",ex.GetType().Name);error="No se pudo completar la generación por un problema técnico. No se confirmó el resultado; solicita asistencia sin enviar tu contraseña ni códigos.";}
+        catch(Microsoft.Data.SqlClient.SqlException ex){error=$"No se confirmó la generación del código (SQL {ex.Number}). No confirmes un código anterior. " + ErroresConexion.Registrar(ex);}
+        catch(Exception ex){error="No se pudo completar la generación. No se confirmó el resultado; solicita asistencia sin enviar tu contraseña ni códigos." + ErroresConexion.Registrar(ex);}
         c="";
         DisenoFormulario.EnInterfaz(this,()=>
         {
@@ -33,7 +34,7 @@ public sealed partial class FormularioCodigoRecuperacion:Form
         var valor=codigo.Text;ocupado=true;continuar.Enabled=generar.Enabled=false;
         Restaurante.Backend.Dominio.ResultadoRecuperacion? resultado=null;
         try{resultado=await Task.Run(()=>repo.IntentarConfirmarCodigoRecuperacion(valor)).ConfigureAwait(false);}
-        catch(Exception ex){System.Diagnostics.Trace.TraceError("Confirmación de custodia: {0}",ex.GetType().Name);}
+        catch(Exception ex){resultado=new(false,"No se confirmó el código con SQL. " + ErroresConexion.Registrar(ex));}
         DisenoFormulario.EnInterfaz(this,()=>{ocupado=false;if(resultado?.Correcto==true){DialogResult=DialogResult.OK;Close();}else{mensaje.Text=resultado?.Mensaje??"No se confirmó el código con SQL. Comprueba la conexión y vuelve a confirmar antes de cerrar.";continuar.Enabled=guardado.Checked;generar.Enabled=true;}});
     }
 }

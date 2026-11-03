@@ -4,6 +4,19 @@ using Restaurante.Backend.Dominio;
 namespace Restaurante.Backend.Servicios;
 public sealed partial class RepositorioRestaurante
 {
+    private const string PrefijoTanda = "Preparación confirmada hasta línea #";
+    private static int? LimitePreparado(SqlConnection c,SqlTransaction t,int pedidoId)
+    {
+        using var q=Consulta(c,t,"SELECT TOP(1) Motivo FROM dbo.AuditoriaOperaciones WHERE PedidoId=@p AND Accion=N'Preparacion' ORDER BY Id DESC;",("@p",pedidoId));
+        var motivo=q.ExecuteScalar() as string;
+        return motivo is not null && motivo.StartsWith(PrefijoTanda,StringComparison.Ordinal) && int.TryParse(motivo[PrefijoTanda.Length..],out var id) ? id : null;
+    }
+    private static void RegistrarTanda(SqlConnection c,SqlTransaction t,Guid op,UsuarioAutenticado actor,CuentaRevision cuenta)
+    {
+        using var q=Consulta(c,t,"SELECT COALESCE(MAX(Id),0) FROM dbo.DetallesPedido WHERE PedidoId=@p;",("@p",cuenta.PedidoId));
+        var limite=(int)q.ExecuteScalar()!;
+        Auditar(c,t,op,actor,cuenta.PedidoId,cuenta.MesaId,"Preparacion",cuenta.Estado,"En preparación",PrefijoTanda+limite,0);
+    }
     private static bool TieneCorrecciones(SqlConnection c,SqlTransaction? t)
     {
         using var q=Consulta(c,t,"SELECT CASE WHEN OBJECT_ID(N'dbo.CorreccionesLinea',N'U') IS NOT NULL AND OBJECT_ID(N'dbo.ResolucionesIncidencia',N'U') IS NOT NULL AND OBJECT_ID(N'dbo.DetallesPedidoVigentes',N'V') IS NOT NULL THEN 1 ELSE 0 END;");
@@ -15,18 +28,27 @@ public sealed partial class RepositorioRestaurante
     public bool CorreccionesDisponibles(){using var c=AbrirConexion();SesionEn(c,null);return TieneCorrecciones(c,null);}
     public IReadOnlyList<LineaPedidoCorregible> ListarLineasCorregibles(int pedidoId)
     {
+        ExigirSesion();var mesa=MesaDePedido(pedidoId);
         using var c=AbrirConexion();using var t=c.BeginTransaction(IsolationLevel.Serializable);
+        using(var bloqueo=Consulta(c,t,"SELECT Id FROM dbo.Mesas WITH(UPDLOCK,HOLDLOCK) WHERE Id=@id;",("@id",mesa)))bloqueo.ExecuteScalar();
         ExigirLecturaPedido(c,t,pedidoId);ExigirCorrecciones(c,t);
+        var cuenta=LeerCuenta(c,t,pedidoId);
         using var q=Consulta(c,t,"SELECT d.Id,d.NombreProducto,d.Cantidad,d.Cantidad-COALESCE(x.Retirada,0),d.PrecioUnitario FROM dbo.DetallesPedido d OUTER APPLY(SELECT SUM(CantidadRetirada) Retirada FROM dbo.CorreccionesLinea WHERE DetalleId=d.Id)x WHERE d.PedidoId=@p ORDER BY d.Id;",("@p",pedidoId));
-        var lista=new List<LineaPedidoCorregible>();using(var r=q.ExecuteReader())while(r.Read())lista.Add(new(r.GetInt32(0),r.GetString(1),r.GetInt32(2),r.GetInt32(3),r.GetDecimal(4)));t.Commit();return lista;
+        var lista=new List<LineaPedidoCorregible>();using(var r=q.ExecuteReader())while(r.Read())lista.Add(new(r.GetInt32(0),r.GetString(1),r.GetInt32(2),r.GetInt32(3),r.GetDecimal(4)));
+        var limite=cuenta.Estado=="Abierto"?0:LimitePreparado(c,t,pedidoId)??int.MaxValue;
+        t.Commit();return lista.Select(l=>l with {Preparada=l.Id<=limite}).ToList();
     }
     public string MarcarPreparacion(int pedidoId,Guid operacionId)
     {
         return Mutacion(operacionId,"Preparacion",new{pedidoId},MesaDePedido(pedidoId),false,(c,t,actor)=>{
+            ExigirCorrecciones(c,t);
             var cuenta=LeerCuenta(c,t,pedidoId);ExigirAbierto(cuenta);SinPagoPendiente(c,t,pedidoId);
-            if(cuenta.Estado!="Abierto")throw new InvalidOperationException("La preparación ya fue declarada.");
+            if(cuenta.Detalles.Count==0)throw new InvalidOperationException("Agrega al menos un producto antes de declarar preparación. Puedes cancelar el pedido vacío desde Gestionar cierre.");
+            var limite=cuenta.Estado=="Abierto"?0:LimitePreparado(c,t,pedidoId)??int.MaxValue;
+            using(var pendientes=Consulta(c,t,"SELECT COUNT(*) FROM dbo.DetallesPedidoVigentes WHERE PedidoId=@p AND Id>@limite;",("@p",pedidoId),("@limite",limite)))
+                if((int)pendientes.ExecuteScalar()! ==0)throw new InvalidOperationException("No hay productos nuevos pendientes de preparar.");
             Ejecutar(c,t,"UPDATE dbo.Pedidos SET Estado=N'En preparación' WHERE Id=@p;",("@p",pedidoId));
-            Auditar(c,t,operacionId,actor,pedidoId,cuenta.MesaId,"Preparacion",cuenta.Estado,"En preparación","Preparación declarada por operador",0);return "En preparación";
+            RegistrarTanda(c,t,operacionId,actor,cuenta);return "En preparación";
         });
     }
     public decimal CorregirLinea(SolicitudCorreccionLinea s)
@@ -35,7 +57,9 @@ public sealed partial class RepositorioRestaurante
         if(!s.SinPreparacionDeclarada||s.CantidadRetirada<=0)throw new ArgumentException("Declare que no hubo preparación ni consumo e indique unidades positivas a retirar.");
         return Mutacion(s.OperacionId,"CorreccionLinea",s,MesaDePedido(s.PedidoId),true,(c,t,actor)=>{
             ExigirCorrecciones(c,t);var cuenta=LeerCuenta(c,t,s.PedidoId);ExigirAbierto(cuenta);ExigirVersion(cuenta,s.Version,s.TotalEsperado);SinPagoPendiente(c,t,s.PedidoId);
-            if(cuenta.Estado!="Abierto")throw new InvalidOperationException("Ya se declaró preparación. Conserve el consumo y registre una incidencia desde Gestionar cierre.");
+            ReglasRestaurante.ExigirSinAjuste(cuenta.Descuento);
+            if(cuenta.Estado!="Abierto" && s.DetalleId <= (LimitePreparado(c,t,s.PedidoId)??int.MaxValue))
+                throw new InvalidOperationException("Esta línea ya entró en preparación. Conserva el consumo y registra una incidencia desde Gestionar cierre.");
             using var q=Consulta(c,t,"SELECT d.Cantidad-COALESCE((SELECT SUM(CantidadRetirada) FROM dbo.CorreccionesLinea WHERE DetalleId=d.Id),0),d.PrecioUnitario FROM dbo.DetallesPedido d WITH(UPDLOCK,HOLDLOCK) WHERE d.Id=@d AND d.PedidoId=@p;",("@d",s.DetalleId),("@p",s.PedidoId));
             int anterior;decimal precio;using(var r=q.ExecuteReader()){if(!r.Read())throw new ArgumentException("La línea no pertenece al pedido.");anterior=r.GetInt32(0);precio=r.GetDecimal(1);}
             if(s.CantidadRetirada>anterior)throw new ArgumentException("No retire más unidades de las vigentes.");

@@ -1,4 +1,4 @@
-using Restaurante.Frontend.Servicios;
+﻿using Restaurante.Frontend.Servicios;
 using Restaurante.Backend.Dominio;
 using Restaurante.Backend.Servicios;
 namespace Restaurante.Frontend.Formularios;
@@ -13,7 +13,16 @@ public sealed partial class FormularioDetalleMesa : Form
     private bool _ocupado;
     private bool _cargando;
     private bool _recuperacionPendiente;
-    public FormularioDetalleMesa() => InitializeComponent();
+    public FormularioDetalleMesa()
+    {
+        InitializeComponent();
+        _productos.SelectedIndexChanged += (_,_) => ActualizarSeleccionVisual();
+    }
+    private void ActualizarSeleccionVisual()
+    {
+        var id=(_productos.SelectedItem as ElementoMenu)?.Id;
+        foreach(var tarjeta in _catalogo.Controls.OfType<TarjetaProducto>())tarjeta.Seleccionada=tarjeta.ProductoId==id;
+    }
     public FormularioDetalleMesa(IRepositorioRestaurante repositorio, Mesa mesa, IDialogosUsuario? dialogos = null) : this()
     {
         _repositorio = repositorio; _mesa = mesa; _dialogos = dialogos ?? new DialogosUsuario();
@@ -34,7 +43,9 @@ public sealed partial class FormularioDetalleMesa : Form
                 var revision = pedido is null ? null : _repositorio.RevisarCuenta(pedido.Id);
                 var incierta = pedido is null ? null : _repositorio.ObtenerPagoIncierto(pedido.Id);
                 var detalles = pedido is null ? new List<DetallePedidoResumen>() : _repositorio.ListarDetallesPedido(pedido.Id).ToList();
-                return (actual, pedido, productos, clientes, detalles, revision, incierta);
+                var permiteCorreccion=_repositorio.CorreccionesDisponibles();
+                var corregibles=pedido is null?new List<LineaPedidoCorregible>():permiteCorreccion?_repositorio.ListarLineasCorregibles(pedido.Id).ToList():detalles.Select((d,i)=>new LineaPedidoCorregible(i,d.Producto,d.Cantidad,d.Cantidad,d.PrecioUnitario,true)).ToList();
+                return (actual, pedido, productos, clientes, detalles, revision, incierta,corregibles,permiteCorreccion);
             });
             var clienteId = (_clientes.SelectedItem as Cliente)?.Id ?? 0;
             var productoId = (_productos.SelectedItem as ElementoMenu)?.Id;
@@ -47,7 +58,9 @@ public sealed partial class FormularioDetalleMesa : Form
             _categoria.Items.Clear(); _categoria.Items.Add("Todas las categorías");
             _categoria.Items.AddRange(_menu.Select(p=>p.Categoria).Distinct().Order().Cast<object>().ToArray());
             _categoria.SelectedItem=_categoria.Items.Contains(categoria)?categoria:_categoria.Items[0];
-            _detalles.DataSource=datos.detalles;
+            _detalles.DataSource=datos.corregibles.Where(l=>l.CantidadVigente>0).Select(l=>new {l.Producto,Cantidad=l.CantidadVigente,Precio=l.PrecioUnitario,Importe=l.CantidadVigente*l.PrecioUnitario,Estado=!datos.permiteCorreccion?"Registrado":l.Preparada?"En preparación":"Pendiente"}).ToList();
+            foreach(var columna in new[]{"Precio","Importe"})if(_detalles.Columns.Contains(columna)){_detalles.Columns[columna].DefaultCellStyle.Format="N2";_detalles.Columns[columna].DefaultCellStyle.Alignment=DataGridViewContentAlignment.MiddleRight;}
+            _desglose.Text=datos.revision is null?"":$"Consumo: {FormatoPresentacion.Moneda(datos.revision.ImporteOriginal)}\nDescuento / cortesía: −{FormatoPresentacion.Moneda(datos.revision.Descuento)}";
             _resumen.Text=$"Mesa {_mesa.Numero} · " + (_pedido is null ? datos.actual.Estado : $"Pedido #{_pedido.Id} · {_pedido.Estado} · {_pedido.Cliente}");
             _total.Text=_pedido is null ? "Sin pedido registrado" : $"Total: {FormatoPresentacion.Moneda(_pedido.Total)}";
             _estado.Text=_pedido is null ? "El primer producto abre y guarda el pedido." : "Productos guardados. Cada incorporación se registra al agregar.";
@@ -57,11 +70,17 @@ public sealed partial class FormularioDetalleMesa : Form
             if(_recuperacionPendiente)_agregar.Enabled=_catalogo.Enabled=false;
             _facturar.Enabled=_pedido is not null && datos.detalles.Count>0 && datos.incierta is null && !_recuperacionPendiente;
             _gestionar.Enabled=!_recuperacionPendiente;
+            var tienePendientes=datos.corregibles.Any(l=>l.CantidadVigente>0&&!l.Preparada);
+            _preparar.Visible=_corregir.Visible=datos.permiteCorreccion;
+            _preparar.Enabled=tienePendientes&&datos.incierta is null&&!_recuperacionPendiente;
+            _corregir.Enabled=_preparar.Enabled&&(datos.revision?.Descuento??0)==0;
+            if((datos.revision?.Descuento??0)>0){_agregar.Enabled=_catalogo.Enabled=false;_estado.Text="Hay un ajuste autorizado. Retíralo desde Gestionar cierre antes de cambiar productos; luego autoriza el nuevo descuento.";}
             if(_recuperacionPendiente)_estado.Text="Hay operaciones pendientes. Cierre la mesa y use Recuperar operaciones desde Inicio.";
             if(datos.incierta is not null)_estado.Text="Tarjeta incierta: no repita el cobro. Utilice Gestionar cierre para conciliar.";
             _cargando=false; DibujarCatalogo();
             if (productoId is not null) _productos.SelectedItem=_productos.Items.Cast<ElementoMenu>().FirstOrDefault(p=>p.Id==productoId) ?? _productos.SelectedItem;
             FormatoPresentacion.Aplicar(this);
+            AjustarTablaCuenta();
         }
         catch (Exception ex)
         {
@@ -69,6 +88,24 @@ public sealed partial class FormularioDetalleMesa : Form
             _dialogos.Mostrar(this,ex.Message,"No se pudo cargar la mesa",MessageBoxButtons.OK,MessageBoxIcon.Error);
         }
         finally { _cargando=false; }
+    }
+    private void AjustarTablaCuenta()
+    {
+        _detalles.AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.None;
+        _detalles.ColumnHeadersDefaultCellStyle.WrapMode=DataGridViewTriState.False;
+        foreach(DataGridViewColumn col in _detalles.Columns) {
+            col.DefaultCellStyle.WrapMode=col.Name=="Producto"?DataGridViewTriState.True:DataGridViewTriState.False;
+            var ancho=col.Name switch {"Cantidad"=>85,"Precio"=>82,"Importe"=>90,"Estado"=>100,_=>130};
+            col.Width=(int)(ancho*DeviceDpi/96f);
+            if(col.Name=="Producto"){col.AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill;col.MinimumWidth=(int)(110*DeviceDpi/96f);}
+            if(col.Name=="Cantidad"){col.HeaderText="Cant.";col.HeaderCell.Style.Padding=Padding.Empty;col.SortMode=DataGridViewColumnSortMode.NotSortable;}
+        }
+    }
+    private void AjustarTarjetas()
+    {
+        var disponible=Math.Max(160,_catalogo.ClientSize.Width-SystemInformation.VerticalScrollBarWidth);
+        var columnas=Math.Max(1,disponible/(int)(220*DeviceDpi/96f));
+        foreach(Control tarjeta in _catalogo.Controls)tarjeta.Width=Math.Max(140,disponible/columnas-20);
     }
     private void Filtro_Cambio(object? sender, EventArgs e) { if (!_cargando) DibujarCatalogo(); }
     private void DibujarCatalogo()
@@ -82,14 +119,16 @@ public sealed partial class FormularioDetalleMesa : Form
         _catalogo.SuspendLayout(); while (_catalogo.Controls.Count>0) _catalogo.Controls[0].Dispose();
         foreach(var producto in lista)
         {
-            var tarjeta=Componentes.Boton($"{producto.Nombre}\n{producto.Categoria} · {producto.Tipo}\n{FormatoPresentacion.Moneda(producto.Precio)}\nSeleccionar",false);
-            tarjeta.Size=new Size((int)(180 * DeviceDpi / 96f),(int)(135 * DeviceDpi / 96f)); tarjeta.AutoSize=false; tarjeta.Margin=new Padding(8); tarjeta.TextAlign=ContentAlignment.MiddleLeft;
-            Iconos.Aplicar(tarjeta,"utensils-crossed");
-            tarjeta.Click+=(_,_)=> { _productos.SelectedItem=producto; _estado.Text=$"Seleccionado: {producto.Nombre}. Elige cantidad y pulsa Agregar."; _cantidad.Focus(); };
+            var tarjeta=new TarjetaProducto(producto){Height=(int)(238*DeviceDpi/96f),Seleccionada=producto.Id==seleccion};
+            tarjeta.Click+=(_,_)=> {
+                foreach(var otra in _catalogo.Controls.OfType<TarjetaProducto>())otra.Seleccionada=false;
+                tarjeta.Seleccionada=true;_productos.SelectedItem=producto;
+                _estado.Text=$"Seleccionado: {producto.Nombre}. Elige cantidad y pulsa Agregar.";_cantidad.Focus();
+            };
             _catalogo.Controls.Add(tarjeta);
         }
         if(lista.Count==0) _catalogo.Controls.Add(Componentes.Etiqueta("No hay productos para esta búsqueda."));
-        _catalogo.ResumeLayout(true);
+        _catalogo.ResumeLayout(true);AjustarTarjetas();ActualizarSeleccionVisual();
     }
     private async void Agregar_Click(object? sender, EventArgs e)
     {
@@ -152,7 +191,7 @@ public sealed partial class FormularioDetalleMesa : Form
     private async void Preparar_Click(object? sender,EventArgs e)
     {
         if(_ocupado||_cargando||_recuperacionPendiente||_pedido is null)return;
-        if(MessageBox.Show(this,"Declara que el pedido entró en preparación. Después no se permite retirar unidades como error de captura; se conservará el consumo y deberá registrarse incidencia. ¿Continuar?","Declarar preparación",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+        if(MessageBox.Show(this,"Los productos pendientes entrarán en preparación y ya no se podrán retirar como error de captura. Los productos que agregues después permanecerán pendientes hasta el próximo envío. ¿Continuar?","Declarar preparación",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
         _ocupado=true;
         try{var id=Guid.NewGuid();var pedido=_pedido.Id;await DiarioOperaciones.Ejecutar(_repositorio,"Preparacion",id,pedido,()=>_repositorio.MarcarPreparacion(pedido,id));}
         catch(Exception ex){_dialogos.Mostrar(this,ex.Message,"Preparación");}

@@ -16,7 +16,11 @@ internal static class DiarioOperaciones
     public static IReadOnlyList<OperacionPendienteLocal> Listar(IRepositorioRestaurante repo)
     {
         var carpeta=Carpeta(repo);if(!Directory.Exists(carpeta))return [];
+        MigrarAliasActual(repo,carpeta);
         var resultado=new List<OperacionPendienteLocal>();
+        foreach(var externo in Directory.EnumerateFiles(carpeta,"*_"+repo.UsuarioActual!.Id+"_*.bin"))
+            if(!Path.GetFileName(externo).StartsWith("DB2_",StringComparison.Ordinal) && !Path.GetFileName(externo).StartsWith(Prefijo(repo),StringComparison.Ordinal))
+                resultado.Add(new(Guid.Empty,repo.IdentificadorBase,repo.UsuarioActual.Id,"Destino por verificar",Path.GetFileName(externo)));
         foreach(var archivo in Directory.EnumerateFiles(carpeta,Prefijo(repo)+"*.bin"))
         {
             try
@@ -35,6 +39,30 @@ internal static class DiarioOperaciones
             }
         }
         return resultado;
+    }
+    private static void MigrarAliasActual(IRepositorioRestaurante repo,string carpeta)
+    {
+        var anterior=repo.IdentificadorBaseAnterior;
+        if(anterior==repo.IdentificadorBase)return;
+        foreach(var archivo in Directory.EnumerateFiles(carpeta,anterior+"_"+repo.UsuarioActual!.Id+"_*.bin"))
+        {
+            // Both names refer to the currently verified connection, never to an inferred remote destination.
+            var p=JsonSerializer.Deserialize<OperacionPendienteLocal>(Encoding.UTF8.GetString(ProtectedData.Unprotect(File.ReadAllBytes(archivo),null,DataProtectionScope.CurrentUser)))??throw new IOException("Conserve el registro de recuperación ilegible.");
+            if(p.Base!=anterior||p.UsuarioId!=repo.UsuarioActual.Id)throw new IOException("El registro anterior no corresponde a esta sesión.");
+            ValidarDatos(p);
+            using var bloqueo=Bloquear(repo,p.Id);
+            using var bloqueoAnterior=new FileStream(archivo+".lock",FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
+            var actual=p with{Base=repo.IdentificadorBase};var destino=Ruta(repo,p.Id);
+            if(File.Exists(destino)) {
+                var existente=JsonSerializer.Deserialize<OperacionPendienteLocal>(Encoding.UTF8.GetString(ProtectedData.Unprotect(File.ReadAllBytes(destino),null,DataProtectionScope.CurrentUser)));
+                if(existente!=actual)throw new IOException("Hay dos registros distintos de la misma operación. Conserve ambos para revisión.");
+            } else {
+                var temporal=destino+"."+Guid.NewGuid().ToString("N")+".tmp";
+                File.WriteAllBytes(temporal,ProtectedData.Protect(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(actual)),null,DataProtectionScope.CurrentUser));
+                File.Move(temporal,destino,false);
+            }
+            File.Delete(archivo);
+        }
     }
     private static void ValidarDatos(OperacionPendienteLocal p)
     {
@@ -112,13 +140,13 @@ internal static class DiarioOperaciones
             case "Conciliar":
                 var conciliacion=JsonSerializer.Deserialize<SolicitudConciliacion>(p.Datos)!;
                 return ResumenCobro(await Ejecutar(repo,p.Tipo,p.Id,conciliacion,()=>repo.ConciliarTarjeta(conciliacion.OperacionIncierta,conciliacion.Confirmado,conciliacion.Motivo,conciliacion.OperacionId)));
-            default:throw new InvalidOperationException("Tipo de operación pendiente desconocido. No se ejecutó nada.");
+            default:throw new InvalidOperationException("El destino de este registro requiere revisión. Vuelve a la conexión anterior para verificarlo; no se repetirá ni borrará automáticamente.");
         }
     }
     private static string ResumenCobro(ResultadoCobro r)=>$"Estado: {r.Estado}. Total: {MonedaGuatemala.Formatear(r.Total)}. Comprobante: {r.NumeroComprobante??"no emitido"}. Cambio: {MonedaGuatemala.Formatear(r.Cambio)}.";
     public static void DescartarRechazada(IRepositorioRestaurante repo,OperacionPendienteLocal p)
     {
-        if(p.Tipo=="Ilegible")throw new InvalidOperationException("Conserve el archivo ilegible y solicite revisión técnica. No se eliminará automáticamente.");
+        if(p.Tipo is "Ilegible" or "Destino por verificar")throw new InvalidOperationException("Conserve el archivo ilegible y solicite revisión técnica. No se eliminará automáticamente.");
         using var bloqueo=Bloquear(repo,p.Id);
         repo.AbandonarOperacion(p.Id);
         File.Delete(Ruta(repo,p.Id));

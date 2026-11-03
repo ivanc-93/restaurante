@@ -6,6 +6,7 @@ internal static class PresentacionPendiente
 {
     public static string Resumen(OperacionPendienteLocal p)
     {
+        if(p.Tipo=="Destino por verificar")return $"Hay un registro de otra conexión: {p.Datos}\r\nNo se ejecutará ni descartará. Vuelve a la conexión anterior para verificar el destino y recuperar la operación. Si cambió el servidor, solicita revisión del registro antes de repetir acciones.";
         if(p.Tipo=="Ilegible")return $"Registro local ilegible: {p.Datos}\r\nSe conserva para revisión técnica. Los otros registros pueden revisarse. No intentes repetir su operación sin comprobar SQL.";
         using var doc=JsonDocument.Parse(p.Datos);var r=doc.RootElement;
         if(r.ValueKind!=JsonValueKind.Object)return $"Acción: {p.Tipo} · Pedido: {r} · Identificador: {p.Id}. Se recuperará la misma solicitud.";

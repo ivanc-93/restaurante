@@ -11,8 +11,24 @@ public sealed partial class RepositorioRestaurante
 {
     private UsuarioAutenticado? _sesion;
     public UsuarioAutenticado? UsuarioActual => _sesion;
+    private readonly object _identidadLock = new();
+    private string? _destinoIdentidad, _identidadBase;
+    public string IdentificadorBaseAnterior { get { using var c=configuracion.CrearConexion();return HuellaIdentidad(c.DataSource+"|"+c.Database); } }
+    private static string HuellaIdentidad(string valor) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(valor.ToUpperInvariant())));
     public string IdentificadorBase {
-        get { using var c=configuracion.CrearConexion();return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(c.DataSource.ToUpperInvariant()+"|"+c.Database.ToUpperInvariant()))); }
+        get {
+            using var c=configuracion.CrearConexion();
+            var destino=c.ConnectionString;
+            lock(_identidadLock) {
+                if(_destinoIdentidad==destino && _identidadBase is not null)return _identidadBase;
+                c.Open();
+                using var q=new SqlCommand("SELECT CONVERT(nvarchar(128),SERVERPROPERTY('ServerName')),DB_NAME(),CONVERT(nvarchar(36),service_broker_guid) FROM sys.databases WHERE database_id=DB_ID();",c);
+                using var r=q.ExecuteReader();
+                if(!r.Read())throw new InvalidOperationException("No se pudo verificar la identidad de la base para recuperar operaciones.");
+                _identidadBase="DB2_"+HuellaIdentidad(r.GetString(0)+"|"+r.GetString(1)+"|"+r.GetString(2));
+                _destinoIdentidad=destino;return _identidadBase;
+            }
+        }
     }
     public bool BaseEsPruebas { get {using var c=configuracion.CrearConexion();return c.Database.StartsWith("Restaurante_Pruebas_",StringComparison.Ordinal);} }
     public void CerrarSesion() => _sesion = null;
@@ -186,6 +202,8 @@ public sealed partial class RepositorioRestaurante
                 : new Plato(menuId,r.GetString(0),r.GetString(3),r.GetDecimal(2));
         }
         var importe=producto.CalcularImporte(cantidad);
+        using(var acumulado=Consulta(c,t,"SELECT COALESCE(ImporteOriginal,Total) FROM dbo.Pedidos WHERE Id=@p;",("@p",pedidoId)))
+            ReglasRestaurante.TotalAdmitido((decimal)acumulado.ExecuteScalar()!,importe);
         Ejecutar(c,t,"""
             INSERT dbo.DetallesPedido(PedidoId,MenuId,Cantidad,PrecioUnitario,NombreProducto,TipoProducto)VALUES(@p,@m,@n,@precio,@nombre,@tipo);
             UPDATE dbo.Pedidos SET Total=Total+@importe,ImporteOriginal=COALESCE(ImporteOriginal,Total)+@importe WHERE Id=@p;
@@ -199,7 +217,11 @@ public sealed partial class RepositorioRestaurante
         return Mutacion(op,"AgregarProducto",new{pedidoId,menuId,cantidad},mesa,false,(c,t,actor)=>
         {
             var cuenta=LeerCuenta(c,t,pedidoId);ExigirAbierto(cuenta);SinPagoPendiente(c,t,pedidoId);
-            Ejecutar(c,t,"UPDATE dbo.AjustesPedido SET Vigente=0 WHERE PedidoId=@p;UPDATE dbo.Pedidos SET Total=COALESCE(ImporteOriginal,Total),Descuento=0 WHERE Id=@p;",("@p",pedidoId));
+            ReglasRestaurante.ExigirSinAjuste(cuenta.Descuento);
+            // Existing preparations without a batch boundary conservatively include all existing lines.
+            if(cuenta.Estado=="En preparación" && LimitePreparado(c,t,pedidoId) is null)
+                RegistrarTanda(c,t,op,actor,cuenta);
+            Ejecutar(c,t,"UPDATE dbo.AjustesPedido SET Vigente=0 WHERE PedidoId=@p AND Descuento=0;",("@p",pedidoId));
             var importe=InsertarLinea(c,t,pedidoId,menuId,cantidad);
             Auditar(c,t,op,actor,pedidoId,mesa,"AgregarProducto",cuenta.Estado,cuenta.Estado,"Incorporación de producto",importe);
             return cuenta.ImporteOriginal+importe;
