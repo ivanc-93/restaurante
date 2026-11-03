@@ -9,7 +9,7 @@ $ErrorActionPreference='Stop'
 # Windows authentication. For SQL authentication use the SQL scripts from SSMS with that connection.
 function Sql([string]$base,[string]$consulta) {
     $salida=& sqlcmd -S $Servidor -E -b -I -f 65001 -l 20 -d $base -W -h -1 -s '|' -Q $consulta
-    if($LASTEXITCODE -ne 0){throw "Falló SQL sobre $base. No continúe manualmente sin revisar el error."}
+    if($LASTEXITCODE -ne 0){throw "Falló SQL sobre $base (código $LASTEXITCODE). Detalle: $($salida -join [Environment]::NewLine). No se continuará."}
     return $salida
 }
 function Script([string]$base,[string]$archivo) {
