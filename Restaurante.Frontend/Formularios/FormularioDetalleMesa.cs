@@ -166,7 +166,7 @@ public sealed partial class FormularioDetalleMesa : Form
             var btnTarjeta = new Restaurante.Frontend.Controles.TarjetaProducto(producto);
             var escala = DeviceDpi / 96f;
             var columnas = Math.Max(1, flpCatalogo.ClientSize.Width / (int)(210 * escala));
-            btnTarjeta.Size = new Size(Math.Max((int)(180 * escala), flpCatalogo.ClientSize.Width / columnas - (int)(18 * escala)), (int)(145 * escala));
+            btnTarjeta.Size = new Size(Math.Max((int)(180 * escala), flpCatalogo.ClientSize.Width / columnas - (int)(18 * escala)), (int)(220 * escala));
             btnTarjeta.Margin = new Padding(6);
             btnTarjeta.Marcar(producto.Id == (cbProductos.SelectedItem as ElementoMenu)?.Id);
             btnTarjeta.Seleccionar += (_, _) =>

@@ -1,6 +1,8 @@
 # Iconos de Sabores
 
-El complemento `Formularios/IconosComplementarios.cs` contiene trazos vectoriales originales del proyecto para limpieza, desactivación, calendario, aviso, actualizar y guardar. Se rasterizan en memoria a 24/32/48 px con transparencia, sin texto incrustado ni archivos descargados. Los recursos Lucide siguientes mantienen sus licencias originales.
+El complemento `Presentacion/IconosComplementarios.cs` contiene trazos vectoriales del proyecto para limpieza, desactivación, calendario, aviso, actualizar y guardar. Se rasterizan en memoria a 24/32/48 px con transparencia, sin texto incrustado ni archivos descargados. Los recursos Lucide siguientes mantienen sus licencias originales.
+
+`Presentacion/IlustracionesSabores.cs` recupera los dibujos vectoriales locales de mesas y categorías de productos de la rama `frontend-Bryan`, commit `baf78305a6aa2ccc66236b641d34f5dde5d1844e`. El archivo de origen los identifica como ilustraciones originales locales. No incorpora fotografías ni servicios externos. Las imágenes de productos son orientativas, no fotografías de los platos del restaurante. Se dibujan en memoria; cada tarjeta libera sus propias imágenes al reemplazarlas o cerrarse. Estos dibujos son independientes de los recursos Lucide.
 
 Fuente: https://lucide.dev/icons/
 Repositorio: https://github.com/lucide-icons/lucide

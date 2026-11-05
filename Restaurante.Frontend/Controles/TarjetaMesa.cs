@@ -7,6 +7,7 @@ internal sealed class TarjetaMesa : UserControl
     private readonly TableLayoutPanel tlpCuerpo;
     private readonly Label lblEstado;
     private readonly PictureBox picMesa;
+    private Bitmap? ilustracionMesa;
     private readonly EstadoVisualMesa estilo;
     internal Mesa Mesa { get; }
     internal Button btnAccionMesa { get; }
@@ -114,7 +115,11 @@ internal sealed class TarjetaMesa : UserControl
         tlpCuerpo.Controls.Add(btnReservarMesa, 0, 6);
         tlpCuerpo.SetColumnSpan(btnReservarMesa, 2);
         Controls.Add(tlpCuerpo);
-        Disposed += (_, _) => ayudaReserva.Dispose();
+        Disposed += (_, _) =>
+        {
+            ayudaReserva.Dispose();
+            ilustracionMesa?.Dispose();
+        };
         AjustarEscala();
     }
 
@@ -141,9 +146,17 @@ internal sealed class TarjetaMesa : UserControl
         lblEstado.Padding = new Padding(Px(6));
         lblEstado.Margin = new Padding(0, 0, 0, Px(5));
         lblEstado.Image = Iconos.Obtener(estilo.Icono, DeviceDpi);
-        picMesa.Size = new Size(Px(48), Px(48));
-        // La ilustración central usa el PNG de 48 px, no amplía el de 24 px en DPI base.
-        picMesa.Image = Iconos.Obtener("armchair", Math.Max(192, DeviceDpi));
+        picMesa.Size = new Size(Px(108), Px(72));
+        // Se dibuja al tamaño físico actual; solo esta tarjeta es dueña del bitmap.
+        if (ilustracionMesa?.Size != picMesa.Size)
+        {
+            var nueva = new Bitmap(picMesa.Width, picMesa.Height);
+            using (var grafico = Graphics.FromImage(nueva))
+                IlustracionesSabores.Mesa(grafico, new Rectangle(Point.Empty, nueva.Size), estilo.Tinta, Mesa.Capacidad);
+            var anterior = ilustracionMesa;
+            picMesa.Image = ilustracionMesa = nueva;
+            anterior?.Dispose();
+        }
         lblNombreReserva.Height = Px(38);
         lblNombreReserva.MinimumSize = new Size(0, Px(38));
         btnReservarMesa.MinimumSize = new Size(0, Px(42));
